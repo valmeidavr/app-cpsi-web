@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Pagination,
@@ -56,8 +57,15 @@ export default function ClientList() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Lista de Clientes</h1>
+    <div className="container mx-auto">
+
+       <Breadcrumb
+        items={[
+          { label: "Painel", href: "/painel" },
+          { label: "Lista de Clientes" }, // Último item sem link
+        ]}
+      />
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Clientes</h1>
 
       <div className="flex gap-2 mb-4">
         <Input
@@ -70,7 +78,7 @@ export default function ClientList() {
         <Button variant="secondary" onClick={handleSearch}>
           <Search className="mr-2 h-4 w-4" /> Pesquisar
         </Button>
-        <Link href="/clientes/novo" passHref>
+        <Link href="/painel/clientes/novo" passHref>
           <Button className="ml-auto">
             <Plus className="mr-2 h-4 w-4" /> Novo Cliente
           </Button>
