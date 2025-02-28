@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getCookie } from "@/util/cookies";
+import menuData from "@/data/menu.json";
 import {
   ChevronRight,
   UserPlus,
@@ -17,7 +19,7 @@ import {
   GraduationCap,
   CalendarCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface SidebarProps {
@@ -25,42 +27,72 @@ interface SidebarProps {
   setCollapsed: (collapsed: boolean) => void;
 }
 
+// Mapeia os ícones para serem usados dinamicamente
+const iconMap: { [key: string]: React.ElementType } = {
+  DockIcon,
+  BoxIcon,
+  BookXIcon,
+  GraduationCap,
+  CalendarCheck,
+  Users,
+  UserPlus,
+};
+
 interface MenuItem {
   icon: React.ElementType;
   label: string;
   href: string;
-  subItems?: { icon: React.ElementType; label: string; href: string }[];
+  requiredGroups?: string[]; // Adicione essa linha
+  subItems?: { 
+    icon: React.ElementType; 
+    label: string; 
+    href: string;
+    requiredGroups?: string[]; // Adicione aqui também para os subitens
+  }[];
 }
 
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
+  const [userGroups, setUserGroups] = useState<string[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
 
-  const menuItems: MenuItem[] = [
-    {
-      icon: DockIcon,
-      label: "Cadastros",
-      href: "#",
-      subItems: [
-        { icon: BoxIcon, label: "Procedimentos", href: "/painel/procedimentos" },
-        { icon: BookXIcon, label: "Especialidades", href: "/painel/especialidades" },
-        { icon: GraduationCap, label: "Turmas", href: "/painel/turmas" },
-        { icon: CalendarCheck, label: "Expedientes", href: "/painel/expedientes" },
-        { icon: Users, label: "Clientes", href: "/painel/clientes" },
-      ],
-    },
-    {
-      icon: Users,
-      label: "Usuários",
-      href: "#",
-      subItems: [
-        { icon: UserPlus, label: "Novo Usuário", href: "/painel/usuarios/novo" },
-        { icon: Users, label: "Gerenciar Usuários", href: "/painel/usuarios" },
-      ],
-    },
-  ];
+  useEffect(() => {
+    const groups = getCookie("userGroups");
+
+    if (groups) {
+      try {
+        setUserGroups(JSON.parse(groups).map((group: any) => group.nome));
+      } catch (e) {
+        console.error("Erro ao parsear grupos do usuário", e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    // Carrega os itens do menu e converte os ícones para componentes React
+    const parsedMenu = menuData.map((item) => ({
+      ...item,
+      icon: iconMap[item.icon], // Mapeia o ícone principal
+      subItems: item.subItems
+        ? item.subItems.map((subItem) => ({
+            ...subItem,
+            icon: iconMap[subItem.icon], // Mapeia os ícones dos subitens
+          }))
+        : [],
+    }));
+  
+    setMenuItems(parsedMenu);
+  }, []);
+
+  const hasAccess = (requiredGroups?: string[]) => {
+    if (!requiredGroups || requiredGroups.length === 0) return true;
+    return requiredGroups.some(group => userGroups.includes(group));
+  };
 
   const renderMenuItem = (item: MenuItem, index: number) => {
+    if (item.requiredGroups && !hasAccess(item.requiredGroups)) return null; // Esconde o item se houver requiredGroups e o usuário não tiver acesso.
+
     if (collapsed) {
       return (
         <Popover key={index}>
@@ -80,22 +112,24 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               >
                 <span>{item.label}</span>
               </Button>
-              {item.subItems && (
+              {item.subItems && item.subItems.some(subItem => subItem.requiredGroups && hasAccess(subItem.requiredGroups)) && (
                 <div className="ml-3 mt-1 space-y-1">
-                  {item.subItems.map((subItem, subIndex) => (
-                    <Link key={subIndex} href={subItem.href} passHref>
-                      <Button
-                        variant="ghost"
-                        className={cn(
-                          "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                          pathname === subItem.href && "bg-gray-700"
-                        )}
-                      >
-                        <subItem.icon className="h-4 w-4 mr-2" />
-                        <span>{subItem.label}</span>
-                      </Button>
-                    </Link>
-                  ))}
+                  {item.subItems.map((subItem, subIndex) =>
+                    subItem.requiredGroups && hasAccess(subItem.requiredGroups) ? (
+                      <Link key={subIndex} href={subItem.href} passHref>
+                        <Button
+                          variant="ghost"
+                          className={cn(
+                            "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
+                            pathname === subItem.href && "bg-gray-700"
+                          )}
+                        >
+                          <subItem.icon className="h-4 w-4 mr-2" />
+                          <span>{subItem.label}</span>
+                        </Button>
+                      </Link>
+                    ) : null
+                  )}
                 </div>
               )}
             </div>
@@ -122,27 +156,31 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
             />
           )}
         </Button>
-        {activeItem === item.label && item.subItems && (
-          <div className="ml-6 mt-1 space-y-1">
-            {item.subItems.map((subItem, subIndex) => (
-              <Link key={subIndex} href={subItem.href} passHref>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                    pathname === subItem.href && "bg-gray-700"
-                  )}
-                >
-                  <subItem.icon className="h-4 w-4 mr-2" />
-                  <span>{subItem.label}</span>
-                </Button>
-              </Link>
-            ))}
-          </div>
-        )}
+        {activeItem === item.label &&
+          item.subItems &&
+          item.subItems.some(subItem => subItem.requiredGroups && hasAccess(subItem.requiredGroups)) && (
+            <div className="ml-6 mt-1 space-y-1">
+              {item.subItems.map((subItem, subIndex) =>
+                subItem.requiredGroups && hasAccess(subItem.requiredGroups) ? (
+                  <Link key={subIndex} href={subItem.href} passHref>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
+                        pathname === subItem.href && "bg-gray-700"
+                      )}
+                    >
+                      <subItem.icon className="h-4 w-4 mr-2" />
+                      <span>{subItem.label}</span>
+                    </Button>
+                  </Link>
+                ) : null
+              )}
+            </div>
+          )}
       </div>
     );
-  };
+};
 
   return (
     <div
