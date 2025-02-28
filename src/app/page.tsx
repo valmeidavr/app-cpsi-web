@@ -30,30 +30,31 @@ export default function Home() {
     event.preventDefault();
     setErrorMessage(null);
     setLoading(true);
+  
     try {
       const { data } = await http.post("auth/login", { email, senha });
       const user = data.usuario;
       const cpsiSystem = user.sistemas.find((sistema: any) => sistema.nome === "CPSI");
-
+  
       if (!cpsiSystem) {
         setErrorMessage("Acesso negado. Você não tem permissão para acessar este sistema.");
         setLoading(false);
         return;
       }
-
-      setCookie("accessToken", data.access_token);
-      setCookie("userGroups", JSON.stringify(cpsiSystem.grupos));
-      router.push("/painel");
+  
+      // 🔥 SALVANDO OS COOKIES CORRETAMENTE
+      setCookie("accessToken", data.access_token, { path: "/" });
+      setCookie("userGroups", JSON.stringify(cpsiSystem.grupos), { path: "/" });
+      
+      console.log("✅ Login bem-sucedido! Redirecionando para o painel...");
+      router.replace("/painel");
     } catch (err: any) {
-      if (err.response && err.response.status === 401) {
-        setErrorMessage("Não autorizado. Verifique suas credenciais.");
-      } else {
-        setErrorMessage("Usuário e/ou senha inválido.");
-      }
+      setErrorMessage(err.response?.status === 401 ? "Não autorizado. Verifique suas credenciais." : "Usuário e/ou senha inválido.");
     } finally {
       setLoading(false);
     }
   }
+  
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
       <Card className="w-full max-w-md shadow-lg">
