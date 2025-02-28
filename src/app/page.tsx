@@ -1,54 +1,98 @@
+"use client";
 
-import Image from "next/image"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Lock, LogIn } from "lucide-react"
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useState } from "react";
+import { http } from "@/util/http";
+import { setCookie } from "@/util/cookies";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Mail, Lock, LogIn } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [senha, setSenha] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  async function onSubmit(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setErrorMessage(null); // Reseta a mensagem antes de tentar logar
+    try {
+      const { data } = await http.post("auth/login", { email, senha });
+      setCookie("accessToken", data.accessToken);
+      router.push("/painel");
+    } catch (err: any) {
+      if (err.response && err.response.status === 401) {
+        setErrorMessage("Não autorizado. Verifique suas credenciais.");
+      } else {
+        setErrorMessage("Usuário e/ou senha inválido.");
+      }
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
+      
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <Image
-              src="/logotipo.svg?height=100&width=200"
-              alt="GRUPO AAP-VR"
-              width={200}
-              height={100}
-              className="rounded-md"
-            />
+            <Image src="/logotipo.svg" alt="GRUPO AAP-VR" width={200} height={100} className="rounded-md" />
           </div>
+          
+          
           <CardTitle className="text-2xl font-bold">Bem-vindo de volta</CardTitle>
+          
           <CardDescription>Entre com suas credenciais para acessar sua conta</CardDescription>
+          
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <Input type="email" placeholder="Email" className="pl-10" />
+
+        <form onSubmit={onSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Input type="email" placeholder="Email" className="pl-10" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-              <Input type="password" placeholder="Senha" className="pl-10" />
+            <div className="space-y-2">
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <Input type="password" placeholder="Senha" className="pl-10" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+              </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button className="w-full">
-            <LogIn className="mr-2 h-4 w-4" /> Entrar
-          </Button>
-          <div className="text-sm text-center">
-            <Link href="/forgot-password" className="text-blue-500 hover:underline">
-              Esqueceu sua senha?
-            </Link>
-          </div>
-        </CardFooter>
+            {/* Exibe o alerta caso haja erro */}
+        {errorMessage && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle>Erro ao fazer login</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full">
+              <LogIn className="mr-2 h-4 w-4" /> Entrar
+            </Button>
+            <div className="text-sm text-center">
+              <Link href="/forgot-password" className="text-blue-500 hover:underline">
+                Esqueceu sua senha?
+              </Link>
+            </div>
+            
+          </CardFooter>
+        </form>
       </Card>
     </main>
-  )
+  );
 }
-
