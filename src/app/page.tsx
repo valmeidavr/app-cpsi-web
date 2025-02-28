@@ -45,8 +45,7 @@ export default function Home() {
       // 🔥 SALVANDO OS COOKIES CORRETAMENTE
       setCookie("accessToken", data.access_token, { path: "/" });
       setCookie("userGroups", JSON.stringify(cpsiSystem.grupos), { path: "/" });
-      
-      console.log("✅ Login bem-sucedido! Redirecionando para o painel...");
+
       router.replace("/painel");
     } catch (err: any) {
       setErrorMessage(err.response?.status === 401 ? "Não autorizado. Verifique suas credenciais." : "Usuário e/ou senha inválido.");

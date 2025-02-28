@@ -5,7 +5,6 @@ import accessConfig from "../data/access.json";
 
 export function middleware(req: NextRequest) {
   const currentPath = req.nextUrl.pathname;
-  console.log("🔍 Middleware executado para:", currentPath);
 
   // 🚀 Libera arquivos estáticos, login e APIs
   if (
@@ -15,7 +14,7 @@ export function middleware(req: NextRequest) {
     currentPath.startsWith("/logotipo.svg") || 
     currentPath.startsWith("/favicon.ico")
   ) {
-    console.log("✅ Liberado (arquivos estáticos ou página de login)");
+
     return NextResponse.next();
   }
 
@@ -23,11 +22,8 @@ export function middleware(req: NextRequest) {
   const accessToken = req.cookies.get("accessToken")?.value;
   const userGroupsCookie = req.cookies.get("userGroups")?.value;
 
-  console.log("🍪 Token recebido:", accessToken ? "Sim" : "Não");
-
   // 🚨 Redireciona se não houver token válido
   if (!accessToken || isTokenExpired(accessToken)) {
-    console.log("🔴 Usuário sem token válido ou expirado. Redirecionando para a home.");
     if (currentPath !== "/") {
       return NextResponse.redirect(new URL("/", req.url));
     }
@@ -37,7 +33,6 @@ export function middleware(req: NextRequest) {
   const payload = getPayload(accessToken);
 
   if (!payload || !payload.usuario) {
-    console.log("⚠️ Erro: Payload inválido ou sem usuário.", payload);
     return NextResponse.redirect(new URL("/", req.url));
   }
 
@@ -47,20 +42,14 @@ export function middleware(req: NextRequest) {
   );
 
   if (!regraAcesso) {
-    console.log("✅ Nenhuma regra específica. Liberado!");
     return NextResponse.next();
   }
-
-  // 🔍 Verifica acesso ao sistema
-  console.log("🔍 Verificando acesso ao sistema:", regraAcesso.sistema);
-  console.log("📌 Sistemas do usuário:", payload.usuario.sistemas.map((s: any) => s.nome));
 
   const sistemaEncontrado = payload.usuario.sistemas.find(
     (sistema: any) => sistema.nome.trim().toUpperCase() === regraAcesso.sistema.trim().toUpperCase()
   );
 
   if (!sistemaEncontrado) {
-    console.log("🔴 Usuário sem acesso ao sistema:", regraAcesso.sistema);
     return NextResponse.redirect(new URL("/", req.url));
   }
 
@@ -68,14 +57,9 @@ export function middleware(req: NextRequest) {
   const userGroups = userGroupsCookie ? JSON.parse(userGroupsCookie) : [];
   const userGroupNames = userGroups.map((grupo: any) => grupo.nome) || [];
 
-  console.log("👥 Grupos do usuário:", userGroupNames);
-
   if (!regraAcesso.gruposPermitidos.some((group) => userGroupNames.includes(group))) {
-    console.log("🔴 Usuário sem permissão para acessar:", currentPath);
     return NextResponse.redirect(new URL("/", req.url));
   }
-
-  console.log("✅ Acesso permitido a:", currentPath);
   return NextResponse.next();
 }
 
