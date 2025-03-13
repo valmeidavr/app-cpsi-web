@@ -1,6 +1,6 @@
-# Gestor da AAPVR
+# CPSI da AAPVR
 
-![Gestor da AAPVR](https://www.aapvr.org.br/wp-content/uploads/2023/08/LOGO-HORIZONTAL-COLORIDO.png)
+![CPSI da AAPVR](https://www.aapvr.org.br/wp-content/uploads/2023/08/LOGO-HORIZONTAL-COLORIDO.png)
 
 > Um sistema moderno e eficiente para a gestão da **Associação de Aposentados e Pensionistas de Volta Redonda (AAPVR)**.
 
@@ -36,7 +36,7 @@ Antes de iniciar, certifique-se de ter instalado:
 1. **Clone o repositório**
    ```sh
    git clone https://github.com/seuusuario/gestor-aapvr.git
-   cd gestor-aapvr
+   cd cpsi-aapvr
    ```
 
 2. **Instale as dependências do frontend**
@@ -81,7 +81,7 @@ Agora, o sistema estará rodando em:
 
 ## 🛠️ Estrutura do Projeto
 ```
-📂 gestor-aapvr
+📂 cpsi-aapvr
  ┣ 📂 frontend (Next.js + ShadCN + Tailwind CSS)
  ┃ ┣ 📂 components
  ┃ ┣ 📂 pages
