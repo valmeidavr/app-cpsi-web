@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/router";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -25,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { createCliente } from "@/app/api/clientes/action";
 
 // Mockup data
 const educationLevels = [
@@ -62,7 +63,7 @@ const formSchema = z.object({
     .min(1, { message: "O campo é obrigatório" }) // Exige pelo menos 1 caractere
     .email({ message: "Email inválido" })
     .default(""), // Valida formato de email
-  dataNascimento: z
+  dtnascimento: z
     .string()
     .min(10, { message: "O campo é obrigatório" })
     .refine(
@@ -89,14 +90,8 @@ const formSchema = z.object({
   bairro: z.string().optional(),
   cidade: z.string().optional(),
   uf: z.string().optional(),
-  telefone1: z.string().optional(),
+  telefone1: z.string().min(11, { message: "Telefone é Obrigatório" }),
   telefone2: z.string().optional(),
-  numeroSUS: z.string().optional(),
-  escolaridade: z.string().optional(),
-  praticaAtividadeFisica: z.string().optional(),
-  tempoAtividadeFisica: z.string().optional(),
-  setoresUtilizacao: z.string().optional(),
-  observacao: z.string().optional(),
 });
 
 // Helper function to format phone number
@@ -133,18 +128,22 @@ export default function CustomerRegistrationForm() {
       uf: "",
       telefone1: "",
       telefone2: "",
-      numeroSUS: "",
-      escolaridade: "",
-      praticaAtividadeFisica: "",
-      tempoAtividadeFisica: "",
-      setoresUtilizacao: "",
-      observacao: "",
+      dtnascimento: "",
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    // Here you would typically send the form data to your backend
+    const router = useRouter();
+    try {
+      await createCliente(values);
+
+      router.push("/clientes");
+    } catch (error) {
+      console.error("Erro ao criar cliente:", error);
+    } finally {
+      setLoading(false);
+    }
     console.log(values);
     setLoading(false);
   };
@@ -251,7 +250,7 @@ export default function CustomerRegistrationForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="dataNascimento"
+              name="dtnascimento"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Nascimento *</FormLabel>
@@ -261,7 +260,7 @@ export default function CustomerRegistrationForm() {
                       maxLength={10}
                       value={field.value}
                       className={`border ${
-                        form.formState.errors.dataNascimento
+                        form.formState.errors.dtnascimento
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
@@ -510,125 +509,8 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="numeroSUS"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Número do SUS</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
           </div>
-          {/* 🔹 Linha 5: Escolaridade, Prática de atividade física, Tempo de atividade física, Setores de Utilização */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <FormField
-              control={form.control}
-              name="escolaridade"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Escolaridade</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Escolaridade" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {educationLevels.map((level) => (
-                        <SelectItem key={level.value} value={level.value}>
-                          {level.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
 
-            <FormField
-              control={form.control}
-              name="praticaAtividadeFisica"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pratica atividade física?</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sim ou Não" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {physicalActivities.map((activity) => (
-                        <SelectItem key={activity.value} value={activity.value}>
-                          {activity.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="tempoAtividadeFisica"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tempo de atividade física</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="setoresUtilizacao"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Setores de Utilização</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-          </div>
-          {/* 🔹 Linha 6: Observação */}
-          <FormField
-            control={form.control}
-            name="observacao"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Observação</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="Digite suas observações aqui"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage className="text-red-500 mt-1 font-light" />
-              </FormItem>
-            )}
-          />
-    
           <Button
             type="submit"
             disabled={loading}
