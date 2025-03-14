@@ -3,23 +3,22 @@ import { http } from "@/util/http";
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
-
-export async function createCliente(
-  body: Cliente
-): Promise<Cliente> {
+export async function createCliente(body: Cliente) {
   if (body.dtnascimento) {
-    body.dtnascimento = format(body.dtnascimento, "dd/MM/yyyy");
+    const parsedDate = new Date(body.dtnascimento);
+    body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
   }
+  console.log(body.dtnascimento);
   body.cpf = limparCPF(String(body.cpf));
   body.cep = limparCEP(String(body.cep));
   body.telefone1 = limparTelefone(String(body.telefone1));
-  body.telefone2 = limparTelefone(String(body.telefone2));
-
-  const { data } = await http.post(`/clientes/`, body);
-
-  return data;
+  if (body.telefone2) {
+    
+    body.telefone2 = limparTelefone(String(body.telefone2));
+  }
+  
+  await http.post('/clientes',body);
 }
-
 
 export async function getClientes(
   page: number = 1,
@@ -39,6 +38,8 @@ export async function getClienteById(id: number): Promise<Cliente> {
   return data;
 }
 
+
+
 export async function updateCliente(
   id: number,
   body: Cliente
@@ -56,11 +57,10 @@ export async function updateCliente(
   return data;
 }
 
-
 export async function handleCliente(id: number, status: Status): Promise<void> {
-    const { data } = await http.patch(`/clientes/${id}`, {
-        status: !status
-    });
+  const { data } = await http.patch(`/clientes/${id}`, {
+    status: !status,
+  });
 
-    return data;
+  return data;
 }

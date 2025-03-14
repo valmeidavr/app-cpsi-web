@@ -1,13 +1,13 @@
 "use client";
 
 import type React from "react";
-import { format, parse, isValid } from "date-fns";
-import { useState } from "react";
+import { parse, isValid } from "date-fns";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/router";
+
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -27,72 +27,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createCliente } from "@/app/api/clientes/action";
-
-// Mockup data
-const educationLevels = [
-  { value: "fundamental", label: "Ensino Fundamental" },
-  { value: "medio", label: "Ensino Médio" },
-  { value: "superior", label: "Ensino Superior" },
-  { value: "pos_graduacao", label: "Pós-Graduação" },
-];
-
-const physicalActivities = [
-  { value: "sim", label: "Sim" },
-  { value: "nao", label: "Não" },
-];
-
-const utilizationSectors = [
-  { value: "saude", label: "Saúde" },
-  { value: "educacao", label: "Educação" },
-  { value: "esporte", label: "Esporte" },
-  { value: "cultura", label: "Cultura" },
-];
+import { handleCEPChange } from "@/app/helpers/handleCEP";
+import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
+import { useRouter } from "next/navigation";
 
 // Mockup de opções de sexo
 const sexOptions = [
-  { value: "masculino", label: "Masculino" },
-  { value: "feminino", label: "Feminino" },
+  { value: "Masculino", label: "Masculino" },
+  { value: "Feminino", label: "Feminino" },
   { value: "outro", label: "Outro" },
 ];
-
-// Schema de validação com `Zod`
-const formSchema = z.object({
-  nome: z.string().min(2, { message: "Nome é obrigatório" }),
-  email: z
-    .string()
-    .min(1, { message: "O campo é obrigatório" }) // Exige pelo menos 1 caractere
-    .email({ message: "Email inválido" })
-    .default(""), // Valida formato de email
-  dtnascimento: z
-    .string()
-    .min(10, { message: "O campo é obrigatório" })
-    .refine(
-      (value) => {
-        const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-        const currentDate = new Date();
-        const minYear = 1920;
-        const year = parseInt(value.split("/")[2]);
-
-        return (
-          isValid(parsedDate) && parsedDate <= currentDate && year >= minYear
-        );
-      },
-      {
-        message: "Data inválida ou fora do intervalo permitido (1920 até hoje)",
-      }
-    )
-    .default(""),
-  sexo: z.string().min(1, { message: "Sexo é obrigatório" }).default(""),
-  cpf: z.string().min(11, { message: "Minímo 11 Cararacteres" }),
-  cep: z.string().optional(),
-  logradouro: z.string().optional(),
-  numero: z.string().optional(),
-  bairro: z.string().optional(),
-  cidade: z.string().optional(),
-  uf: z.string().optional(),
-  telefone1: z.string().min(11, { message: "Telefone é Obrigatório" }),
-  telefone2: z.string().optional(),
-});
 
 // Helper function to format phone number
 const formatPhone = (value: string) => {
@@ -103,17 +47,9 @@ const formatPhone = (value: string) => {
     .slice(0, 15); // Limita o tamanho máximo
 };
 
-// Helper function to format CEP
-const formatCEP = (value: string) => {
-  return value
-    .replace(/\D/g, "") // Remove tudo que não for número
-    .replace(/^(\d{5})(\d{1,3})?$/, "$1-$2") // Insere a máscara corretamente
-    .slice(0, 9); // Limita a 9 caracteres (00000-000)
-};
-
 export default function CustomerRegistrationForm() {
   const [loading, setLoading] = useState(false);
-
+  const router = useRouter();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -132,13 +68,35 @@ export default function CustomerRegistrationForm() {
     },
   });
 
+  useEffect(() => {
+    const storedData = localStorage.getItem("formData");
+    if (storedData) {
+      const parsedData = JSON.parse(storedData);
+
+      // Asegure-se de que todos os campos estão sendo definidos explicitamente
+      form.setValue("nome", parsedData.nome || "");
+      form.setValue("email", parsedData.email || "");
+      form.setValue("cpf", parsedData.cpf || "");
+      form.setValue("cep", parsedData.cep || "");
+      form.setValue("logradouro", parsedData.logradouro || "");
+      form.setValue("numero", parsedData.numero || "");
+      form.setValue("bairro", parsedData.bairro || "");
+      form.setValue("cidade", parsedData.cidade || "");
+      form.setValue("uf", parsedData.uf || "");
+      form.setValue("telefone1", parsedData.telefone1 || "");
+      form.setValue("telefone2", parsedData.telefone2 || "");
+      form.setValue("dtnascimento", parsedData.dtnascimento || "");
+    }
+  }, []);
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    const router = useRouter();
+
     try {
+      localStorage.setItem("formData", JSON.stringify(values));
       await createCliente(values);
 
-      router.push("/clientes");
+      router.push("/painel/clientes");
     } catch (error) {
       console.error("Erro ao criar cliente:", error);
     } finally {
@@ -148,40 +106,8 @@ export default function CustomerRegistrationForm() {
     setLoading(false);
   };
 
-  const handleCEPChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    let rawCEP = e.target.value;
-    let formattedCEP = formatCEP(rawCEP); // Aplica a máscara
-
-    form.setValue("cep", formattedCEP); // Atualiza o estado do React Hook Form
-
-    const onlyNumbers = formattedCEP.replace(/\D/g, ""); // Remove caracteres não numéricos
-
-    if (onlyNumbers.length === 8) {
-      try {
-        const response = await fetch(
-          `https://viacep.com.br/ws/${onlyNumbers}/json/`
-        );
-        const data = await response.json();
-
-        if (!data.erro) {
-          form.setValue("logradouro", data.logradouro || "");
-          form.setValue("bairro", data.bairro || "");
-          form.setValue("cidade", data.localidade || "");
-          form.setValue("uf", data.uf || "");
-          form.clearErrors("cep"); // Remove o erro se o CEP for válido
-        } else {
-          form.setError("cep", {
-            type: "manual",
-            message: "CEP não encontrado",
-          });
-        }
-      } catch (error) {
-        form.setError("cep", {
-          type: "manual",
-          message: "Erro ao buscar CEP. Tente novamente.",
-        });
-      }
-    }
+  const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
+    handleCEPChange(e, form);
   };
 
   return (
@@ -201,7 +127,6 @@ export default function CustomerRegistrationForm() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto space-y-4 p-2"
         >
-          {/* 🔹 Linha 1: Nome + Email */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -212,6 +137,7 @@ export default function CustomerRegistrationForm() {
                   <FormControl>
                     <Input
                       {...field}
+                      value={field.value || ""}
                       className={`border ${
                         form.formState.errors.nome
                           ? "border-red-500"
@@ -234,6 +160,7 @@ export default function CustomerRegistrationForm() {
                     <Input
                       type="email"
                       {...field}
+                      value={field.value || ""}
                       className={`border ${
                         form.formState.errors.email
                           ? "border-red-500"
@@ -258,18 +185,18 @@ export default function CustomerRegistrationForm() {
                     <Input
                       placeholder="DD/MM/AAAA"
                       maxLength={10}
-                      value={field.value}
+                      value={field.value || ""}
                       className={`border ${
                         form.formState.errors.dtnascimento
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
                       onChange={(e) => {
-                        let inputDate = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        let inputDate = e.target.value.replace(/\D/g, "");
                         let formatted = inputDate
-                          .replace(/(\d{2})(\d)/, "$1/$2") // Adiciona primeira barra "/"
-                          .replace(/(\d{2})(\d)/, "$1/$2") // Adiciona segunda barra "/"
-                          .slice(0, 10); // Limita a 10 caracteres (DD/MM/AAAA)
+                          .replace(/(\d{2})(\d)/, "$1/$2")
+                          .replace(/(\d{2})(\d)/, "$1/$2")
+                          .slice(0, 10);
 
                         field.onChange(formatted);
                       }}
@@ -282,16 +209,14 @@ export default function CustomerRegistrationForm() {
                         const currentDate = new Date();
                         const minYear = 1920;
 
-                        // Obtém o ano digitado
                         const year = parseInt(field.value.split("/")[2]);
 
-                        // Verifica se a data é válida
                         if (
-                          !isValid(parsedDate) || // Se a data não for válida
-                          parsedDate > currentDate || // Se for maior que a data atual
-                          year < minYear // Se for menor que 1920
+                          !isValid(parsedDate) ||
+                          parsedDate > currentDate ||
+                          year < minYear
                         ) {
-                          field.onChange(""); // Limpa o campo
+                          field.onChange("");
                         }
                       }}
                     />
@@ -300,7 +225,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="sexo"
@@ -309,9 +233,15 @@ export default function CustomerRegistrationForm() {
                   <FormLabel>Sexo *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value || ""}
                   >
-                    <FormControl>
+                    <FormControl
+                      className={
+                        form.formState.errors.sexo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
@@ -341,9 +271,9 @@ export default function CustomerRegistrationForm() {
                     <Input
                       placeholder="Somente Números"
                       maxLength={11}
-                      value={field.value}
+                      value={field.value || ""}
                       onChange={(e) => {
-                        const numericValue = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+                        const numericValue = e.target.value.replace(/\D/g, "");
                         field.onChange(numericValue);
                       }}
                       className={`border ${
@@ -375,7 +305,7 @@ export default function CustomerRegistrationForm() {
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
                       onChange={(e) => {
-                        handleCEPChange(e); // Aplica a máscara e busca o endereço
+                        handleCEPChangeHandler(e); // Aplica a máscara e busca o endereço
                       }}
                     />
                   </FormControl>
@@ -457,21 +387,22 @@ export default function CustomerRegistrationForm() {
             />
           </div>
           {/* 🔹 Linha 4: Telefone, Celular, Número do SUS */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="telefone1"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Telefone</FormLabel>
+                  <FormLabel>Telefone 1 *</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="(00) 0000-0000"
+                      placeholder="Telefone"
                       maxLength={15}
-                      value={field.value}
-                      onChange={(e) =>
-                        field.onChange(formatPhone(e.target.value))
-                      }
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const formattedPhone = formatPhone(e.target.value);
+                        field.onChange(formattedPhone);
+                      }}
                       className={`border ${
                         form.formState.errors.telefone1
                           ? "border-red-500"
@@ -492,12 +423,13 @@ export default function CustomerRegistrationForm() {
                   <FormLabel>Telefone 2</FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="(00) 00000-0000"
+                      placeholder="Telefone"
                       maxLength={15}
-                      value={field.value}
-                      onChange={(e) =>
-                        field.onChange(formatPhone(e.target.value))
-                      }
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const formattedPhone = formatPhone(e.target.value);
+                        field.onChange(formattedPhone);
+                      }}
                       className={`border ${
                         form.formState.errors.telefone2
                           ? "border-red-500"

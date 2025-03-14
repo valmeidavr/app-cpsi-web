@@ -11,7 +11,7 @@ http.interceptors.request.use((request) => {
   }
 
   const token = getCookie("accessToken");
-  console.log('token', token);
+
   if (token) {
     request.headers["Authorization"] = `Bearer ${token}`;
   }
