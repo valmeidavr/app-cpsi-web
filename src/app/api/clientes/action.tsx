@@ -3,6 +3,7 @@ import { http } from "@/util/http";
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
+
 export async function createCliente(body: Cliente) {
   if (body.dtnascimento) {
     const parsedDate = new Date(body.dtnascimento);
@@ -41,7 +42,7 @@ export async function getClienteById(id: number): Promise<Cliente> {
 
 
 export async function updateCliente(
-  id: number,
+  id: string,
   body: Cliente
 ): Promise<Cliente> {
   if (body.dtnascimento) {
