@@ -34,7 +34,7 @@ export async function getClientes(
   page: number = 1,
   limit: number = 10,
   search?: string
-): Promise<ClientePaginacao> {
+){
   const { data } = await httpServer.get("/clientes", {
     params: { page, limit, search },
   });

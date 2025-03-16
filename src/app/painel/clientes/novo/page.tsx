@@ -74,8 +74,6 @@ export default function CustomerRegistrationForm() {
 
     try {
       await createCliente(values);
-
-
       router.push("/painel/clientes&status=success");
     } catch (error: any) {
       const errorMessage =

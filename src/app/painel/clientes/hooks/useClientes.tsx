@@ -81,5 +81,6 @@ export function useClientes() {
     searchTerm,
     setSearchTerm,
     atualizarStatusCliente,
+    loadClientes,
   };
 }

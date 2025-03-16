@@ -51,12 +51,8 @@ const ClienteTabela = () => {
     setIsViewModalOpen(true);
   };
 
-
-
-
   return (
     <div>
-      {/* Barra de pesquisa */}
       <div className="flex gap-2 mb-4">
         <Input
           type="text"
@@ -65,9 +61,6 @@ const ClienteTabela = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <Button variant="secondary">
-          <Search className="mr-2 h-4 w-4" /> Pesquisar
-        </Button>
 
         <Button className="ml-auto" asChild>
           <Link href="/painel/clientes/novo">
@@ -99,67 +92,75 @@ const ClienteTabela = () => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clientList.map((client) => (
-            <TableRow
-              key={client.id}
-              className={
-                client.status === "Inativo"
-                  ? "bg-red-100 border-l-4 border-red-500 line-through"
-                  : ""
-              }
-            >
-              <TableCell>{client.id}</TableCell>
-              <TableCell>{client.nome}</TableCell>
-              <TableCell className="white-space: nowrap;">
-                {formatCPF(client.cpf)}
-              </TableCell>
-              <TableCell className="white-space: nowrap;">
-                <a
-                  href={`https://wa.me/55${client.telefone1.replace(
-                    /\D/g,
-                    ""
-                  )}`}
-                >
-                  {formatTelefone(client.telefone1)}
-                </a>
-              </TableCell>
-              <TableCell className="white-space: nowrap;">
-                <a href={`mailto:${client.email}`}>{client.email}</a>
-              </TableCell>
-              <TableCell>
-                {client.status === "Inativo" ? (
-                  <span className="text-red-500 font-semibold">Inativo</span>
-                ) : (
-                  <span className="text-green-500 font-semibold">Ativo</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" size="icon" className="mr-2" asChild>
-                  <Link href={`clientes/editar/${client.id}`}>
-                    <Edit className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleViewClient(client)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => atualizarStatusCliente(+client.id)}
-                >
-                  {loadingStatus === +client.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+          {Array.isArray(clientList) && clientList.length > 0 ? (
+            clientList.map((client) => (
+              <TableRow
+                key={client.id}
+                className={
+                  client.status === "Inativo"
+                    ? "bg-red-100 border-l-4 border-red-500 line-through"
+                    : ""
+                }
+              >
+                <TableCell>{client.id}</TableCell>
+                <TableCell>{client.nome}</TableCell>
+                <TableCell className="white-space: nowrap;">
+                  {formatCPF(client.cpf)}
+                </TableCell>
+                <TableCell className="white-space: nowrap;">
+                  <a
+                    href={`https://wa.me/55${client.telefone1.replace(
+                      /\D/g,
+                      ""
+                    )}`}
+                  >
+                    {formatTelefone(client.telefone1)}
+                  </a>
+                </TableCell>
+                <TableCell className="white-space: nowrap;">
+                  <a href={`mailto:${client.email}`}>{client.email}</a>
+                </TableCell>
+                <TableCell>
+                  {client.status === "Inativo" ? (
+                    <span className="text-red-500 font-semibold">Inativo</span>
                   ) : (
-                    <EyeOff className="h-4 w-4" />
+                    <span className="text-green-500 font-semibold">Ativo</span>
                   )}
-                </Button>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="icon" className="mr-2" asChild>
+                    <Link href={`clientes/editar/${client.id}`}>
+                      <Edit className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleViewClient(client)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => atualizarStatusCliente(+client.id)}
+                  >
+                    {loadingStatus === +client.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                Nenhum cliente encontrado.
               </TableCell>
             </TableRow>
-          ))}
+          )}
         </TableBody>
       </Table>
 
