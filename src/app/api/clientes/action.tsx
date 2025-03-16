@@ -1,10 +1,18 @@
-import { Cliente, ClientePaginacao, Status } from "@/app/types/Cliente";
-import { http } from "@/util/http";
+"use server";
+import {
+  Cliente,
+  ClientePaginacao,
+  CreateCliente,
+  Status,
+} from "@/app/types/Cliente";
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
+import { httpServer } from "@/util/htppServer";
+import { revalidatePath } from "next/cache";
+import { toast } from "sonner";
 
-export async function createCliente(body: Cliente) {
+export async function createCliente(body: CreateCliente) {
   if (body.dtnascimento) {
     const parsedDate = new Date(body.dtnascimento);
     body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
@@ -14,11 +22,12 @@ export async function createCliente(body: Cliente) {
   body.cep = limparCEP(String(body.cep));
   body.telefone1 = limparTelefone(String(body.telefone1));
   if (body.telefone2) {
-    
     body.telefone2 = limparTelefone(String(body.telefone2));
   }
-  
-  await http.post('/clientes',body);
+
+  await httpServer.post("/clientes", {
+    body,
+  });
 }
 
 export async function getClientes(
@@ -26,7 +35,7 @@ export async function getClientes(
   limit: number = 10,
   search?: string
 ): Promise<ClientePaginacao> {
-  const { data } = await http.get("/clientes", {
+  const { data } = await httpServer.get("/clientes", {
     params: { page, limit, search },
   });
 
@@ -34,34 +43,37 @@ export async function getClientes(
 }
 
 export async function getClienteById(id: number): Promise<Cliente> {
-  const { data } = await http.get(`/clientes/${id}`);
+  const { data } = await httpServer.get(`/clientes/${id}`);
 
   return data;
 }
 
+export async function updateCliente(id: string, body: CreateCliente) {
+  try {
+    if (body.dtnascimento) {
+      const parsedDate = new Date(body.dtnascimento);
+      body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
+    }
+    body.cpf = limparCPF(String(body.cpf));
+    if(body.cep) body.cep = limparCEP(String(body.cep));
+    body.telefone1 = limparTelefone(String(body.telefone1));
+    body.telefone2 = limparTelefone(String(body.telefone2));
 
-
-export async function updateCliente(
-  id: string,
-  body: Cliente
-): Promise<Cliente> {
-  if (body.dtnascimento) {
-    body.dtnascimento = format(body.dtnascimento, "dd/MM/yyyy");
+    await httpServer.patch(`/clientes/${id}`, body);
+    toast.success("Cliente atualizado com sucesso!");
+    revalidatePath("painel/clientes");
+  } catch (error) {
+    console.log("tratar erro: ", error);
+    return {
+      message: "Não foi possível fazer o update do Cliente",
+      error: true,
+    };
   }
-  body.cpf = limparCPF(String(body.cpf));
-  body.cep = limparCEP(String(body.cep));
-  body.telefone1 = limparTelefone(String(body.telefone1));
-  body.telefone2 = limparTelefone(String(body.telefone2));
-
-  const { data } = await http.patch(`/clientes/${id}`, body);
-
-  return data;
 }
 
-export async function handleCliente(id: number, status: Status): Promise<void> {
-  const { data } = await http.patch(`/clientes/${id}`, {
-    status: !status,
+export async function handleClienteStatus(id: number): Promise<void> {
+  const cliente = await getClienteById(id);
+  const { data } = await httpServer.patch(`/clientes/${id}`, {
+    status: cliente.status == "Ativo" ? "Inativo" : "Ativo",
   });
-
-  return data;
 }

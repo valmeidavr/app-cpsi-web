@@ -1,16 +1,33 @@
 export enum Status {
-  Ativo = "Ativo",
-  Inativo = "Inativo",
+ "Ativo",
+ "Inativo",
 }
 
 export type Cliente = {
-  id?: string;
+  id: string;
   nome: string;
   email: string;
-  dtnascimento: string | null;
-  sexo: string | null;
+  dtnascimento?: string;
+  sexo: string;
   cpf: string;
   cep?: string | undefined;
+  logradouro?: string ;
+  numero?: string ;
+  bairro?: string ;
+  cidade?: string ;
+  uf?: string ;
+  telefone1: string;
+  telefone2?: string | undefined;
+  status?: Status | string;
+};
+
+export type CreateCliente = {
+  nome: string;
+  email: string;
+  dtnascimento?: string;
+  sexo: string;
+  cpf: string;
+  cep?: string | null;
   logradouro?: string | null;
   numero?: string | null;
   bairro?: string | null;
@@ -18,8 +35,9 @@ export type Cliente = {
   uf?: string | null;
   telefone1: string;
   telefone2?: string | undefined;
-  status?: Status;
+  status?: Status | string;
 };
+
 
 export type ClientePaginacao = {
   data: Cliente[];
