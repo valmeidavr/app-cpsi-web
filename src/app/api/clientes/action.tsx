@@ -17,7 +17,6 @@ export async function createCliente(body: CreateCliente) {
     const parsedDate = new Date(body.dtnascimento);
     body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
   }
-  console.log(body.dtnascimento);
   body.cpf = limparCPF(String(body.cpf));
   body.cep = limparCEP(String(body.cep));
   body.telefone1 = limparTelefone(String(body.telefone1));
@@ -63,7 +62,6 @@ export async function updateCliente(id: string, body: CreateCliente) {
     toast.success("Cliente atualizado com sucesso!");
     revalidatePath("painel/clientes");
   } catch (error) {
-    console.log("tratar erro: ", error);
     return {
       message: "Não foi possível fazer o update do Cliente",
       error: true,
