@@ -60,6 +60,7 @@ const PaginationLink = ({
 PaginationLink.displayName = "PaginationLink"
 
 const PaginationPrevious = ({
+  children,
   className,
   ...props
 }: React.ComponentProps<typeof PaginationLink>) => (
@@ -70,12 +71,13 @@ const PaginationPrevious = ({
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
-    <span>Previous</span>
+    <span>{children}</span>
   </PaginationLink>
-)
+);
 PaginationPrevious.displayName = "PaginationPrevious"
 
 const PaginationNext = ({
+  children,
   className,
   ...props
 }: React.ComponentProps<typeof PaginationLink>) => (
@@ -85,10 +87,10 @@ const PaginationNext = ({
     className={cn("gap-1 pr-2.5", className)}
     {...props}
   >
-    <span>Next</span>
+    <span>{children}</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
-)
+);
 PaginationNext.displayName = "PaginationNext"
 
 const PaginationEllipsis = ({
