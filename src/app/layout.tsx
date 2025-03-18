@@ -7,7 +7,7 @@ const fontSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const fontTitle = Nunito({ subsets: ["latin"], variable: "--font-title" });
 
 export const metadata: Metadata = {
-  title: "Gestor AAP-VR",
+  title: "CPSI AAP-VR",
   description: "Software de Gestão AAP-VR",
 };
 

@@ -2,7 +2,7 @@ import axios from "axios";
 import { getCookie } from "./cookies";
 
 export const http = axios.create({
-  baseURL: "https://api-v2.aapvr.com.br/",
+  baseURL: "https://app-cpsi-api-production.up.railway.app/",
 });
 
 http.interceptors.request.use((request) => {

@@ -1,0 +1,19 @@
+{
+  "restricoes": [
+    {
+      "path": "/painel",
+      "sistema": "CPSI",
+      "gruposPermitidos": ["ADMIN", "GESTOR"]
+    },
+    {
+      "path": "/painel/usuarios",
+      "sistema": "CPSI",
+      "gruposPermitidos": ["ADMIN"]
+    },
+    {
+      "path": "/painel/procedimentos",
+      "sistema": "CPSI",
+      "gruposPermitidos": ["ADMIN", "GESTOR", "OPERADOR"]
+    }
+  ]
+}
