@@ -19,6 +19,7 @@ export default function PainelLayout({ children }: { children: React.ReactNode }
           <Header />
         </div>
 
+
         {/* Espaço para evitar sobreposição do Header */}
         <div className="mt-16 flex-1 p-6 flex justify-center items-start">
           <div className="bg-white shadow-lg rounded-lg p-8 w-11/12 max-w-6xl border border-gray-300">
