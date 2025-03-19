@@ -9,21 +9,25 @@ import { Loader2 } from "lucide-react";
 
 export default function CustomerUpdateForm() {
   const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [loading, setLoading] = useState(true);
   const params = useParams();
 
   useEffect(() => {
-    if (typeof params?.id === "string") {
-      loadClientes(params.id);
-    } else if (Array.isArray(params?.id)) {
-      loadClientes(params.id[0]);
+    if (params?.id) {
+      const clienteId = Array.isArray(params.id) ? params.id[0] : params.id;
+      loadClientes(clienteId);
     }
   }, [params]);
+
   const loadClientes = async (id: string) => {
     try {
+      setLoading(true);
       const clienteData = await getClienteById(Number(id));
       setCliente(clienteData);
     } catch (error) {
       console.error("Erro ao carregar cliente:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,7 +40,14 @@ export default function CustomerUpdateForm() {
           { label: "Editar Cliente" }, // Último item sem link
         ]}
       />
-      {cliente ? <FormUpdateCliente cliente={cliente} /> :  <div className="flex justify-center align-middle items-center h-screen"> <Loader2/></div>}
+
+      {loading ? (
+        <div className="flex justify-center items-center h-screen">
+          <Loader2 className="w-10 h-10 animate-spin text-gray-500" />
+        </div>
+      ) : (
+        cliente && <FormUpdateCliente cliente={cliente} />
+      )}
     </div>
   );
 }

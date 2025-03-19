@@ -191,6 +191,14 @@ export default function ClientesPage() {
                             </Button>
                           </Link>
                         </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Editar Cliente
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
                       </Tooltip.Root>
                     </Tooltip.Provider>
 
@@ -215,6 +223,16 @@ export default function ClientesPage() {
                             />
                           </Button>
                         </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            {cliente.status === "Ativo"
+                              ? "Inativar Cliente"
+                              : "Ativar Cliente"}
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
                       </Tooltip.Root>
                     </Tooltip.Provider>
                   </TableCell>
@@ -229,7 +247,7 @@ export default function ClientesPage() {
               previousLabel={"←"}
               nextLabel={"→"}
               pageCount={totalPaginas}
-              forcePage={paginaAtual} 
+              forcePage={paginaAtual}
               onPageChange={(event) => setPaginaAtual(event.selected)}
               containerClassName={"flex gap-2"}
               pageClassName={"px-4 py-2 border rounded-md cursor-pointer"}
@@ -239,7 +257,7 @@ export default function ClientesPage() {
               disabledClassName={"opacity-50 cursor-not-allowed"}
               pageLinkClassName={
                 "w-full h-full flex items-center justify-center"
-              } 
+              }
               previousLinkClassName={
                 "w-full h-full flex items-center justify-center"
               }

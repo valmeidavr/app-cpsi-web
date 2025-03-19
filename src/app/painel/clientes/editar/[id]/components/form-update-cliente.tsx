@@ -126,7 +126,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                    />
+                      onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -149,7 +149,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                    />
+                      onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -319,7 +319,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Logradouro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -333,7 +333,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Número</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -349,7 +349,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Bairro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -363,7 +363,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -377,7 +377,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>UF</FormLabel>
                   <FormControl>
-                    <Input value={field.value ?? ""} />
+                    <Input value={field.value ?? ""} onChange={field.onChange} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
