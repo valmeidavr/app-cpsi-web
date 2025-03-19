@@ -131,7 +131,7 @@ export default function ClientesPage() {
 
         {/* ✅ Botão Novo Cliente */}
         <Button asChild>
-          <Link href="/clientes/novo">
+          <Link href="/painel/clientes/novo">
             <Plus className="h-5 w-5 mr-2" />
             Novo Cliente
           </Link>
@@ -185,7 +185,7 @@ export default function ClientesPage() {
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
-                          <Link href={`/clientes/editar/${cliente.id}`}>
+                          <Link href={`/painel/clientes/editar/${cliente.id}`}>
                             <Button size="icon" variant="outline">
                               <Edit className="h-5 w-5" />
                             </Button>
