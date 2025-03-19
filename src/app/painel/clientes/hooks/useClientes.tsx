@@ -9,12 +9,21 @@ const LIMIT = 10;
 
 export function useClientes() {
   const router = useRouter();
-  const urlParams = new URLSearchParams(window.location.search); // Obtendo parâmetros da URL manualmente
+  
+  // 🔹 Estado para armazenar os parâmetros da URL
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
 
-  // 🛠️ Aplicando `useMemo` para evitar re-renderizações desnecessárias
-  const currentPage = useMemo(() => Number(urlParams.get("page")) || 1, [urlParams]);
-  const status = useMemo(() => urlParams.get("status"), [urlParams]);
-  const message = useMemo(() => urlParams.get("message"), [urlParams]);
+  // 🛠️ Obtendo os parâmetros da URL no client-side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setSearchParams(new URLSearchParams(window.location.search));
+    }
+  }, []);
+
+  // 🔹 Aplicando `useMemo` para evitar re-renderizações desnecessárias
+  const currentPage = useMemo(() => Number(searchParams?.get("page")) || 1, [searchParams]);
+  const status = useMemo(() => searchParams?.get("status") || "", [searchParams]);
+  const message = useMemo(() => searchParams?.get("message") || "", [searchParams]);
 
   const [clientList, setClientList] = useState<Cliente[]>([]);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -24,6 +33,7 @@ export function useClientes() {
   const [loadingStatus, setLoadingStatus] = useState<number | null>(null);
 
   const loadClientes = async () => {
+    if (!searchParams) return; // ⚠️ Evita erro enquanto `searchParams` é `null`
     try {
       const { data, total, totalPages } = await getClientes(currentPage, LIMIT, searchTerm);
       setClientList(data);
@@ -68,7 +78,7 @@ export function useClientes() {
 
   useEffect(() => {
     loadClientes();
-  }, [currentPage, searchTerm]);
+  }, [currentPage, searchTerm, searchParams]);
 
   return {
     clientList,
