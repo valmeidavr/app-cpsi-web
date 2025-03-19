@@ -9,7 +9,7 @@ http.interceptors.request.use((request) => {
   if (!process.browser) {
     return request;
   }
-  
+
   const token = getCookie("accessToken");
 
   if (token) {

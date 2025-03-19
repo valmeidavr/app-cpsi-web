@@ -1,16 +1,6 @@
 "use client";
-//React
-import type React from "react";
-import { parse, isValid } from "date-fns";
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-
-//Zod
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
+//components
 import { Button } from "@/components/ui/button";
-//Components
-import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Save, Loader2 } from "lucide-react";
 import {
   Form,
@@ -28,17 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
 
+//React
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { parse, isValid, format } from "date-fns";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+
+//Zod
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 //api
-import { createCliente } from "@/app/api/clientes/action";
+import { updateCliente } from "@/app/api/clientes/action";
 import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 
-//helpers
+import { Cliente } from "@/app/types/Cliente";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
-import { useRouter } from "next/navigation";
-
 // Mockup de opções de sexo
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
@@ -46,48 +43,59 @@ const sexOptions = [
   { value: "outro", label: "Outro" },
 ];
 
+export interface FormUpdateClienteProps {
+  cliente: Cliente;
+}
 
-export default function CustomerRegistrationForm() {
+const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
   const [loading, setLoading] = useState(false);
+
   const router = useRouter();
 
+  //Definindo valores default com os dado do cliente
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
-    defaultValues: {
-      nome: "",
-      cpf: "",
-      cep: "",
-      logradouro: "",
-      numero: "",
-      bairro: "",
-      cidade: "",
-      uf: "",
-      telefone1: "",
-      telefone2: "",
-      dtnascimento: "",
-    },
+    defaultValues: cliente ?? "",
   });
 
+  //Formatação dos Campos
+  useEffect(() => {
+    if (cliente) {
+      const formattedPhone1 = formatTelefoneInput(cliente.telefone1 || "");
+      const formattedPhone2 = formatTelefoneInput(cliente.telefone2 || "");
+      const formattedCPF = formatCPFInput(cliente.cpf || "");
+
+      form.setValue("telefone1", formattedPhone1);
+      form.setValue("telefone2", formattedPhone2);
+      form.setValue("cpf", formattedCPF);
+      form.setValue("cep", cliente.cep || "");
+      form.setValue("logradouro", cliente.logradouro || "");
+      form.setValue("bairro", cliente.bairro || "");
+      form.setValue("uf", cliente.uf || "");
+      form.setValue("numero", cliente.numero || "");
+      form.setValue("cidade", cliente.cidade || "");
+    }
+  }, [cliente, form]);
+
+  //Função de submeter os dados
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-
     try {
-      await createCliente(values);
-      router.push("/painel/clientes&status=success");
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar usuário";
-
-      // Exibindo toast de erro
-      toast.error(errorMessage);
+      if (cliente.id) await updateCliente(cliente.id, values);
+ 
+      router.push(
+        "/painel/clientes?status=success&message=Usuario%20atualizado%20com%20sucesso"
+      );
+    } catch (error) {
+      console.error("Erro ao criar cliente:", error);
     } finally {
       setLoading(false);
     }
-    console.log(values);
     setLoading(false);
   };
 
+  //Função de buscar endereco com o CEP
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, form);
   };
@@ -96,15 +104,8 @@ export default function CustomerRegistrationForm() {
     <div className="flex flex-col flex-1 h-full">
       {" "}
       {/* overflow-hidden */}
-      <Breadcrumb
-        items={[
-          { label: "Painel", href: "/painel" },
-          { label: "Clientes", href: "/painel/clientes" },
-          { label: "Novo Cliente" }, // Último item sem link
-        ]}
-      />
       <Form {...form}>
-        <h1 className="text-2xl font-bold mb-4 mt-5">Novo Cliente</h1>
+        <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -127,9 +128,7 @@ export default function CustomerRegistrationForm() {
                       } focus:ring-2 focus:ring-primary`}
                     />
                   </FormControl>
-                  <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.nome?.message}
-                  </FormMessage>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}
             />
@@ -162,56 +161,68 @@ export default function CustomerRegistrationForm() {
             <FormField
               control={form.control}
               name="dtnascimento"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data de Nascimento *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="DD/MM/AAAA"
-                      maxLength={10}
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
+              render={({ field }) => {
+                useEffect(() => {
+                  if (field.value) {
+                    const parsedDate = parse(
+                      field.value,
+                      "yyyy-MM-dd",
+                      new Date()
+                    );
 
-                        if (value.length > 2) {
-                          value = value.replace(/^(\d{2})/, "$1/");
-                        }
-                        if (value.length > 5) {
-                          value = value.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
-                        }
+                    if (isValid(parsedDate)) {
+                      const formattedDate = format(parsedDate, "dd/MM/yyyy");
+                      field.onChange(formattedDate);
+                    }
+                  }
+                }, [field.value]);
+                return (
+                  <FormItem>
+                    <FormLabel>Data de Nascimento *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="DD/MM/AAAA"
+                        maxLength={10}
+                        value={field.value || ""}
+                        className={`border ${
+                          form.formState.errors.dtnascimento
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                        onChange={(e) => {
+                          let inputDate = e.target.value.replace(/\D/g, "");
+                          let formatted = inputDate
+                            .replace(/(\d{2})(\d)/, "$1/$2")
+                            .replace(/(\d{2})(\d)/, "$1/$2")
+                            .slice(0, 10);
 
-                        field.onChange(value);
-                      }}
-                      onBlur={() => {
-                        if (!field.value) return;
+                          field.onChange(formatted);
+                        }}
+                        onBlur={() => {
+                          const parsedDate = parse(
+                            field.value,
+                            "dd/MM/yyyy",
+                            new Date()
+                          );
+                          const currentDate = new Date();
+                          const minYear = 1920;
 
-                        const parsedDate = parse(
-                          field.value,
-                          "dd/MM/yyyy",
-                          new Date()
-                        );
-                        const currentDate = new Date();
-                        const minYear = 1920;
-                        const year = parseInt(field.value.split("/")[2]);
+                          const year = parseInt(field.value.split("/")[2]);
 
-                        if (
-                          !isValid(parsedDate) ||
-                          parsedDate > currentDate ||
-                          year < minYear
-                        ) {
-                          field.onChange(""); // Limpa campo se a data for inválida
-                        }
-                      }}
-                      className={`border ${
-                        form.formState.errors.dtnascimento
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
+                          if (
+                            !isValid(parsedDate) ||
+                            parsedDate > currentDate ||
+                            year < minYear
+                          ) {
+                            field.onChange("");
+                          }
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                );
+              }}
             />
             <FormField
               control={form.control}
@@ -258,7 +269,6 @@ export default function CustomerRegistrationForm() {
                   <FormControl>
                     <Input
                       placeholder="Somente Números"
-                      maxLength={14}
                       value={field.value || ""}
                       onChange={(e) =>
                         field.onChange(formatCPFInput(e.target.value))
@@ -286,6 +296,7 @@ export default function CustomerRegistrationForm() {
                       placeholder="00000-000"
                       maxLength={9}
                       {...field}
+                      value={field.value ?? ""}
                       className={`border ${
                         form.formState.errors.cep
                           ? "border-red-500"
@@ -308,7 +319,7 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>Logradouro</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -322,7 +333,7 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>Número</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -338,7 +349,7 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>Bairro</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -352,7 +363,7 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -366,7 +377,7 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>UF</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input value={field.value ?? ""} />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -378,28 +389,47 @@ export default function CustomerRegistrationForm() {
             <FormField
               control={form.control}
               name="telefone1"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Telefone 1 *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Telefone"
-                      maxLength={15}
-                      value={field.value || ""}
-                      onChange={(e) => {
-                        const formattedPhone = formatTelefoneInput(e.target.value);
-                        field.onChange(formattedPhone);
-                      }}
-                      className={`border ${
-                        form.formState.errors.telefone1
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                useEffect(() => {
+                  if (field.value) {
+                    const parsedDate = parse(
+                      field.value,
+                      "yyyy-MM-dd",
+                      new Date()
+                    );
+
+                    if (isValid(parsedDate)) {
+                      const formattedDate = format(parsedDate, "dd/MM/yyyy");
+                      field.onChange(formattedDate);
+                    }
+                  }
+                }, [field.value]);
+
+                return (
+                  <FormItem>
+                    <FormLabel>Telefone 1 *</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Telefone"
+                        maxLength={15}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const formattedPhone = formatTelefoneInput(
+                            e.target.value
+                          );
+                          field.onChange(formattedPhone);
+                        }}
+                        className={`border ${
+                          form.formState.errors.telefone1
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
@@ -453,4 +483,6 @@ export default function CustomerRegistrationForm() {
       </Form>
     </div>
   );
-}
+};
+
+export default FormUpdateCliente;
