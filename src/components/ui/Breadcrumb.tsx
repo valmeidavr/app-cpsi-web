@@ -9,7 +9,7 @@ interface BreadcrumbProps {
 
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ items }) => {
   return (
-    <nav className="flex items-center space-x-2 text-sm font-medium text-gray-600 bg-gray-100 px-4 py-2 rounded-sm shadow-md">
+    <nav className="flex items-center space-x-2 text-sm font-medium text-gray-600 bg-gray-100 px-4 py-2 rounded-sm shadow-md mb-4">
       {items.map((item, index) => {
         const isLast = index === items.length - 1;
 
