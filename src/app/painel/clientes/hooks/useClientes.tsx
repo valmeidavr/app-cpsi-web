@@ -1,19 +1,20 @@
 "use client";
 import { useEffect, useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Cliente } from "@/app/types/Cliente";
 import { getClientes, handleClienteStatus } from "@/app/api/clientes/action";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation";
 
 const LIMIT = 10;
 
 export function useClientes() {
-  const searchParams = useSearchParams();
+  const router = useRouter();
+  const urlParams = new URLSearchParams(window.location.search); // Obtendo parâmetros da URL manualmente
 
   // 🛠️ Aplicando `useMemo` para evitar re-renderizações desnecessárias
-  const currentPage = useMemo(() => Number(searchParams.get("page")) || 1, [searchParams]);
-  const status = useMemo(() => searchParams.get("status"), [searchParams]);
-  const message = useMemo(() => searchParams.get("message"), [searchParams]);
+  const currentPage = useMemo(() => Number(urlParams.get("page")) || 1, [urlParams]);
+  const status = useMemo(() => urlParams.get("status"), [urlParams]);
+  const message = useMemo(() => urlParams.get("message"), [urlParams]);
 
   const [clientList, setClientList] = useState<Cliente[]>([]);
   const [totalPages, setTotalPages] = useState<number>(1);
