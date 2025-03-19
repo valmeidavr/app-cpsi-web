@@ -11,6 +11,7 @@ export function useClientes() {
   const searchParams = useSearchParams();
 
   // 🛠️ Aplicando `useMemo` para evitar re-renderizações desnecessárias
+  
   const currentPage = useMemo(() => Number(searchParams.get("page")) || 1, [searchParams]);
   const status = useMemo(() => searchParams.get("status"), [searchParams]);
   const message = useMemo(() => searchParams.get("message"), [searchParams]);
