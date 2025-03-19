@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Cliente } from "@/app/types/Cliente";
 import { getClientes, handleClienteStatus } from "@/app/api/clientes/action";
 import { toast } from "sonner";
@@ -9,9 +9,11 @@ const LIMIT = 10;
 
 export function useClientes() {
   const searchParams = useSearchParams();
-  const currentPage = Number(searchParams.get("page")) || 1;
-  const status = searchParams.get("status");
-  const message = searchParams.get("message")
+
+  // 🛠️ Aplicando `useMemo` para evitar re-renderizações desnecessárias
+  const currentPage = useMemo(() => Number(searchParams.get("page")) || 1, [searchParams]);
+  const status = useMemo(() => searchParams.get("status"), [searchParams]);
+  const message = useMemo(() => searchParams.get("message"), [searchParams]);
 
   const [clientList, setClientList] = useState<Cliente[]>([]);
   const [totalPages, setTotalPages] = useState<number>(1);
@@ -20,15 +22,9 @@ export function useClientes() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [loadingStatus, setLoadingStatus] = useState<number | null>(null);
 
-
   const loadClientes = async () => {
-
     try {
-      const { data, total, totalPages } = await getClientes(
-        currentPage,
-        LIMIT,
-        searchTerm
-      );
+      const { data, total, totalPages } = await getClientes(currentPage, LIMIT, searchTerm);
       setClientList(data);
       setTotal(total);
       setTotalPages(totalPages);
@@ -65,13 +61,14 @@ export function useClientes() {
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
     } finally {
-      setLoadingStatus(null); // Desativa o loading
+      setLoadingStatus(null);
     }
   };
 
   useEffect(() => {
     loadClientes();
   }, [currentPage, searchTerm]);
+
   return {
     clientList,
     totalPages,
