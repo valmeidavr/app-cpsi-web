@@ -1,25 +1,27 @@
-export type Usuario = {
+export type SistemaComGrupos = {
   id: number;
   nome: string;
-  email: string;
-  grupos: Grupo[];
+  grupos: {
+    id: number;
+    nome: string;
+    sistemaId: number;
+  }[];
 };
 
-export type UsuarioPaginacao = {
-  data: Usuario[];
-  total: number = 10;
-  page: number = 1;
-  totalPages: number;
+export type Sistema = {
+  nome: string;
 };
 
 export type Grupo = {
   id: number;
   nome: string;
-  sistemaId: number;
+  sistema: Sistema;
 };
 
-export type Sistema = {
+export type UsuarioComGrupos = {
   id: number;
   nome: string;
-  grupos: Grupo[];
+  email: string;
+  grupos: { grupo: Grupo }[];
 };
+

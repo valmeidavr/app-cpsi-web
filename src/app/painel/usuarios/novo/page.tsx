@@ -1,13 +1,7 @@
 "use client";
-import React, {
-  ChangeEvent,
-  ReactEventHandler,
-  useEffect,
-  useState,
-} from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -20,34 +14,35 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { createCliente } from "@/app/api/clientes/action";
 import { formSchema } from "@/app/api/usuarios/schema/formSchemaUsuarios";
-import { redirect, useRouter } from "next/navigation";
-import { Sistema } from "@/app/types/Usuario";
-import { useUsuarios } from "../hooks/useUsuarios";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import { createUsuarios } from "@/app/api/usuarios/action";
+import { createUsuario } from "@/app/api/usuarios/action";
+import { useRouter } from "next/navigation";
+import { z } from "zod";
+import { SistemaComGrupos } from "@/app/types/Usuario";
+import { http } from "@/util/http";
 
-export default function CustomerRegistrationForm() {
+export default function UsuarioRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<Record<number, number>>(
     {}
   );
-  const [passwordMatches, setPasswordMatches] = useState<boolean>(true);
+  const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
 
-  const handlePasswordChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const confirmPassword = event.target.value;
-    const passwordInput = document.getElementById(
-      "password"
-    ) as HTMLInputElement;
-    const password = passwordInput.value;
-
-    setPasswordMatches(confirmPassword === password);
-  };
-
-  const { sistemas } = useUsuarios();
+  
+  useEffect(() => {
+    async function fetchSistemas() {
+      try {
+        const { data } = await http.get("http://localhost:3000/sistemas");
+        setSistemas(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Erro ao carregar sistemas:", error);
+      }
+    }
+    fetchSistemas();
+  }, []);
   const router = useRouter();
 
   const form = useForm({
@@ -67,16 +62,25 @@ export default function CustomerRegistrationForm() {
     form.setValue(`sistema.${sistemaId}`, grupoId, { shouldValidate: true });
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-    const response = await createUsuarios(values);
-    console.log("response:", response);
+
     try {
-    } catch (error) {
-      toast.error("Erro ao salvar usuário");
+      console.log("Usuário", values);
+      await createUsuario(values);
+
+      router.push("/painel/usuarios?status=success");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao salvar usuário";
+
+      // Exibindo toast de erro
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
+    console.log(values);
+    setLoading(false);
   };
 
   return (
@@ -143,7 +147,7 @@ export default function CustomerRegistrationForm() {
                   <FormLabel>Senha *</FormLabel>
                   <FormControl>
                     <Input
-                      type="senha"
+                      type="password"
                       {...field}
                       value={field.value || ""}
                       className={`border ${
@@ -168,10 +172,9 @@ export default function CustomerRegistrationForm() {
                   <FormLabel>Confirma Senha</FormLabel>
                   <FormControl>
                     <Input
-                      type="senha"
+                      type="password"
                       {...field}
                       value={field.value || ""}
-                      onChange={handlePasswordChange}
                       className={`border ${
                         form.formState.errors.confirmedsenha
                           ? "border-red-500"
@@ -180,7 +183,7 @@ export default function CustomerRegistrationForm() {
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1">
-                    {passwordMatches ? false : "Campo de senha não é igual"}
+                    {form.formState.errors.confirmedsenha?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -194,7 +197,7 @@ export default function CustomerRegistrationForm() {
                 <h3 className="font-bold mb-2">{sistema.nome}</h3>
                 <RadioGroup
                   value={selectedGroups[sistema.id]?.toString() || ""}
-                  onValueChange={(value) =>
+                  onValueChange={(value: any) =>
                     handleGroupChange(sistema.id, Number(value))
                   }
                   className="space-y-2"

@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { getUsuarios } from "@/app/api/usuarios/action";
-import { Sistema, Usuario } from "@/app/types/Usuario";
+import { Sistema, SistemaComGrupos, UsuarioComGrupos } from "@/app/types/Usuario";
 import { http } from "@/util/http";
 
 export function useUsuarios() {
   const [loading, setLoading] = useState<boolean>(false);
-  const [usuarioList, setUsuarioList] = useState<Usuario[]>([]);
-  const [sistemas, setSistemas] = useState<Sistema[]>([]);
+  const [usuarioList, setUsuarioList] = useState<UsuarioComGrupos[]>([]);
+  const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
   const loadUsuarios = async () => {
     setLoading(true);
     try {
