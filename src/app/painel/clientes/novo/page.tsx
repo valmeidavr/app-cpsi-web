@@ -46,7 +46,6 @@ const sexOptions = [
   { value: "outro", label: "Outro" },
 ];
 
-
 export default function CustomerRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -260,9 +259,17 @@ export default function CustomerRegistrationForm() {
                       placeholder="Somente Números"
                       maxLength={14}
                       value={field.value || ""}
-                      onChange={(e) =>
-                        field.onChange(formatCPFInput(e.target.value))
-                      }
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        if (
+                          e.nativeEvent.inputType === "deleteContentBackward"
+                        ) {
+                          // Permite apagar sem reformatar
+                          field.onChange(rawValue);
+                        } else {
+                          field.onChange(formatCPFInput(rawValue)); // Aplica a máscara
+                        }
+                      }}
                       className={`border ${
                         form.formState.errors.cpf
                           ? "border-red-500"
@@ -285,15 +292,25 @@ export default function CustomerRegistrationForm() {
                     <Input
                       placeholder="00000-000"
                       maxLength={9}
-                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        if (
+                          e.nativeEvent.inputType === "deleteContentBackward"
+                        ) {
+                          // Permite apagar sem reformatar
+                          field.onChange(rawValue);
+                        } else {
+                          field.onChange(
+                            rawValue.replace(/^(\d{5})(\d)/, "$1-$2") // Aplica a máscara ao digitar
+                          );
+                        }
+                      }}
                       className={`border ${
                         form.formState.errors.cep
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                      onChange={(e) => {
-                        handleCEPChangeHandler(e); // Aplica a máscara e busca o endereço
-                      }}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
@@ -365,9 +382,57 @@ export default function CustomerRegistrationForm() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>UF</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.uf
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[
+                        "AC",
+                        "AL",
+                        "AP",
+                        "AM",
+                        "BA",
+                        "CE",
+                        "DF",
+                        "ES",
+                        "GO",
+                        "MA",
+                        "MT",
+                        "MS",
+                        "MG",
+                        "PA",
+                        "PB",
+                        "PR",
+                        "PE",
+                        "PI",
+                        "RJ",
+                        "RN",
+                        "RS",
+                        "RO",
+                        "RR",
+                        "SC",
+                        "SP",
+                        "SE",
+                        "TO",
+                      ].map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estado}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}
@@ -387,7 +452,9 @@ export default function CustomerRegistrationForm() {
                       maxLength={15}
                       value={field.value || ""}
                       onChange={(e) => {
-                        const formattedPhone = formatTelefoneInput(e.target.value);
+                        const formattedPhone = formatTelefoneInput(
+                          e.target.value
+                        );
                         field.onChange(formattedPhone);
                       }}
                       className={`border ${
