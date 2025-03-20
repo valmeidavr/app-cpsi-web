@@ -271,10 +271,21 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                   <FormControl>
                     <Input
                       placeholder="Somente Números"
+                      maxLength={14}
                       value={field.value || ""}
-                      onChange={(e) =>
-                        field.onChange(formatCPFInput(e.target.value))
-                      }
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+
+                        if (
+                          e.nativeEvent.inputType === "deleteContentBackward"
+                        ) {
+                          // Se o usuário estiver apagando, não aplica a formatação
+                          field.onChange(rawValue);
+                        } else {
+                          // Aplica a formatação normalmente
+                          field.onChange(formatCPFInput(rawValue));
+                        }
+                      }}
                       className={`border ${
                         form.formState.errors.cpf
                           ? "border-red-500"
@@ -297,16 +308,27 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                     <Input
                       placeholder="00000-000"
                       maxLength={9}
-                      {...field}
-                      value={field.value ?? ""}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+
+                        if (
+                          e.nativeEvent.inputType === "deleteContentBackward"
+                        ) {
+                          // Se o usuário estiver apagando, não aplica a formatação
+                          field.onChange(rawValue);
+                        } else {
+                          // Aplica a máscara ao digitar
+                          field.onChange(
+                            rawValue.replace(/^(\d{5})(\d)/, "$1-$2")
+                          );
+                        }
+                      }}
                       className={`border ${
                         form.formState.errors.cep
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                      onChange={(e) => {
-                        handleCEPChangeHandler(e); // Aplica a máscara e busca o endereço
-                      }}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
