@@ -295,16 +295,17 @@ export default function CustomerRegistrationForm() {
                       value={field.value || ""}
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
-                        const inputEvent = e.nativeEvent as InputEvent; 
-                        
+                        const inputEvent = e.nativeEvent as InputEvent;
+                      
                         if (inputEvent.inputType === "deleteContentBackward") {
                           // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
-                          field.onChange(
-                            rawValue.replace(/^(\d{5})(\d)/, "$1-$2") // Aplica a máscara ao digitar
-                          );
+                          field.onChange(rawValue.replace(/^(\d{5})(\d)/, "$1-$2")); // Aplica a máscara ao digitar
                         }
+                      
+                        // Chama a função handleCEPChangeHandler após atualizar o valor
+                        handleCEPChangeHandler(e);
                       }}
                       className={`border ${
                         form.formState.errors.cep
