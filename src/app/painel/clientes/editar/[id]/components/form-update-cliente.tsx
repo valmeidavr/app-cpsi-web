@@ -83,7 +83,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
     setLoading(true);
     try {
       if (cliente.id) await updateCliente(cliente.id, values);
- 
+
       router.push(
         "/painel/clientes?status=success&message=Usuario%20atualizado%20com%20sucesso"
       );
@@ -126,7 +126,8 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                      onChange={field.onChange} />
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -149,7 +150,8 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                      onChange={field.onChange} />
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -319,7 +321,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Logradouro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -333,7 +339,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Número</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -349,7 +359,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Bairro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -363,7 +377,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} onChange={field.onChange} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -376,9 +394,57 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>UF</FormLabel>
-                  <FormControl>
-                    <Input value={field.value ?? ""} onChange={field.onChange} />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.uf
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[
+                        "AC",
+                        "AL",
+                        "AP",
+                        "AM",
+                        "BA",
+                        "CE",
+                        "DF",
+                        "ES",
+                        "GO",
+                        "MA",
+                        "MT",
+                        "MS",
+                        "MG",
+                        "PA",
+                        "PB",
+                        "PR",
+                        "PE",
+                        "PI",
+                        "RJ",
+                        "RN",
+                        "RS",
+                        "RO",
+                        "RR",
+                        "SC",
+                        "SP",
+                        "SE",
+                        "TO",
+                      ].map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estado}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}
