@@ -13,21 +13,28 @@ import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
 export async function createCliente(body: CreateCliente) {
-  if (body.dtnascimento) {
-    const parsedDate = new Date(body.dtnascimento);
-    body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
-  }
-  body.cpf = limparCPF(String(body.cpf));
-  body.cep = limparCEP(String(body.cep));
-  body.telefone1 = limparTelefone(String(body.telefone1));
-  if (body.telefone2) {
-    body.telefone2 = limparTelefone(String(body.telefone2));
-  }
+  try {
+    if (body.dtnascimento) {
+      const parsedDate = new Date(body.dtnascimento);
+      body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
+    }
+    body.cpf = limparCPF(String(body.cpf));
+    body.cep = limparCEP(String(body.cep));
+    body.telefone1 = limparTelefone(String(body.telefone1));
+    if (body.telefone2) {
+      body.telefone2 = limparTelefone(String(body.telefone2));
+    }
 
-  await httpServer.post("/clientes", {
-    body,
-  });
+    await httpServer.post("/clientes", body);
+
+    toast.success("Cliente criado com sucesso!");
+    revalidatePath("/painel/clientes"); // 🔄 Revalida os dados para refletir a alteração
+  } catch (error: any) {
+    console.error("Erro ao criar cliente:", error);
+    toast.error(error.response?.data?.message || "Erro ao criar cliente.");
+  }
 }
+
 
 export async function getClientes(
   page: number = 1,

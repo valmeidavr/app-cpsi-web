@@ -83,7 +83,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
     setLoading(true);
     try {
       if (cliente.id) await updateCliente(cliente.id, values);
- 
+
       router.push(
         "/painel/clientes?status=success&message=Usuario%20atualizado%20com%20sucesso"
       );
@@ -126,6 +126,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
@@ -149,6 +150,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
+                      onChange={field.onChange}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
@@ -269,10 +271,21 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                   <FormControl>
                     <Input
                       placeholder="Somente Números"
+                      maxLength={14}
                       value={field.value || ""}
-                      onChange={(e) =>
-                        field.onChange(formatCPFInput(e.target.value))
-                      }
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                        const inputEvent = e.nativeEvent as InputEvent;
+                        if (
+                          inputEvent.inputType === "deleteContentBackward"
+                        ){
+                          // Se o usuário estiver apagando, não aplica a formatação
+                          field.onChange(rawValue);
+                        } else {
+                          // Aplica a formatação normalmente
+                          field.onChange(formatCPFInput(rawValue));
+                        }
+                      }}
                       className={`border ${
                         form.formState.errors.cpf
                           ? "border-red-500"
@@ -295,16 +308,28 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                     <Input
                       placeholder="00000-000"
                       maxLength={9}
-                      {...field}
-                      value={field.value ?? ""}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                        const inputEvent = e.nativeEvent as InputEvent;
+            
+                        if (inputEvent.inputType === "deleteContentBackward") {
+                          // Se o usuário estiver apagando, não aplica a formatação
+                          field.onChange(rawValue);
+                        } else {
+                          // Aplica a máscara ao digitar
+                          const formattedValue = rawValue.replace(/^(\d{5})(\d)/, "$1-$2");
+                          field.onChange(formattedValue);
+                        }
+            
+                        // Chama a função para buscar o endereço baseado no CEP digitado
+                        handleCEPChangeHandler(e);
+                      }}
                       className={`border ${
                         form.formState.errors.cep
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
-                      onChange={(e) => {
-                        handleCEPChangeHandler(e); // Aplica a máscara e busca o endereço
-                      }}
                     />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
@@ -319,7 +344,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Logradouro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -333,7 +362,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Número</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -349,7 +382,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Bairro</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -363,7 +400,11 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                 <FormItem>
                   <FormLabel>Cidade</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ""} />
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
@@ -376,9 +417,57 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>UF</FormLabel>
-                  <FormControl>
-                    <Input value={field.value ?? ""} />
-                  </FormControl>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.uf
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {[
+                        "AC",
+                        "AL",
+                        "AP",
+                        "AM",
+                        "BA",
+                        "CE",
+                        "DF",
+                        "ES",
+                        "GO",
+                        "MA",
+                        "MT",
+                        "MS",
+                        "MG",
+                        "PA",
+                        "PB",
+                        "PR",
+                        "PE",
+                        "PI",
+                        "RJ",
+                        "RN",
+                        "RS",
+                        "RO",
+                        "RR",
+                        "SC",
+                        "SP",
+                        "SE",
+                        "TO",
+                      ].map((estado) => (
+                        <SelectItem key={estado} value={estado}>
+                          {estado}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}
@@ -470,12 +559,12 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Salvando...
+                Atualizando...
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Salvar
+                Atualizar
               </>
             )}
           </Button>
