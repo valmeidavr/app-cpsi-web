@@ -8,7 +8,7 @@ import {
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
-import { http } from "@/util/http";
+import { httpServer } from "@/util/htppServer";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
@@ -25,7 +25,7 @@ export async function createCliente(body: CreateCliente) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
 
-    await http.post("/clientes", body);
+    await httpServer.post("/clientes", body);
 
     toast.success("Cliente criado com sucesso!");
     revalidatePath("/painel/clientes"); // 🔄 Revalida os dados para refletir a alteração
@@ -41,7 +41,7 @@ export async function getClientes(
   limit: number = 10,
   search?: string
 ){
-  const { data } = await http.get("/clientes", {
+  const { data } = await httpServer.get("/clientes", {
     params: { page, limit, search },
   });
 
@@ -49,7 +49,7 @@ export async function getClientes(
 }
 
 export async function getClienteById(id: number): Promise<Cliente> {
-  const { data } = await http.get(`/clientes/${id}`);
+  const { data } = await httpServer.get(`/clientes/${id}`);
 
   return data;
 }
@@ -65,7 +65,7 @@ export async function updateCliente(id: string, body: CreateCliente) {
     body.telefone1 = limparTelefone(String(body.telefone1));
     body.telefone2 = limparTelefone(String(body.telefone2));
 
-    await http.patch(`/clientes/${id}`, body);
+    await httpServer.patch(`/clientes/${id}`, body);
     toast.success("Cliente atualizado com sucesso!");
     revalidatePath("painel/clientes");
   } catch (error) {
@@ -78,7 +78,7 @@ export async function updateCliente(id: string, body: CreateCliente) {
 
 export async function handleClienteStatus(id: number): Promise<void> {
   const cliente = await getClienteById(id);
-  const { data } = await http.patch(`/clientes/${id}`, {
+  const { data } = await httpServer.patch(`/clientes/${id}`, {
     status: cliente.status == "Ativo" ? "Inativo" : "Ativo",
   });
 }
