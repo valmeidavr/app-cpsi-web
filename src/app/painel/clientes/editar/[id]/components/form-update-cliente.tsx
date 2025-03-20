@@ -536,12 +536,12 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Salvando...
+                Atualizando...
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Salvar
+                Atualizar
               </>
             )}
           </Button>
