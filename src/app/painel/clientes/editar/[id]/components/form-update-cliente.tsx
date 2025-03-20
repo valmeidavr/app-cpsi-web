@@ -275,10 +275,10 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                       value={field.value || ""}
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-
+                        const inputEvent = e.nativeEvent as InputEvent;
                         if (
-                          e.nativeEvent.inputType === "deleteContentBackward"
-                        ) {
+                          inputEvent.inputType === "deleteContentBackward"
+                        ){
                           // Se o usuário estiver apagando, não aplica a formatação
                           field.onChange(rawValue);
                         } else {
@@ -311,9 +311,9 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                       value={field.value || ""}
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-
+                        const inputEvent = e.nativeEvent as InputEvent;
                         if (
-                          e.nativeEvent.inputType === "deleteContentBackward"
+                          inputEvent.inputType === "deleteContentBackward"
                         ) {
                           // Se o usuário estiver apagando, não aplica a formatação
                           field.onChange(rawValue);

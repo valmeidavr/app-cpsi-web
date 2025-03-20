@@ -261,9 +261,9 @@ export default function CustomerRegistrationForm() {
                       value={field.value || ""}
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
-                        if (
-                          e.nativeEvent.inputType === "deleteContentBackward"
-                        ) {
+                        const inputEvent = e.nativeEvent as InputEvent; // Força o tipo correto
+
+                        if (inputEvent.inputType === "deleteContentBackward") {
                           // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
@@ -295,9 +295,9 @@ export default function CustomerRegistrationForm() {
                       value={field.value || ""}
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
-                        if (
-                          e.nativeEvent.inputType === "deleteContentBackward"
-                        ) {
+                        const inputEvent = e.nativeEvent as InputEvent; 
+                        
+                        if (inputEvent.inputType === "deleteContentBackward") {
                           // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
