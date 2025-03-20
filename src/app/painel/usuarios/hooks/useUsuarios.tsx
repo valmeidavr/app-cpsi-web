@@ -1,32 +1,20 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { getUsuarios } from "@/app/api/usuarios/action";
-import { Usuario } from "@/app/types/Usuario";
-
-const LIMIT = 10;
+import { Sistema, Usuario } from "@/app/types/Usuario";
+import { http } from "@/util/http";
 
 export function useUsuarios() {
-  const searchParams = useSearchParams();
-  const currentPage = Number(searchParams.get("page")) || 1;
-  const status = searchParams.get("status");
-  const message = searchParams.get("message");
-
-  const [usuarioList, setUsuarioList] = useState<Usuario[]>([]);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(false);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-
-
+  const [usuarioList, setUsuarioList] = useState<Usuario[]>([]);
+  const [sistemas, setSistemas] = useState<Sistema[]>([]);
   const loadUsuarios = async () => {
     setLoading(true);
     try {
-      const { data } = await getUsuarios(currentPage, LIMIT, searchTerm);
-    
-      setUsuarioList(data);
-      setTotal(total);
-      setTotalPages(totalPages);
+      const response = await http.get("http://localhost:3000/users");
+      const usuarios = response.data.data;
+      console.log("usuarios:", usuarios);
+      setUsuarioList(Array.isArray(usuarios) ? usuarios : []);
     } catch (error) {
       console.error("Erro ao carregar usuarios:", error);
     } finally {
@@ -36,15 +24,23 @@ export function useUsuarios() {
 
   useEffect(() => {
     loadUsuarios();
-  }, [currentPage, searchTerm]);
+    async function fetchSistemas() {
+      try {
+        const { data } = await http.get("http://localhost:3000/sistemas");
+        console.log("sistemas:", data);
+        setSistemas(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error("Erro ao carregar sistemas:", error);
+      }
+    }
+    fetchSistemas();
+  }, []);
 
   return {
     usuarioList,
-    totalPages,
-    total,
     loading,
-    searchTerm,
-    setSearchTerm,
     loadUsuarios,
+    sistemas,
+    setSistemas,
   };
 }
