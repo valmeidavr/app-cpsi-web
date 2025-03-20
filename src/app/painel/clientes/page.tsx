@@ -242,18 +242,33 @@ export default function ClientesPage() {
           </Table>
 
           {/* ✅ Paginação */}
+          {/* ✅ Paginação corrigida */}
           <div className="flex justify-center mt-4">
             <ReactPaginate
-              previousLabel={"←"}
-              nextLabel={"→"}
+              previousLabel={
+                <span className="w-full h-full flex items-center justify-center">
+                  ←
+                </span>
+              }
+              nextLabel={
+                <span className="w-full h-full flex items-center justify-center">
+                  →
+                </span>
+              }
               pageCount={totalPaginas}
               forcePage={paginaAtual}
               onPageChange={(event) => setPaginaAtual(event.selected)}
               containerClassName={"flex gap-2"}
-              pageClassName={"px-4 py-2 border rounded-md cursor-pointer"}
+              pageClassName={
+                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+              }
               activeClassName={"bg-blue-500 text-white"}
-              previousClassName={"px-4 py-2 border rounded-md cursor-pointer"}
-              nextClassName={"px-4 py-2 border rounded-md cursor-pointer"}
+              previousClassName={
+                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+              }
+              nextClassName={
+                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+              }
               disabledClassName={"opacity-50 cursor-not-allowed"}
               pageLinkClassName={
                 "w-full h-full flex items-center justify-center"
