@@ -1,53 +1,52 @@
 [
-    {
-      "icon": "DockIcon",
-      "label": "Cadastros",
-      "href": "#",
-      "subItems": [
-        {
-          "icon": "BoxIcon",
-          "label": "Procedimentos",
-          "href": "/painel/procedimentos",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        },
-        {
-          "icon": "BookXIcon",
-          "label": "Especialidades",
-          "href": "/painel/especialidades",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        },
-        {
-          "icon": "GraduationCap",
-          "label": "Turmas",
-          "href": "/painel/turmas",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        },
-        {
-          "icon": "CalendarCheck",
-          "label": "Expedientes",
-          "href": "/painel/expedientes",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        },
-        {
-          "icon": "Users",
-          "label": "Clientes",
-          "href": "/painel/clientes",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        }
-      ]
-    },
-    {
-      "icon": "Users",
-      "label": "Segurança",
-      "href": "#",
-      "subItems": [
-        {
-          "icon": "Users",
-          "label": "Gerenciar Usuários",
-          "href": "/painel/usuarios",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        }
-      ]
-    }
-  ]
-  
+  {
+    "icon": "DockIcon",
+    "label": "Cadastros",
+    "href": "#",
+    "subItems": [
+      {
+        "icon": "BoxIcon",
+        "label": "Procedimentos",
+        "href": "/painel/procedimentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "BookXIcon",
+        "label": "Especialidades",
+        "href": "/painel/especialidades",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "GraduationCap",
+        "label": "Turmas",
+        "href": "/painel/turmas",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "CalendarCheck",
+        "label": "Expedientes",
+        "href": "/painel/expedientes",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Users",
+        "label": "Clientes",
+        "href": "/painel/clientes",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      }
+    ]
+  },
+  {
+    "icon": "LockKeyhole",
+    "label": "Segurança",
+    "href": "#",
+    "subItems": [
+      {
+        "icon": "Users",
+        "label": "Gerenciar Usuários",
+        "href": "/painel/usuarios",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      }
+    ]
+  }
+]
