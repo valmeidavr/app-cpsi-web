@@ -31,7 +31,6 @@ export default function UsuarioRegistrationForm() {
   );
   const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
 
-  
   useEffect(() => {
     async function fetchSistemas() {
       try {
@@ -53,13 +52,13 @@ export default function UsuarioRegistrationForm() {
       email: "",
       senha: "",
       confirmedsenha: "",
-      sistema: {},
+      grupoIds: {},
     },
   });
 
   const handleGroupChange = (sistemaId: number, grupoId: number) => {
     setSelectedGroups((prev) => ({ ...prev, [sistemaId]: grupoId }));
-    form.setValue(`sistema.${sistemaId}`, grupoId, { shouldValidate: true });
+    form.setValue(`grupoIds.${sistemaId}`, grupoId, { shouldValidate: true });
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -206,7 +205,7 @@ export default function UsuarioRegistrationForm() {
                     <FormField
                       key={grupo.id}
                       control={form.control}
-                      name={`sistema.${sistema.id}`}
+                      name={`grupoIds.${sistema.id}`}
                       render={() => (
                         <FormItem className="flex items-center space-x-2">
                           <FormControl>

@@ -83,7 +83,6 @@ export default function CustomerRegistrationForm() {
     } finally {
       setLoading(false);
     }
-    console.log(values);
     setLoading(false);
   };
 

@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchema = z
+export const formSchemaUpdate = z
   .object({
     nome: z
       .string()
@@ -14,8 +14,8 @@ export const formSchema = z
       .min(1, { message: "O campo é obrigatório" })
       .email({ message: "Email inválido" })
       .default(""),
-    senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
-    confirmedsenha: z.string().min(6, "A confirmação de senha é obrigatória"),
+    senha: z.string().optional(),
+    confirmedsenha: z.string().optional(),
     grupoIds: z.record(z.number().optional()).optional(),
   })
   .refine((data) => data.senha === data.confirmedsenha, {

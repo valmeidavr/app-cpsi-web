@@ -11,13 +11,22 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus, Eye } from "lucide-react";
+import { Loader2, Search, Edit, Power, Plus, Eye, Trash } from "lucide-react";
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { deleteUsuario } from "@/app/api/usuarios/action";
+import {
+  DialogFooter,
+  DialogHeader,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 // ✅ Definir o tipo Usuario
 interface Usuario {
   id: number;
@@ -40,7 +49,10 @@ export default function UsuariosPage() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState<Usuario | null>(
+    null
+  );
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const carregarUsuarios = async () => {
     setCarregando(true);
     try {
@@ -70,6 +82,22 @@ export default function UsuariosPage() {
     carregarUsuarios();
   };
 
+  const deletarUsuario = async () => {
+    if (!usuarioSelecionado) return;
+    setCarregando(true);
+    try {
+      await deleteUsuario(usuarioSelecionado.id);
+      setUsuarios((prevUsuarios) =>
+        prevUsuarios.filter((usuario) => usuario.id !== usuarioSelecionado.id)
+      );
+      toast.warning("Usuário deletado com sucesso!");
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao alterar status do cliente:", error);
+    } finally {
+      setCarregando(false);
+    }
+  };
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -112,98 +140,147 @@ export default function UsuariosPage() {
             <span className="ml-2 text-gray-500">Carregando ...</span>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Nível de Acesso</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {usuarios.map((usuario) => (
-                <TableRow key={usuario.id}>
-                  <TableCell>{usuario.id}</TableCell>
-                  <TableCell>{usuario.nome}</TableCell>
-                  <TableCell className="white-space: nowrap;">
-                    <a href={`mailto:${usuario.email}`}>{usuario.email}</a>
-                  </TableCell>
-                  <TableCell className="white-space: nowrap;">
-                    {usuario.grupos.map((g) => (
-                      <div
-                        className="flex gap-2 align-middle items-center justify-between space-y-2"
-                        key={g.grupo.id}
-                      >
-                        <h2>{g.grupo.sistema.nome}:</h2>
-                        <Badge>{g.grupo.nome}</Badge>
-                      </div>
-                    ))}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Link href={`/painel/usuarios/editar/${usuario.id}`}>
-                            <Button size="icon" variant="outline">
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                          </Link>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Editar Usuario
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
-                    <Button variant="ghost" size="icon">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>ID</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Nível de Acesso</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {usuarios.map((usuario) => (
+                  <TableRow key={usuario.id}>
+                    <TableCell>{usuario.id}</TableCell>
+                    <TableCell>{usuario.nome}</TableCell>
+                    <TableCell className="white-space: nowrap;">
+                      <a href={`mailto:${usuario.email}`}>{usuario.email}</a>
+                    </TableCell>
+                    <TableCell className="white-space: nowrap;">
+                      {usuario.grupos.map((g) => (
+                        <div
+                          className="flex gap-2 align-middle items-center justify-between space-y-2"
+                          key={g.grupo.id}
+                        >
+                          <h2>{g.grupo.sistema.nome}:</h2>
+                          <Badge>{g.grupo.nome}</Badge>
+                        </div>
+                      ))}
+                    </TableCell>
+                    <TableCell className="flex gap-2">
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <Link
+                              href={`/painel/usuarios/editar/${usuario.id}`}
+                            >
+                              <Button size="icon" variant="outline">
+                                <Edit className="h-5 w-5" />
+                              </Button>
+                            </Link>
+                          </Tooltip.Trigger>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Editar Usuário
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <Button
+                              size="icon"
+                              variant="destructive"
+                              onClick={() => {
+                                setUsuarioSelecionado(usuario);
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              <Trash className="h-5 w-5" />
+                            </Button>
+                          </Tooltip.Trigger>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Deletar Usuário
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="flex justify-center mt-4">
+              <ReactPaginate
+                previousLabel={
+                  <span className="w-full h-full flex items-center justify-center">
+                    ←
+                  </span>
+                }
+                nextLabel={
+                  <span className="w-full h-full flex items-center justify-center">
+                    →
+                  </span>
+                }
+                pageCount={totalPaginas}
+                forcePage={paginaAtual}
+                onPageChange={(event) => setPaginaAtual(event.selected)}
+                containerClassName={"flex gap-2"}
+                pageClassName={
+                  "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+                }
+                activeClassName={"bg-blue-500 text-white"}
+                previousClassName={
+                  "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+                }
+                nextClassName={
+                  "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
+                }
+                disabledClassName={"opacity-50 cursor-not-allowed"}
+                pageLinkClassName={
+                  "w-full h-full flex items-center justify-center"
+                }
+                previousLinkClassName={
+                  "w-full h-full flex items-center justify-center"
+                }
+                nextLinkClassName={
+                  "w-full h-full flex items-center justify-center"
+                }
+              />
+            </div>
+          </>
         )}
-        <div className="flex justify-center mt-4">
-          <ReactPaginate
-            previousLabel={
-              <span className="w-full h-full flex items-center justify-center">
-                ←
-              </span>
-            }
-            nextLabel={
-              <span className="w-full h-full flex items-center justify-center">
-                →
-              </span>
-            }
-            pageCount={totalPaginas}
-            forcePage={paginaAtual}
-            onPageChange={(event) => setPaginaAtual(event.selected)}
-            containerClassName={"flex gap-2"}
-            pageClassName={
-              "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-            }
-            activeClassName={"bg-blue-500 text-white"}
-            previousClassName={
-              "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-            }
-            nextClassName={
-              "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-            }
-            disabledClassName={"opacity-50 cursor-not-allowed"}
-            pageLinkClassName={"w-full h-full flex items-center justify-center"}
-            previousLinkClassName={
-              "w-full h-full flex items-center justify-center"
-            }
-            nextLinkClassName={"w-full h-full flex items-center justify-center"}
-          />
-        </div>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirmar Ação</DialogTitle>
+            </DialogHeader>
+            <p>Tem certeza que deseja deletar este usuario?</p>
+            <DialogFooter>
+              <Button
+                variant="secondary"
+                onClick={() => setIsDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={() => deletarUsuario()}>
+                Deletar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Modal de detalhes */}
       </div>
     </div>
