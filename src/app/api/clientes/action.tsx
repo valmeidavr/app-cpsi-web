@@ -8,7 +8,7 @@ import {
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
-import { httpServer } from "@/util/htppServer";
+import { httpServer } from "@/util/httpServer";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 

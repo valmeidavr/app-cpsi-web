@@ -38,15 +38,9 @@
     },
     {
       "icon": "Users",
-      "label": "Usuários",
+      "label": "Segurança",
       "href": "#",
       "subItems": [
-        {
-          "icon": "UserPlus",
-          "label": "Novo Usuário",
-          "href": "/painel/usuarios/novo",
-          "requiredGroups": ["ADMIN", "GESTOR"]
-        },
         {
           "icon": "Users",
           "label": "Gerenciar Usuários",
