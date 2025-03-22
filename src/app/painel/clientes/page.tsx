@@ -11,7 +11,15 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Edit,
+  Power,
+  Plus,
+  Mail,
+  MessageCircle,
+} from "lucide-react";
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
@@ -149,7 +157,7 @@ export default function ClientesPage() {
           {/* Tabela de Clientes */}
           <Table>
             <TableHeader>
-              <TableRow >
+              <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>CPF</TableHead>
@@ -172,17 +180,59 @@ export default function ClientesPage() {
                   <TableCell>{cliente.nome}</TableCell>
                   <TableCell>{cliente.cpf}</TableCell>
                   <TableCell>
-                    <a href={`mailto:${cliente.email}`}>{cliente.email}</a>
+                    <Tooltip.Provider>
+                      <Tooltip.Root>
+                        <div className="flex gap-1.5 items-center">
+                          <Mail className="w-4 h-4" />
+                          <Tooltip.Trigger asChild>
+                            <a
+                              target="_blank"
+                              className="hover:text-blue-500"
+                              href={`mailto:${cliente.email}`}
+                            >
+                              {cliente.email}
+                            </a>
+                          </Tooltip.Trigger>
+                        </div>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Enviar Email
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </Tooltip.Provider>
                   </TableCell>
                   <TableCell>
-                    <a
-                      href={`https://wa.me/55${cliente.telefone1.replace(
-                        /\D/g,
-                        ""
-                      )}`}
-                    >
-                      {cliente.telefone1}
-                    </a>
+                    <Tooltip.Provider>
+                      <Tooltip.Root>
+                        <div className="flex gap-0.5 items-center">
+                          <MessageCircle className="w-4 h-4" />
+                          <Tooltip.Trigger asChild>
+                            <a
+                              target="_blank"
+                              className="hover:text-blue-500"
+                              href={`https://wa.me/55${cliente.telefone1.replace(
+                                /\D/g,
+                                ""
+                              )}`}
+                            >
+                              {cliente.telefone1}
+                            </a>
+                          </Tooltip.Trigger>
+                        </div>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Abrir WhatsApp
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </Tooltip.Provider>
                   </TableCell>
                   <TableCell className="flex gap-3">
                     {/* ✅ Botão Editar com Tooltip */}
