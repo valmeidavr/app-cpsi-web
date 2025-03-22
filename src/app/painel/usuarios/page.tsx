@@ -82,6 +82,10 @@ export default function UsuariosPage() {
     }
   };
 
+  const formatarPalavra = (palavra: string): string => {
+    return palavra.replace("U", "Ú");
+  };
+
   useEffect(() => {
     carregarUsuarios();
   }, [paginaAtual]);
@@ -200,7 +204,7 @@ export default function UsuariosPage() {
                           className="flex gap-2 align-middle items-center justify-between space-y-2"
                           key={g.grupo.id}
                         >
-                          <h2>{g.grupo.sistema.nome}:</h2>
+                          <h2>{formatarPalavra(g.grupo.sistema.nome)}:</h2>
                           <Badge>{g.grupo.nome}</Badge>
                         </div>
                       ))}
