@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -30,6 +30,8 @@ export default function UsuarioRegistrationForm() {
     {}
   );
   const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     async function fetchSistemas() {
@@ -55,6 +57,14 @@ export default function UsuarioRegistrationForm() {
       grupoIds: {},
     },
   });
+
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev); // Alterna a visibilidade da senha
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword((prev) => !prev); // Alterna a visibilidade da confirmação de senha
+  };
 
   const handleGroupChange = (sistemaId: number, grupoId: number) => {
     setSelectedGroups((prev) => ({ ...prev, [sistemaId]: grupoId }));
@@ -88,7 +98,7 @@ export default function UsuarioRegistrationForm() {
         items={[
           { label: "Painel", href: "/painel" },
           { label: "Gerenciar Usuários", href: "/painel/usuarios" },
-          { label: "Novo Usuários" },
+          { label: "Novo Usuário" },
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Novo Usuário</h1>
@@ -121,7 +131,7 @@ export default function UsuarioRegistrationForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Email *</FormLabel>
                 <FormControl>
                   <Input
                     type="email"
@@ -145,16 +155,31 @@ export default function UsuarioRegistrationForm() {
                 <FormItem>
                   <FormLabel>Senha *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      value={field.value || ""}
-                      className={`border ${
-                        form.formState.errors.senha
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
+                    <div className="relative">
+                      <Input
+                        autoComplete="new-password"
+                        type={showPassword ? "text" : "password"} // Alterna entre "password" e "text"
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.senha
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary pr-10`} // Adiciona espaço para o ícone
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2" // Posiciona o ícone
+                        onClick={togglePasswordVisibility}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" /> // Ícone para ocultar a senha
+                        ) : (
+                          <Eye className="h-4 w-4" /> // Ícone para mostrar a senha
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1">
                     {form.formState.errors.senha?.message}
@@ -168,18 +193,32 @@ export default function UsuarioRegistrationForm() {
               name="confirmedsenha"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirma Senha</FormLabel>
+                  <FormLabel>Confirmar Senha *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      value={field.value || ""}
-                      className={`border ${
-                        form.formState.errors.confirmedsenha
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? "text" : "password"} // Alterna entre "password" e "text"
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.confirmedsenha
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary pr-10`} // Adiciona espaço para o ícone
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2" // Posiciona o ícone
+                        onClick={toggleConfirmPasswordVisibility}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" /> // Ícone para ocultar a senha
+                        ) : (
+                          <Eye className="h-4 w-4" /> // Ícone para mostrar a senha
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1">
                     {form.formState.errors.confirmedsenha?.message}

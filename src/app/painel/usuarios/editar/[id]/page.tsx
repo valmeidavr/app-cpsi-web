@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -35,6 +35,8 @@ export default function UsuarioUpdateForm() {
   const params = useParams();
   const [isFormReset, setIsFormReset] = useState(false);
   const userId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const router = useRouter();
 
@@ -105,6 +107,14 @@ export default function UsuarioUpdateForm() {
     },
   });
 
+  const togglePasswordVisibility = () => {
+    setShowPassword((prev) => !prev); // Alterna a visibilidade da senha
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword((prev) => !prev); // Alterna a visibilidade da confirmação de senha
+  };
+
   const handleGroupChange = (sistemaId: number, grupoId: number) => {
     setSelectedGroups((prev) => ({ ...prev, [sistemaId]: grupoId }));
     form.setValue(`grupoIds.${sistemaId}`, grupoId, { shouldValidate: true });
@@ -114,10 +124,10 @@ export default function UsuarioUpdateForm() {
     setLoading(true);
     try {
       if (!userId) redirect("/painel/usuarios");
-  
-      const data  = await updateUsuario(userId, values);
 
-       router.push("/painel/usuarios?status=updated");
+      const data = await updateUsuario(userId, values);
+
+      router.push("/painel/usuarios?status=updated");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -162,7 +172,7 @@ export default function UsuarioUpdateForm() {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Email</FormLabel>
+                <FormLabel>Email *</FormLabel>
                 <FormControl>
                   <Input type="email" {...field} />
                 </FormControl>
@@ -178,16 +188,30 @@ export default function UsuarioUpdateForm() {
                 <FormItem>
                   <FormLabel>Senha *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      value={field.value || ""}
-                      className={`border ${
-                        form.formState.errors.senha
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.senha
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary pr-10`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
+                        onClick={togglePasswordVisibility}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1">
                     {form.formState.errors.senha?.message}
@@ -201,18 +225,32 @@ export default function UsuarioUpdateForm() {
               name="confirmedsenha"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Confirma Senha</FormLabel>
+                  <FormLabel>Confirmar Senha *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="password"
-                      {...field}
-                      value={field.value || ""}
-                      className={`border ${
-                        form.formState.errors.confirmedsenha
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
+                    <div className="relative">
+                      <Input
+                        type={showConfirmPassword ? "text" : "password"}
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.confirmedsenha
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary pr-10`}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
+                        onClick={toggleConfirmPasswordVisibility}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1">
                     {form.formState.errors.confirmedsenha?.message}
