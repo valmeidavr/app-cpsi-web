@@ -190,6 +190,7 @@ export default function UsuarioUpdateForm() {
                   <FormControl>
                     <div className="relative">
                       <Input
+                        autoComplete="new-password"
                         type={showPassword ? "text" : "password"}
                         {...field}
                         className={`border ${
