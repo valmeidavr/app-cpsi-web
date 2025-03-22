@@ -103,10 +103,10 @@ export default function UsuariosPage() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Usuarios" },
+          { label: "Lista de Usuários" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Usuarios</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Usuários</h1>
 
       {/* Barra de Pesquisa e Botão Novo Usuario */}
       <div className="flex justify-between items-center mb-4">
@@ -128,7 +128,7 @@ export default function UsuariosPage() {
         <Button asChild>
           <Link href="/painel/usuarios/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Novo Usuario
+            Novo Usuário
           </Link>
         </Button>
       </div>
