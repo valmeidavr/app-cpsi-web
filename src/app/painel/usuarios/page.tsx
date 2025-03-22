@@ -11,7 +11,16 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus, Eye, Trash } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Edit,
+  Power,
+  Plus,
+  Eye,
+  Trash,
+  Mail,
+} from "lucide-react";
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
@@ -160,7 +169,30 @@ export default function UsuariosPage() {
                     <TableCell>{usuario.id}</TableCell>
                     <TableCell>{usuario.nome}</TableCell>
                     <TableCell className="white-space: nowrap;">
-                      <a href={`mailto:${usuario.email}`}>{usuario.email}</a>
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <div className="flex gap-1.5 items-center">
+                            <Mail className="w-4 h-4" />
+                            <Tooltip.Trigger asChild>
+                              <a
+                                target="_blank"
+                                className="hover:text-blue-500"
+                                href={`mailto:${usuario.email}`}
+                              >
+                                {usuario.email}
+                              </a>
+                            </Tooltip.Trigger>
+                          </div>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Enviar Email
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
                     </TableCell>
                     <TableCell className="white-space: nowrap;">
                       {usuario.grupos.map((g) => (
