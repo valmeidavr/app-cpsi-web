@@ -139,7 +139,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Email *</FormLabel>
                   <FormControl>
                     <Input
                       type="email"
@@ -276,9 +276,7 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
                         const inputEvent = e.nativeEvent as InputEvent;
-                        if (
-                          inputEvent.inputType === "deleteContentBackward"
-                        ){
+                        if (inputEvent.inputType === "deleteContentBackward") {
                           // Se o usuário estiver apagando, não aplica a formatação
                           field.onChange(rawValue);
                         } else {
@@ -312,16 +310,19 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
                       onChange={(e) => {
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
                         const inputEvent = e.nativeEvent as InputEvent;
-            
+
                         if (inputEvent.inputType === "deleteContentBackward") {
                           // Se o usuário estiver apagando, não aplica a formatação
                           field.onChange(rawValue);
                         } else {
                           // Aplica a máscara ao digitar
-                          const formattedValue = rawValue.replace(/^(\d{5})(\d)/, "$1-$2");
+                          const formattedValue = rawValue.replace(
+                            /^(\d{5})(\d)/,
+                            "$1-$2"
+                          );
                           field.onChange(formattedValue);
                         }
-            
+
                         // Chama a função para buscar o endereço baseado no CEP digitado
                         handleCEPChangeHandler(e);
                       }}
