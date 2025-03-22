@@ -149,7 +149,7 @@ export default function ClientesPage() {
           {/* Tabela de Clientes */}
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow >
                 <TableHead>ID</TableHead>
                 <TableHead>Nome</TableHead>
                 <TableHead>CPF</TableHead>
@@ -162,7 +162,11 @@ export default function ClientesPage() {
               {clientes.map((cliente) => (
                 <TableRow
                   key={cliente.id}
-                  className={cliente.status === "Inativo" ? "bg-red-100" : ""}
+                  className={
+                    cliente.status === "Inativo"
+                      ? "bg-red-100"
+                      : "odd:bg-gray-100 even:bg-white"
+                  }
                 >
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>

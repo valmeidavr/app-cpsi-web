@@ -153,7 +153,10 @@ export default function UsuariosPage() {
               </TableHeader>
               <TableBody>
                 {usuarios.map((usuario) => (
-                  <TableRow key={usuario.id}>
+                  <TableRow
+                    key={usuario.id}
+                    className="odd:bg-gray-100 even:bg-white"
+                  >
                     <TableCell>{usuario.id}</TableCell>
                     <TableCell>{usuario.nome}</TableCell>
                     <TableCell className="white-space: nowrap;">
