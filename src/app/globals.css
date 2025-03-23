@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 /* 🔹 Garante que a página ocupe toda a tela e permita rolagem global */
-html, body {
+html,
+body {
   height: 100%;
   min-height: 100vh;
   overflow-y: hidden; /* Scroll apenas quando necessário */
@@ -11,7 +12,8 @@ html, body {
 }
 
 /* 🔹 Garante que o conteúdo principal cresça corretamente */
-#__next, main {
+#__next,
+main {
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* Mantém o conteúdo pelo menos na altura da tela */
@@ -92,4 +94,8 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.p-4 {
+  padding: 0.7rem;
 }

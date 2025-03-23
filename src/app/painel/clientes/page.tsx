@@ -33,6 +33,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { formatarTelefone } from "@/util/clearData";
+import { formatarCPF } from "@/util/clearData";
 
 // ✅ Definir o tipo Cliente
 interface Cliente {
@@ -178,7 +180,9 @@ export default function ClientesPage() {
                 >
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>
-                  <TableCell>{cliente.cpf}</TableCell>
+                  <TableCell className="text-[13px]">
+                    {formatarCPF(cliente.cpf)}
+                  </TableCell>
                   <TableCell>
                     <Tooltip.Provider>
                       <Tooltip.Root>
@@ -213,13 +217,13 @@ export default function ClientesPage() {
                           <Tooltip.Trigger asChild>
                             <a
                               target="_blank"
-                              className="hover:text-blue-500"
+                              className="hover:text-blue-500 text-[13px]"
                               href={`https://wa.me/55${cliente.telefone1.replace(
                                 /\D/g,
                                 ""
                               )}`}
                             >
-                              {cliente.telefone1}
+                              {formatarTelefone(cliente.telefone1)}
                             </a>
                           </Tooltip.Trigger>
                         </div>
