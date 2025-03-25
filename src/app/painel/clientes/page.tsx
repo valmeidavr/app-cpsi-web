@@ -33,8 +33,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { formatarTelefone } from "@/util/clearData";
-import { formatarCPF } from "@/util/clearData";
+import { formatarCPF, formatarTelefone } from "@/util/clearData";
 
 // ✅ Definir o tipo Cliente
 interface Cliente {
@@ -174,11 +173,7 @@ export default function ClientesPage() {
               {clientes.map((cliente) => (
                 <TableRow
                   key={cliente.id}
-                  className={
-                    cliente.status === "Inativo"
-                      ? "bg-red-100"
-                      : "odd:bg-gray-100 even:bg-white"
-                  }
+                  className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>
@@ -240,28 +235,31 @@ export default function ClientesPage() {
                       </Tooltip.Root>
                     </Tooltip.Provider>
                   </TableCell>
-                  <TableCell className="flex gap-3">
+                  <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Link href={`/painel/clientes/editar/${cliente.id}`}>
-                            <Button size="icon" variant="outline">
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                          </Link>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Editar Cliente
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
-
+                    {cliente.status === "Ativo" && (
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <Link
+                              href={`/painel/clientes/editar/${cliente.id}`}
+                            >
+                              <Button size="icon" variant="outline">
+                                <Edit className="h-5 w-5" />
+                              </Button>
+                            </Link>
+                          </Tooltip.Trigger>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Editar Cliente
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
+                    )}
                     {/* ✅ Botão Ativar/Inativar com Tooltip */}
                     <Tooltip.Provider>
                       <Tooltip.Root>
