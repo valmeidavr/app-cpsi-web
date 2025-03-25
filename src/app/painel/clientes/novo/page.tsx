@@ -38,6 +38,7 @@ import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
 import { useRouter } from "next/navigation";
+import { http } from "@/util/http";
 
 // Mockup de opções de sexo
 const sexOptions = [
@@ -49,6 +50,13 @@ const sexOptions = [
 export default function CustomerRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const [isCheckingEmail, setIsCheckingEmail] = useState<Boolean>(false);
+  const [emailError, setEmailError] = useState<string | null>("");
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+
+  const [isCheckingCpf, setIsCheckingCpf] = useState<Boolean>(false);
+  const [cpfError, setCpfError] = useState<string | null>("");
+  const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -70,7 +78,10 @@ export default function CustomerRegistrationForm() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-
+    if (emailError || cpfError) {
+      toast.error("Corrija os erros antes de enviar o formulário.");
+      return;
+    }
     try {
       await createCliente(values);
       router.push("/painel/clientes&status=success");
@@ -86,6 +97,70 @@ export default function CustomerRegistrationForm() {
     setLoading(false);
   };
 
+  const checkEmail = async (email: string) => {
+    if (!email) {
+      setEmailError(null);
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    try {
+      const { data } = await http.get(
+        `http://localhost:3000/clientes/findByEmail/${email}`
+      );
+      if (data) {
+        setEmailError("Este email já está em uso.");
+      } else {
+        setEmailError(null);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar email:", error);
+      setEmailError("Erro ao verificar email.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  const checkCpf = async (cpf: string) => {
+    if (!cpf) {
+      setCpfError(null);
+      return;
+    }
+
+    setIsCheckingCpf(true);
+    try {
+      const { data } = await http.get(
+        `http://localhost:3000/clientes/findByCpf/${cpf}`
+      );
+      if (data) {
+        setCpfError("Este cpf já está em uso.");
+      } else {
+        setCpfError(null);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar cpf:", error);
+      setCpfError("Erro ao verificar cpf.");
+    } finally {
+      setIsCheckingCpf(false);
+    }
+  };
+
+  const handlecpfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const cpf = event.target.value;
+    form.setValue("cpf", cpf, { shouldValidate: true });
+
+    if (timeoutCpfId) clearTimeout(timeoutCpfId);
+    const newTimeoutCpfId = setTimeout(() => checkCpf(cpf), 500);
+    setTimeoutCpfId(newTimeoutCpfId);
+  };
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const email = event.target.value;
+    form.setValue("email", email, { shouldValidate: true });
+
+    if (timeoutId) clearTimeout(timeoutId);
+    const newTimeoutId = setTimeout(() => checkEmail(email), 500);
+    setTimeoutId(newTimeoutId);
+  };
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, form);
   };
@@ -142,6 +217,7 @@ export default function CustomerRegistrationForm() {
                     <Input
                       type="email"
                       {...field}
+                      onChange={handleEmailChange}
                       value={field.value || ""}
                       className={`border ${
                         form.formState.errors.email
@@ -150,6 +226,14 @@ export default function CustomerRegistrationForm() {
                       } focus:ring-2 focus:ring-primary`}
                     />
                   </FormControl>
+                  {isCheckingEmail && (
+                    <p className="text-gray-500 text-sm">
+                      Verificando email...
+                    </p>
+                  )}
+                  {emailError && (
+                    <p className="text-red-500 text-sm">{emailError}</p>
+                  )}
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}
@@ -259,6 +343,7 @@ export default function CustomerRegistrationForm() {
                       maxLength={14}
                       value={field.value || ""}
                       onChange={(e) => {
+                        handlecpfChange(e);
                         let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent; // Força o tipo correto
 
@@ -276,6 +361,12 @@ export default function CustomerRegistrationForm() {
                       } focus:ring-2 focus:ring-primary`}
                     />
                   </FormControl>
+                  {isCheckingCpf && (
+                    <p className="text-gray-500 text-sm">Verificando CPF...</p>
+                  )}
+                  {cpfError && (
+                    <p className="text-red-500 text-sm">{cpfError}</p>
+                  )}
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}

@@ -29,6 +29,9 @@ export default function UsuarioRegistrationForm() {
   const [selectedGroups, setSelectedGroups] = useState<Record<number, number>>(
     {}
   );
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -73,7 +76,10 @@ export default function UsuarioRegistrationForm() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
-
+    if (emailError) {
+      toast.error("Corrija os erros antes de enviar o formulário.");
+      return;
+    }
     try {
       console.log("Usuário", values);
       await createUsuario(values);
@@ -92,6 +98,38 @@ export default function UsuarioRegistrationForm() {
     setLoading(false);
   };
 
+  const checkEmail = async (email: string) => {
+    if (!email) {
+      setEmailError(null);
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    try {
+      const { data } = await http.get(
+        `http://localhost:3000/users/findByEmail/${email}`
+      );
+      if (data) {
+        setEmailError("Este email já está em uso.");
+      } else {
+        setEmailError(null);
+      }
+    } catch (error) {
+      console.error("Erro ao verificar email:", error);
+      setEmailError("Erro ao verificar email.");
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
+  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const email = event.target.value;
+    form.setValue("email", email, { shouldValidate: true });
+
+    if (timeoutId) clearTimeout(timeoutId);
+    const newTimeoutId = setTimeout(() => checkEmail(email), 500);
+    setTimeoutId(newTimeoutId);
+  };
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -136,13 +174,20 @@ export default function UsuarioRegistrationForm() {
                   <Input
                     type="email"
                     {...field}
+                    onChange={handleEmailChange}
                     className={`border ${
-                      form.formState.errors.email
+                      emailError || form.formState.errors.email
                         ? "border-red-500"
                         : "border-gray-300"
                     } focus:ring-2 focus:ring-primary`}
                   />
                 </FormControl>
+                {isCheckingEmail && (
+                  <p className="text-gray-500 text-sm">Verificando email...</p>
+                )}
+                {emailError && (
+                  <p className="text-red-500 text-sm">{emailError}</p>
+                )}
                 <FormMessage />
               </FormItem>
             )}
