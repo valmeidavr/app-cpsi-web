@@ -56,6 +56,7 @@ export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<Usuario | null>(
@@ -75,6 +76,7 @@ export default function UsuariosPage() {
 
       setUsuarios(data.data);
       setTotalPaginas(data.totalPages);
+      setTotalUsuarios(data.total);
     } catch (error) {
       console.error("Erro ao buscar usuarios:", error);
     } finally {
@@ -260,6 +262,15 @@ export default function UsuariosPage() {
                 ))}
               </TableBody>
             </Table>
+
+            {/* Totalizador de Usuarios */}
+            <div className="flex justify-between items-center ml-1 mt-4">
+              <div className="text-sm text-gray-600">
+                Mostrando {Math.min((paginaAtual + 1) * 5, totalUsuarios)} de{" "}
+                {totalUsuarios} usuários
+              </div>
+            </div>
+
             <div className="flex justify-center mt-4">
               <ReactPaginate
                 previousLabel={

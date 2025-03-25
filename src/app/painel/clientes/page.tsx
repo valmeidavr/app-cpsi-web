@@ -50,6 +50,7 @@ export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
+  const [totalClientes, setTotalClientes] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
@@ -71,6 +72,7 @@ export default function ClientesPage() {
 
       setClientes(data.data);
       setTotalPaginas(data.totalPages);
+      setTotalClientes(data.total);
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
     } finally {
@@ -298,6 +300,14 @@ export default function ClientesPage() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Totalizador de Clientes */}
+          <div className="flex justify-between items-center ml-1 mt-4">
+            <div className="text-sm text-gray-600">
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalClientes)} de{" "}
+              {totalClientes} clientes
+            </div>
+          </div>
 
           {/* ✅ Paginação */}
           {/* ✅ Paginação corrigida */}
