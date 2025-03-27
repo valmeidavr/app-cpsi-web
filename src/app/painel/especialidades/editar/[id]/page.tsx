@@ -60,6 +60,7 @@ export default function EditarEspecialidade() {
       }
     }
     fetchData();
+    fetchData();
   }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -69,7 +70,7 @@ export default function EditarEspecialidade() {
 
       const data = await updateEspecialidade(especialidadeId, values);
 
-      router.push("/painel/especialidade?status=updated");
+      router.push("/painel/especialidades?status=updated");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
