@@ -1,6 +1,11 @@
 "use client";
 
+//React
 import { useEffect, useState } from "react";
+import ReactPaginate from "react-paginate";
+import * as Tooltip from "@radix-ui/react-tooltip";
+
+//Components
 import {
   Table,
   TableBody,
@@ -12,11 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
-import ReactPaginate from "react-paginate";
-import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Dialog,
   DialogTrigger,
@@ -25,6 +27,9 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+
+//Helpers
+import { http } from "@/util/http";
 
 // ✅ Definir o tipo Especialidade
 interface Especialidade {
@@ -131,6 +136,7 @@ export default function Especialidades() {
           </Button>
         </div>
 
+        {/* ✅ Botão Novo Cliente */}
         <Button asChild>
           <Link href="/painel/especialidades/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -239,7 +245,7 @@ export default function Especialidades() {
               ))}
             </TableBody>
           </Table>
-
+          {/* Totalizador de Especialidades */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalEspecialidades)}{" "}
@@ -247,6 +253,8 @@ export default function Especialidades() {
             </div>
           </div>
 
+          {/* ✅ Paginação */}
+          {/* ✅ Paginação corrigida */}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={

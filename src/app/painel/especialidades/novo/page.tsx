@@ -1,7 +1,14 @@
 "use client";
-import React, { useEffect, useState } from "react";
+
+//React
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
+
+//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -14,20 +21,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import { createUsuario } from "@/app/api/usuarios/action";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { http } from "@/util/http";
 
-//api
+//API
 import { createEspecialidade } from "@/app/api/especialidades/action";
 import { formSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
+//Helpers
+import { useRouter } from "next/navigation";
+
 export default function NovaEspecialidade() {
   const [loading, setLoading] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
   const router = useRouter();
   const form = useForm({
