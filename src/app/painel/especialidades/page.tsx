@@ -75,9 +75,12 @@ export default function Especialidades() {
       especialidadeSelecionada.status === "Ativo" ? "Inativo" : "Ativo";
 
     try {
-      await http.patch(`/especialidades/${especialidadeSelecionada.id}`, {
-        status: novoStatus,
-      });
+      await http.patch(
+        `http://localhost:3000/especialidades/${especialidadeSelecionada.id}`,
+        {
+          status: novoStatus,
+        }
+      );
       setEspecialidades((especialidades) =>
         especialidades.map((especialidade) =>
           especialidade.id === especialidadeSelecionada.id
@@ -107,10 +110,10 @@ export default function Especialidades() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Especialidades" },
+          { label: "Lista de Especialidades" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Especialidades</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Especialidades</h1>
 
       {/* Barra de Pesquisa e Botão Nova Especialidade */}
       <div className="flex justify-between items-center mb-4">
@@ -164,7 +167,15 @@ export default function Especialidades() {
                   <TableCell>{especialidade.id}</TableCell>
                   <TableCell>{especialidade.nome}</TableCell>
                   <TableCell>{especialidade.codigo}</TableCell>
-                  <TableCell>{especialidade.status}</TableCell>
+                  <TableCell
+                    className={`${
+                      especialidade.status === "Ativo"
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {especialidade.status}
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
                     {especialidade.status === "Ativo" && (
@@ -300,7 +311,7 @@ export default function Especialidades() {
             </Button>
             <Button
               variant="default"
-              // onClick={alterarStatusEspecialidade}
+              onClick={alterarStatusEspecialidade}
               disabled={loadingInativar}
             >
               {loadingInativar ? (
