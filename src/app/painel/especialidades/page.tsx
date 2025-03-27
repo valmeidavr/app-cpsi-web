@@ -46,26 +46,26 @@ export default function Especialidades() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
 
-  // const carregarEspecialidades = async () => {
-  //   setCarregando(true);
-  //   try {
-  //     const { data } = await http.get("especialidades", {
-  //       params: {
-  //         page: paginaAtual + 1,
-  //         limit: 5,
-  //         search: termoBusca,
-  //       },
-  //     });
+  const carregarEspecialidades = async () => {
+    setCarregando(true);
+    try {
+      const { data } = await http.get("http://localhost:3000/especialidades", {
+        params: {
+          page: paginaAtual + 1,
+          limit: 5,
+          search: termoBusca,
+        },
+      });
 
-  //     setEspecialidades(data.data);
-  //     setTotalPaginas(data.totalPages);
-  //     setTotalEspecialidades(data.total);
-  //   } catch (error) {
-  //     console.error("Erro ao buscar especialidades:", error);
-  //   } finally {
-  //     setCarregando(false);
-  //   }
-  // };
+      setEspecialidades(data.data);
+      setTotalPaginas(data.totalPages);
+      setTotalEspecialidades(data.total);
+    } catch (error) {
+      console.error("Erro ao buscar especialidades:", error);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
   // ✅ Atualiza status da especialidade (Ativo/Inativo)
   const alterarStatusEspecialidade = async () => {
@@ -93,28 +93,13 @@ export default function Especialidades() {
     }
   };
 
-  const especialidade: Especialidade[] = [
-    { id: 1, codigo: "100245", nome: "DERMATOLOGISTA", status: "Ativo" },
-    { id: 2, codigo: "205301", nome: "CARDIOLOGISTA", status: "Ativo" },
-    { id: 3, codigo: "213150", nome: "FÍSICO MÉDICO", status: "Ativo" },
-    { id: 4, codigo: "402154", nome: "PEDIATRA", status: "Ativo" },
-    { id: 5, codigo: "223505", nome: "ENFERMAGEM", status: "Ativo" },
-    { id: 6, codigo: "601234", nome: "NEUROLOGISTA", status: "Ativo" },
-    { id: 7, codigo: "703452", nome: "GINECOLOGISTA", status: "Ativo" },
-    { id: 8, codigo: "808765", nome: "ONCOLOGISTA", status: "Ativo" },
-    { id: 9, codigo: "905678", nome: "RADIOLOGISTA", status: "Ativo" },
-    { id: 10, codigo: "102345", nome: "ANESTESIOLOGISTA", status: "Ativo" },
-  ];
-
   useEffect(() => {
-    // carregarEspecialidades()
-    especialidade;
+    carregarEspecialidades();
   }, [paginaAtual]);
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    especialidade;
-    // carregarEspecialidades();
+    carregarEspecialidades();
   };
 
   return (
@@ -171,7 +156,7 @@ export default function Especialidades() {
               </TableRow>
             </TableHeader>
             <TableBody className="text-center">
-              {especialidade.map((especialidade) => (
+              {especialidades.map((especialidade) => (
                 <TableRow
                   key={especialidade.id}
                   className={"odd:bg-gray-100 even:bg-white"}

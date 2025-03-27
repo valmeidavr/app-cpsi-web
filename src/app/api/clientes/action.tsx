@@ -35,12 +35,11 @@ export async function createCliente(body: CreateCliente) {
   }
 }
 
-
 export async function getClientes(
   page: number = 1,
   limit: number = 10,
   search?: string
-){
+) {
   const { data } = await httpServer.get("/clientes", {
     params: { page, limit, search },
   });
@@ -61,7 +60,7 @@ export async function updateCliente(id: string, body: CreateCliente) {
       body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
     }
     body.cpf = limparCPF(String(body.cpf));
-    if(body.cep) body.cep = limparCEP(String(body.cep));
+    if (body.cep) body.cep = limparCEP(String(body.cep));
     body.telefone1 = limparTelefone(String(body.telefone1));
     body.telefone2 = limparTelefone(String(body.telefone2));
 

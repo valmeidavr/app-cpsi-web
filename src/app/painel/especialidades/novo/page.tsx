@@ -29,6 +29,7 @@ export default function NovaEspecialidade() {
   const [loading, setLoading] = useState(false);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
+  const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -38,23 +39,25 @@ export default function NovaEspecialidade() {
     },
   });
 
-  //   try {
-  //     console.log("Usuário", values);
-  //     await createUsuario(values);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    try {
+      console.log("Especialidade", values);
+      await createEspecialidade(values);
 
-  //     router.push("/painel/usuarios?status=success");
-  //   } catch (error: any) {
-  //     const errorMessage =
-  //       error.response?.data?.message || "Erro ao salvar usuário";
+      router.push("/painel/especialidades?status=success");
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao salvar especialidade";
 
-  //     // Exibindo toast de erro
-  //     toast.error(errorMessage);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  //   console.log(values);
-  //   setLoading(false);
-  // };
+      // Exibindo toast de erro
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+    console.log(values);
+    setLoading(false);
+  };
 
   return (
     <div className="container mx-auto">
@@ -68,7 +71,7 @@ export default function NovaEspecialidade() {
       <h1 className="text-2xl font-bold mb-6 mt-5">Nova Especialidade</h1>
 
       <Form {...form}>
-        <form className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Campos de Nome e Código */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField

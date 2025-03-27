@@ -1,6 +1,7 @@
 "use server";
 
 import { http } from "@/util/http";
+import { httpServer } from "@/util/httpServer";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
@@ -9,7 +10,7 @@ export async function getEspecialidades(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/especialidades", {
+  const { data } = await http.get("http://localhost:3000/especialidades", {
     params: { page, limit, search },
   });
   return data;
@@ -27,8 +28,9 @@ export async function createEspecialidade({
   nome,
   codigo,
 }: createEspecialidadePayload) {
+  console.log("body", nome, codigo);
   try {
-    await http.post("/especialidades", {
+    await httpServer.post("http://localhost:3000/especialidades", {
       nome,
       codigo,
     });
@@ -50,8 +52,9 @@ export async function updateEspecialidade(
   id: string,
   body: updateEspecialidadePayload
 ) {
+  console.log(body);
   try {
-    const { data } = await http.patch(
+    const { data } = await httpServer.patch(
       `http://localhost:3000/especialidades/${id}`,
       body
     );

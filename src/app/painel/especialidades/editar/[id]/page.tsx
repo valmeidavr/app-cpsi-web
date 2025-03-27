@@ -16,18 +16,25 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import { createUsuario } from "@/app/api/usuarios/action";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
 import { http } from "@/util/http";
+import { redirect, useParams } from "next/navigation";
 
 //api
-import { createEspecialidade } from "@/app/api/especialidades/action";
+import {
+  createEspecialidade,
+  getEspecialidadeById,
+  updateEspecialidade,
+} from "@/app/api/especialidades/action";
 import { formSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 export default function EditarEspecialidade() {
   const [loading, setLoading] = useState(false);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [especialidade, setEspecialidade] = useState(null);
+  const params = useParams();
+  const especialidadeId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -38,23 +45,40 @@ export default function EditarEspecialidade() {
     },
   });
 
-  //   try {
-  //     console.log("Usuário", values);
-  //     await createUsuario(values);
+  const router = useRouter();
 
-  //     router.push("/painel/usuarios?status=success");
-  //   } catch (error: any) {
-  //     const errorMessage =
-  //       error.response?.data?.message || "Erro ao salvar usuário";
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        if (!especialidadeId) redirect("/painel/especialidades");
+        const data = await getEspecialidadeById(especialidadeId);
+        setEspecialidade(data);
+        console.log(data);
 
-  //     // Exibindo toast de erro
-  //     toast.error(errorMessage);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  //   console.log(values);
-  //   setLoading(false);
-  // };
+        form.reset({
+          nome: data.nome,
+          codigo: data.codigo,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar usuário:", error);
+      }
+    }
+  }, []);
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    try {
+      if (!especialidadeId) redirect("/painel/especialidade");
+
+      const data = await updateEspecialidade(especialidadeId, values);
+
+      router.push("/painel/especialidade?status=updated");
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="container mx-auto">
