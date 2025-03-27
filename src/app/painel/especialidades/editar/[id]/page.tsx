@@ -14,11 +14,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { http } from "@/util/http";
 import { redirect, useParams } from "next/navigation";
 
 //api
@@ -53,7 +51,6 @@ export default function EditarEspecialidade() {
         if (!especialidadeId) redirect("/painel/especialidades");
         const data = await getEspecialidadeById(especialidadeId);
         setEspecialidade(data);
-        console.log(data);
 
         form.reset({
           nome: data.nome,
@@ -63,6 +60,7 @@ export default function EditarEspecialidade() {
         console.error("Erro ao carregar usuário:", error);
       }
     }
+    fetchData();
   }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -72,7 +70,7 @@ export default function EditarEspecialidade() {
 
       const data = await updateEspecialidade(especialidadeId, values);
 
-      router.push("/painel/especialidade?status=updated");
+      router.push("/painel/especialidades?status=updated");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -92,7 +90,7 @@ export default function EditarEspecialidade() {
       <h1 className="text-2xl font-bold mb-6 mt-5">Editar Especialidade</h1>
 
       <Form {...form}>
-        <form className="space-y-4">
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           {/* Campos de Nome e Código */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
