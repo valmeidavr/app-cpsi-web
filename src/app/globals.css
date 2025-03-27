@@ -99,3 +99,8 @@ body {
 .p-4 {
   padding: 0.7rem;
 }
+
+.h-12-1 {
+  text-align: center;
+  vertical-align: middle;
+}
