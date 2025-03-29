@@ -46,7 +46,7 @@ export async function createUsuario({
 }
 
 export async function getUsuarioById(id: string) {
-  const { data } = await httpServer.get(`http://localhost:3000/users/${id}`);
+  const { data } = await httpServer.get(`/users/${id}`);
   return data;
 }
 
@@ -54,7 +54,7 @@ export async function updateUsuario(id: string, body: updateUsuariosPayload) {
   try {
     body.grupoIds = Object.values(body.grupoIds);
     const { data } = await httpServer.patch(
-      `http://localhost:3000/users/${id}`,
+      `/users/${id}`,
       body
     );
     revalidatePath("painel/usuarios?status=success");
@@ -71,7 +71,7 @@ export async function updateUsuario(id: string, body: updateUsuariosPayload) {
 export async function deleteUsuario(id: number) {
   try {
     const response = await httpServer.delete(
-      `http://localhost:3000/users/${id}`
+      `/users/${id}`
     );
     revalidatePath("painel/usuarios");
   } catch {

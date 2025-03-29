@@ -39,7 +39,7 @@ export default function UsuarioRegistrationForm() {
   useEffect(() => {
     async function fetchSistemas() {
       try {
-        const { data } = await http.get("http://localhost:3000/sistemas");
+        const { data } = await http.get("/sistemas");
         setSistemas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Erro ao carregar sistemas:", error);
@@ -107,7 +107,7 @@ export default function UsuarioRegistrationForm() {
     setIsCheckingEmail(true);
     try {
       const { data } = await http.get(
-        `http://localhost:3000/users/findByEmail/${email}`
+        `/users/findByEmail/${email}`
       );
       if (data) {
         setEmailError("Este email já está em uso.");

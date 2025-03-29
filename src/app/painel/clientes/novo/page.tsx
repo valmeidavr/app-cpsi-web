@@ -106,7 +106,7 @@ export default function CustomerRegistrationForm() {
     setIsCheckingEmail(true);
     try {
       const { data } = await http.get(
-        `http://localhost:3000/clientes/findByEmail/${email}`
+        `/clientes/findByEmail/${email}`
       );
       if (data) {
         setEmailError("Este email já está em uso.");
@@ -130,7 +130,7 @@ export default function CustomerRegistrationForm() {
     setIsCheckingCpf(true);
     try {
       const { data } = await http.get(
-        `http://localhost:3000/clientes/findByCpf/${cpf}`
+        `/clientes/findByCpf/${cpf}`
       );
       if (data) {
         setCpfError("Este cpf já está em uso.");

@@ -81,7 +81,7 @@ export default function UsuarioUpdateForm() {
 
     async function fetchSistemas() {
       try {
-        const { data } = await http.get("http://localhost:3000/sistemas");
+        const { data } = await http.get("/sistemas");
         setSistemas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Erro ao carregar sistemas:", error);
