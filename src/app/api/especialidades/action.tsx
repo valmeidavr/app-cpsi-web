@@ -10,7 +10,7 @@ export async function getEspecialidades(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("http://localhost:3000/especialidades", {
+  const { data } = await http.get("/especialidades", {
     params: { page, limit, search },
   });
   return data;
@@ -30,7 +30,7 @@ export async function createEspecialidade({
 }: createEspecialidadePayload) {
   console.log("body", nome, codigo);
   try {
-    await httpServer.post("http://localhost:3000/especialidades", {
+    await httpServer.post("/especialidades", {
       nome,
       codigo,
     });
@@ -44,7 +44,7 @@ export async function createEspecialidade({
 }
 
 export async function getEspecialidadeById(id: string) {
-  const { data } = await http.get(`http://localhost:3000/especialidades/${id}`);
+  const { data } = await http.get(`/especialidades/${id}`);
   return data;
 }
 
@@ -55,7 +55,7 @@ export async function updateEspecialidade(
   console.log(body);
   try {
     const { data } = await httpServer.patch(
-      `http://localhost:3000/especialidades/${id}`,
+      `/especialidades/${id}`,
       body
     );
     revalidatePath("painel/especialidades?status=success");
@@ -72,7 +72,7 @@ export async function updateEspecialidade(
 export async function deleteEspecialidade(id: number) {
   try {
     const response = await http.delete(
-      `http://localhost:3000/especialidades/${id}`
+      `/especialidades/${id}`
     );
     revalidatePath("painel/especialidades");
   } catch {

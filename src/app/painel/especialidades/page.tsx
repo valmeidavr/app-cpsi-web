@@ -49,7 +49,7 @@ export default function Especialidades() {
   const carregarEspecialidades = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/especialidades", {
+      const { data } = await http.get("/especialidades", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
