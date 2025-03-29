@@ -1,7 +1,15 @@
 "use client";
+
+//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+
+//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -15,21 +23,19 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
-import { redirect, useParams } from "next/navigation";
 
-//api
+//API
 import {
-  createEspecialidade,
   getEspecialidadeById,
   updateEspecialidade,
 } from "@/app/api/especialidades/action";
 import { formSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
+//Helpers
+import { redirect, useParams } from "next/navigation";
+
 export default function EditarEspecialidade() {
   const [loading, setLoading] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [especialidade, setEspecialidade] = useState(null);
   const params = useParams();
   const especialidadeId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -61,12 +67,13 @@ export default function EditarEspecialidade() {
       }
     }
     fetchData();
+    fetchData();
   }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      if (!especialidadeId) redirect("/painel/especialidade");
+      if (!especialidadeId) redirect("/painel/especialidades");
 
       const data = await updateEspecialidade(especialidadeId, values);
 
@@ -90,7 +97,7 @@ export default function EditarEspecialidade() {
       <h1 className="text-2xl font-bold mb-6 mt-5">Editar Especialidade</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* Campos de Nome e Código */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
