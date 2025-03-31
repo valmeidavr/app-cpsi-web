@@ -10,10 +10,9 @@ export async function getEspecialidades(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await httpServer.get("http://localhost:3000/especialidades", {
+  const { data } = await httpServer.get("/especialidades", {
     params: { page, limit, search },
   });
-  console.log("especialidades", data);
   return data;
 }
 
@@ -29,7 +28,6 @@ export async function createEspecialidade({
   nome,
   codigo,
 }: createEspecialidadePayload) {
-  console.log("body", nome, codigo);
   try {
     await httpServer.post("/especialidades", {
       nome,
@@ -53,7 +51,7 @@ export async function updateEspecialidade(
   id: string,
   body: updateEspecialidadePayload
 ) {
-  console.log(body);
+
   try {
     const { data } = await httpServer.patch(
       `/especialidades/${id}`,

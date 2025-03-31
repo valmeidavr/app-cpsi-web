@@ -60,7 +60,7 @@ export default function NovoProcedimento() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      console.log("Procedimento", values);
+
       await createProcedimento({
         ...values,
         especialidadeId: Number(values.especialidadeId),
@@ -81,17 +81,15 @@ export default function NovoProcedimento() {
     } finally {
       setLoading(false);
     }
-    console.log(values);
     setLoading(false);
   };
 
   const fetchEspecialidade = async () => {
     try {
       const { data } = await http.get(
-        "http://localhost:3000/especialidades",
+        "/especialidades",
         {}
       );
-      console.log(data.data);
 
       setEspecialidadeOptions(data.data);
     } catch (error: any) {}

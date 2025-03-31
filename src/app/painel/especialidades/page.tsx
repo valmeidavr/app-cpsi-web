@@ -81,7 +81,7 @@ export default function Especialidades() {
 
     try {
       await http.patch(
-        `http://localhost:3000/especialidades/${especialidadeSelecionada.id}`,
+        `/especialidades/${especialidadeSelecionada.id}`,
         {
           status: novoStatus,
         }

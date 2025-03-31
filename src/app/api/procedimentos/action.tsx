@@ -9,7 +9,7 @@ export async function getProcedimentos(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await httpServer.get("http://localhost:3000/procedimentos", {
+  const { data } = await httpServer.get("/procedimentos", {
     params: { page, limit, search },
   });
   return data;
@@ -33,15 +33,14 @@ export async function createProcedimento({
   tipo,
   especialidadeId
 }: createProcedimentoPayload) {
-  console.log("body", nome, codigo, tipo, especialidadeId);
+;
   try {
-    const { data } = await httpServer.post("http://localhost:3000/procedimentos", {
+    const { data } = await httpServer.post("/procedimentos", {
       nome,
       codigo,
       tipo,
       especialidadeId,
     });
-    console.log("response:", data)
     revalidatePath("/painel/procedimentos");
   } catch (error: any) {
     console.error("Erro ao criar procedimento:", error);
@@ -50,7 +49,7 @@ export async function createProcedimento({
 
 export async function getProcedimentoById(id: string) {
   const { data } = await httpServer.get(
-    `http://localhost:3000/procedimentos/${id}`
+    `/procedimentos/${id}`
   );
   return data;
 }
@@ -59,10 +58,9 @@ export async function updateProcedimento(
   id: string,
   body: updateProcedimentoPayload
 ) {
-  console.log("body",body);
   try {
     const { data } = await httpServer.patch(
-      `http://localhost:3000/procedimentos/${id}`,
+      `/procedimentos/${id}`,
       body
     );
     revalidatePath("painel/procedimentos");

@@ -58,7 +58,7 @@ export default function Procedimentos() {
   const carregarProcedimentos = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/procedimentos", {
+      const { data } = await http.get("/procedimentos", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
@@ -83,7 +83,7 @@ export default function Procedimentos() {
       procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
       await http.patch(
-        `http://localhost:3000/procedimentos/${procedimentoSelecionado.id}`,
+        `/procedimentos/${procedimentoSelecionado.id}`,
         {
           status: novoStatus,
         }

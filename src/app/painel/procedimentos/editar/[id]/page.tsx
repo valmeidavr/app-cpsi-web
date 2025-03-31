@@ -116,7 +116,7 @@ export default function NovoProcedimento() {
   const fetchEspecialidade = async () => {
     try {
       const { data } = await http.get(
-        "http://localhost:3000/especialidades",
+        "/especialidades",
         {}
       );
       setEspecialidadeOptions(data.data);
