@@ -19,7 +19,7 @@ export const formSchema = z.object({
 
   tipo: z.string().min(1, { message: "Tipo é obrigatório" }).default(""),
 
-  especialidadeTeste: z.string().default(""), //Somente para testar o select com dados mockados
-
-  especialidadeId: z.record(z.number().optional()).optional(),
+  especialidadeId: z
+    .union([z.string(), z.number()])
+    .transform((val) => Number(val)),
 });

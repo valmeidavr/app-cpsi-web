@@ -10,9 +10,10 @@ export async function getEspecialidades(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/especialidades", {
+  const { data } = await httpServer.get("http://localhost:3000/especialidades", {
     params: { page, limit, search },
   });
+  console.log("especialidades", data);
   return data;
 }
 

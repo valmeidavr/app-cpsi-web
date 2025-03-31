@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { http } from "@/util/http";
+import { toast } from "sonner";
 
 // ✅ Definir o tipo Procedimentos
 interface Procedimento {
@@ -54,102 +55,92 @@ export default function Procedimentos() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
 
-  // Mockup de procedimentos
-  const procedimento: Procedimento[] = [
-    {
-      id: 1,
-      nome: "Radioterapia Convencional",
-      codigo: 1001,
-      tipo: "SESSÃO",
-      status: "Ativo",
-    },
-    {
-      id: 2,
-      nome: "Holter cardiaco",
-      codigo: 2002,
-      tipo: "SESSÃO",
-      status: "Ativo",
-    },
-    {
-      id: 3,
-      nome: "Fisioterapia Respiratória",
-      codigo: 3050,
-      tipo: "MENSAL",
-      status: "Inativo",
-    },
-    {
-      id: 4,
-      nome: "Hemodiálise",
-      codigo: 4100,
-      tipo: "MENSAL",
-      status: "Ativo",
-    },
-    {
-      id: 5,
-      nome: "Mapeamento de pressão",
-      codigo: 5005,
-      tipo: "SESSÃO",
-      status: "Ativo",
-    },
-  ];
+  const carregarProcedimentos = async () => {
+    setCarregando(true);
+    try {
+      const { data } = await http.get("http://localhost:3000/procedimentos", {
+        params: {
+          page: paginaAtual + 1,
+          limit: 5,
+          search: termoBusca,
+        },
+      });
 
-  // const carregarProcedimentos = async () => {
-  //   setCarregando(true);
-  //   try {
-  //     const { data } = await http.get("/procedimentos", {
-  //       params: {
-  //         page: paginaAtual + 1,
-  //         limit: 5,
-  //         search: termoBusca,
-  //       },
-  //     });
+      setProcedimentos(data.data);
+      setTotalPaginas(data.totalPages);
+      setTotalProcedimentos(data.total);
+    } catch (error) {
+      console.error("Erro ao buscar procedimentos:", error);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-  //     setProcedimentos(data.data);
-  //     setTotalPaginas(data.totalPages);
-  //     setTotalProcedimentos(data.total);
-  //   } catch (error) {
-  //     console.error("Erro ao buscar procedimentos:", error);
-  //   } finally {
-  //     setCarregando(false);
-  //   }
-  // };
-
-  // // ✅ Atualiza status do procedimento (Ativo/Inativo)
-  // const alterarStatusProcedimento = async () => {
-  //   if (!procedimentoSelecionado) return;
-  //   setLoadingInativar(true);
-  //   const novoStatus =
-  //     procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
-
-  //   try {
-  //     await http.patch(
-  //       `http://localhost:3000/procedimentos/${procedimentoSelecionado.id}`,
-  //       {
-  //         status: novoStatus,
-  //       }
-  //     );
-  //     setProcedimentos((procedimentos) =>
-  //       procedimentos.map((procedimento) =>
-  //         procedimento.id === procedimentoSelecionado.id
-  //           ? { ...procedimento, status: novoStatus }
-  //           : procedimento
-  //       )
-  //     );
-  //     setIsDialogOpen(false);
-  //   } catch (error) {
-  //     console.error("Erro ao alterar status do procedimento:", error);
-  //   } finally {
-  //     setLoadingInativar(false);
-  //   }
-  // };
+  const alterarStatusProcedimento = async () => {
+    if (!procedimentoSelecionado) return;
+    setLoadingInativar(true);
+    const novoStatus =
+      procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
+    try {
+      await http.patch(
+        `http://localhost:3000/procedimentos/${procedimentoSelecionado.id}`,
+        {
+          status: novoStatus,
+        }
+      );
+      setProcedimentos((procedimentos) =>
+        procedimentos.map((procedimento) =>
+          procedimento.id === procedimentoSelecionado.id
+            ? { ...procedimento, status: novoStatus }
+            : procedimento
+        )
+      );
+      toast.success(
+        `Status do procedimento alterado para ${novoStatus} com sucesso!`,
+        {
+          style: {
+            backgroundColor: "green", // Estilos diretamente aplicados
+            color: "white",
+            padding: "1rem",
+            borderLeft: "4px solid green",
+          },
+        }
+      );
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao alterar status do procedimento:", error);
+    } finally {
+      setLoadingInativar(false);
+    }
+  };
 
   useEffect(() => {
-    // carregarProcedimentos();
+    carregarProcedimentos();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message, {
+        style: {
+          backgroundColor: "green", // Estilos diretamente aplicados
+          color: "white",
+          padding: "1rem",
+          borderLeft: "4px solid green",
+        },
+      });
+    } else if (type == "error") {
+      toast.error(message, {
+        className: "toast-error",
+      });
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    // carregarProcedimentos();
+    carregarProcedimentos();
   };
 
   return (
@@ -208,7 +199,7 @@ export default function Procedimentos() {
               </TableRow>
             </TableHeader>
             <TableBody className="text-center">
-              {procedimento.map((procedimento) => (
+              {procedimentos.map((procedimento) => (
                 <TableRow
                   key={procedimento.id}
                   className={"odd:bg-gray-100 even:bg-white"}
@@ -366,7 +357,7 @@ export default function Procedimentos() {
             </Button>
             <Button
               variant="default"
-              // onClick={alterarStatusProcedimento}
+              onClick={alterarStatusProcedimento}
               disabled={loadingInativar}
             >
               {loadingInativar ? (

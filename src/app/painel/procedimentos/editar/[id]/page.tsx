@@ -35,15 +35,22 @@ import {
 import {
   getProcedimentoById,
   updateProcedimento,
+  updateProcedimentoPayload,
 } from "@/app/api/procedimentos/action";
 import { formSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
+import { http } from "@/util/http";
+import { EspecialidadeDTO } from "@/app/types/Especialidade";
 
 export default function NovoProcedimento() {
   const [loading, setLoading] = useState(false);
-  const [procedimento, setProcedimento] = useState(null);
+  const [procedimento, setProcedimento] =
+    useState<updateProcedimentoPayload | null>(null);
+  const [especialidadeOptions, setEspecialidadeOptions] = useState<
+    EspecialidadeDTO[]
+  >([]);
   const params = useParams();
   const procedimentoId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -51,60 +58,74 @@ export default function NovoProcedimento() {
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
-      nome: "Holter Cardiaco",
-      codigo: "2002",
-      tipo: "SESSÃO",
-      especialidadeTeste: "Cardiologista",
+      nome: "",
+      codigo: "",
+      tipo: "",
+      especialidadeId: 0,
     },
   });
 
   const router = useRouter();
 
-  // useEffect(() => {
-  //   async function fetchData() {
-  //     try {
-  //       if (!procedimentoId) redirect("/painel/procedimentos");
-  //       const data = await getProcedimentoById(procedimentoId);
-  //       setProcedimento(data);
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        if (!procedimentoId) redirect("/painel/procedimentos");
+        await fetchEspecialidade();
+        const data = await getProcedimentoById(procedimentoId);
+        setProcedimento(data);
+        form.reset({
+          nome: data.nome,
+          codigo: data.codigo,
+          tipo: data.tipo,
+          especialidadeId: data.especialidadeId
+            ? data.especialidadeId.toString()
+            : 0,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar procedimento:", error);
+      }
+    }
+    fetchData();
+  }, []);
 
-  //       form.reset({
-  //         nome: data.nome,
-  //         codigo: data.codigo,
-  //       });
-  //     } catch (error) {
-  //       console.error("Erro ao carregar procedimento:", error);
-  //     }
-  //   }
-  //   fetchData();
-  // }, []);
 
-  // const onSubmit = async (values: z.infer<typeof formSchema>) => {
-  //   setLoading(true);
-  //   try {
-  //     if (!procedimentoId) redirect("/painel/procedimentos");
+  
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    try {
+      if (!procedimentoId) redirect("/painel/procedimentos");
 
-  //     const data = await updateProcedimento(procedimentoId, values);
+      const data = await updateProcedimento(procedimentoId, {
+        ...values,
+        especialidadeId: Number(values.especialidadeId),
+      });
+      const queryParams = new URLSearchParams();
 
-  //     router.push("/painel/procedimento?status=updated");
-  //   } catch (error: any) {
-  //     toast.error(error.message);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
+      queryParams.set("type", "success");
+      queryParams.set("message", "Procedimento Atualizado com Sucesso");
 
+      router.push(`/painel/procedimentos?${queryParams.toString()}`);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchEspecialidade = async () => {
+    try {
+      const { data } = await http.get(
+        "http://localhost:3000/especialidades",
+        {}
+      );
+      setEspecialidadeOptions(data.data);
+    } catch (error: any) {}
+  };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
-    { value: "SESSÃO", label: "SESSÃO" },
+    { value: "SESSAO", label: "SESSÃO" },
     { value: "MENSAL", label: "MENSAL" },
-  ];
-
-  // Mockup de opçoes de Especialidade
-  const especialidadeOptions = [
-    { value: "Cardiologista", label: "Cardiologista" },
-    { value: "Fisioterapeuta", label: "Fisioterapeuta" },
-    { value: "Radiologista", label: "Radiologista" },
-    { value: "Nefrologista", label: "Nefrologista" },
   ];
 
   return (
@@ -119,10 +140,7 @@ export default function NovoProcedimento() {
       <h1 className="text-2xl font-bold mb-6 mt-5">Editar Procedimento</h1>
 
       <Form {...form}>
-        <form className="space-y-4">
-          {" "}
-          {/*onSubmit={form.handleSubmit(onSubmit)}*/}
-          {/* Campos de Nome e Código */}
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
@@ -202,17 +220,19 @@ export default function NovoProcedimento() {
 
             <FormField
               control={form.control}
-              name="especialidadeTeste"
+              name="especialidadeId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especialidade *</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
+                    value={field.value ? field.value.toString() : ""}
+                    onValueChange={(value) => {
+                      field.onChange(Number(value));
+                    }} 
                   >
                     <FormControl
                       className={
-                        form.formState.errors.especialidadeTeste
+                        form.formState.errors.especialidadeId
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -223,8 +243,11 @@ export default function NovoProcedimento() {
                     </FormControl>
                     <SelectContent>
                       {especialidadeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                        <SelectItem
+                          key={option.id}
+                          value={option.id.toString()}
+                        >
+                          {option.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>

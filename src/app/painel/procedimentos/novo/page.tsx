@@ -1,7 +1,7 @@
 "use client";
 
 //React
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 //Zod
@@ -36,10 +36,15 @@ import { formSchema } from "@/app/api/procedimentos/schema/formSchemaProcediment
 
 //Helpers
 import { useRouter } from "next/navigation";
+import { getEspecialidades } from "@/app/api/especialidades/action";
+import { http } from "@/util/http";
+import { EspecialidadeDTO } from "@/app/types/Especialidade";
 
 export default function NovoProcedimento() {
   const [loading, setLoading] = useState(false);
-
+  const [especialidadeOptions, setEspecialidadeOptions] = useState<
+    EspecialidadeDTO[]
+  >([]);
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -48,44 +53,58 @@ export default function NovoProcedimento() {
       nome: "",
       codigo: "",
       tipo: "",
-      especialidadeTeste: "",
+      especialidadeId: 0,
     },
   });
 
-  // const onSubmit = async (values: z.infer<typeof formSchema>) => {
-  //   setLoading(true);
-  //   try {
-  //     console.log("Procedimento", values);
-  //     await createProcedimento(values);
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setLoading(true);
+    try {
+      console.log("Procedimento", values);
+      await createProcedimento({
+        ...values,
+        especialidadeId: Number(values.especialidadeId),
+      });
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
 
-  //     router.push("/painel/procedimentos?status=success");
-  //   } catch (error: any) {
-  //     const errorMessage =
-  //       error.response?.data?.message || "Erro ao salvar procedimento";
+      queryParams.set("type", "success");
+      queryParams.set("message", "salvo com sucesso");
 
-  //     // Exibindo toast de erro
-  //     toast.error(errorMessage);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  //   console.log(values);
-  //   setLoading(false);
-  // };
+      router.push(`/painel/procedimentos?${queryParams.toString()}`);
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Erro ao salvar procedimento";
 
+      // Exibindo toast de erro
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+    console.log(values);
+    setLoading(false);
+  };
+
+  const fetchEspecialidade = async () => {
+    try {
+      const { data } = await http.get(
+        "http://localhost:3000/especialidades",
+        {}
+      );
+      console.log(data.data);
+
+      setEspecialidadeOptions(data.data);
+    } catch (error: any) {}
+  };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
-    { value: "SESSÃO", label: "SESSÃO" },
+    { value: "SESSAO", label: "SESSÃO" },
     { value: "MENSAL", label: "MENSAL" },
   ];
 
-  // Mockup de opçoes de Especialidade
-  const especialidadeOptions = [
-    { value: "Cardiologista", label: "Cardiologista" },
-    { value: "Fisioterapeuta", label: "Fisioterapeuta" },
-    { value: "Radiologista", label: "Radiologista" },
-    { value: "Nefrologista", label: "Nefrologista" },
-  ];
-
+  useEffect(() => {
+    fetchEspecialidade();
+  }, []);
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -98,10 +117,7 @@ export default function NovoProcedimento() {
       <h1 className="text-2xl font-bold mb-6 mt-5">Novo Procedimento</h1>
 
       <Form {...form}>
-        <form className="space-y-4">
-          {" "}
-          {/*onSubmit={form.handleSubmit(onSubmit)}*/}
-          {/* Campos de Nome e Código */}
+        <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
@@ -181,17 +197,16 @@ export default function NovoProcedimento() {
 
             <FormField
               control={form.control}
-              name="especialidadeTeste"
+              name="especialidadeId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especialidade *</FormLabel>
                   <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
+                    onValueChange={(value) => field.onChange(Number(value))}
                   >
                     <FormControl
                       className={
-                        form.formState.errors.especialidadeTeste
+                        form.formState.errors.especialidadeId
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -202,8 +217,11 @@ export default function NovoProcedimento() {
                     </FormControl>
                     <SelectContent>
                       {especialidadeOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                        <SelectItem
+                          key={option.id}
+                          value={option.id.toString()}
+                        >
+                          {option.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>

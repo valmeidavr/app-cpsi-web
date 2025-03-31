@@ -9,7 +9,7 @@ export async function getProcedimentos(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await httpServer.get("/procedimentos", {
+  const { data } = await httpServer.get("http://localhost:3000/procedimentos", {
     params: { page, limit, search },
   });
   return data;
@@ -18,30 +18,40 @@ export async function getProcedimentos(
 type createProcedimentoPayload = {
   nome: string;
   codigo: string;
+  tipo: string;
+  especialidadeId: number
 };
-type updateProcedimentoPayload = {
+export type updateProcedimentoPayload = {
   nome: string;
   codigo: string;
+  tipo: string;
+  especialidadeId: number;
 };
 export async function createProcedimento({
   nome,
   codigo,
+  tipo,
+  especialidadeId
 }: createProcedimentoPayload) {
-  console.log("body", nome, codigo);
+  console.log("body", nome, codigo, tipo, especialidadeId);
   try {
-    await httpServer.post("/procedimentos", {
+    const { data } = await httpServer.post("http://localhost:3000/procedimentos", {
       nome,
       codigo,
+      tipo,
+      especialidadeId,
     });
+    console.log("response:", data)
     revalidatePath("/painel/procedimentos");
   } catch (error: any) {
     console.error("Erro ao criar procedimento:", error);
-    toast.error(error.response?.data?.message || "Erro ao criar procedimento.");
   }
 }
 
 export async function getProcedimentoById(id: string) {
-  const { data } = await httpServer.get(`/procedimentos/${id}`);
+  const { data } = await httpServer.get(
+    `http://localhost:3000/procedimentos/${id}`
+  );
   return data;
 }
 
@@ -49,10 +59,13 @@ export async function updateProcedimento(
   id: string,
   body: updateProcedimentoPayload
 ) {
-  console.log(body);
+  console.log("body",body);
   try {
-    const { data } = await httpServer.patch(`/procedimentos/${id}`, body);
-    revalidatePath("painel/procedimentos?status=success");
+    const { data } = await httpServer.patch(
+      `http://localhost:3000/procedimentos/${id}`,
+      body
+    );
+    revalidatePath("painel/procedimentos");
     return data;
   } catch (error) {
     console.error("Erro no update:", error);
