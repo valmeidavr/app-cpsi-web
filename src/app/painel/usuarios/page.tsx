@@ -63,6 +63,7 @@ export default function UsuariosPage() {
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [loadingInativar, setLoadingInativar] = useState(false);
   const carregarUsuarios = async () => {
     setCarregando(true);
     try {
@@ -99,7 +100,7 @@ export default function UsuariosPage() {
 
   const deletarUsuario = async () => {
     if (!usuarioSelecionado) return;
-    setCarregando(true);
+    setLoadingInativar(true);
     try {
       await deleteUsuario(usuarioSelecionado.id);
       setUsuarios((prevUsuarios) =>
@@ -110,7 +111,7 @@ export default function UsuariosPage() {
     } catch (error) {
       console.error("Erro ao alterar status do cliente:", error);
     } finally {
-      setCarregando(false);
+      setLoadingInativar(false);
     }
   };
   return (
@@ -321,11 +322,20 @@ export default function UsuariosPage() {
               <Button
                 variant="secondary"
                 onClick={() => setIsDialogOpen(false)}
+                disabled={loadingInativar}
               >
                 Cancelar
               </Button>
-              <Button variant="destructive" onClick={() => deletarUsuario()}>
-                Deletar
+              <Button
+                variant="destructive"
+                onClick={() => deletarUsuario()}
+                disabled={loadingInativar}
+              >
+                {loadingInativar ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  "Deletar"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
