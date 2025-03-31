@@ -27,34 +27,38 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { http } from "@/util/http";
+import { toast } from "sonner";
 
-// ✅ Definir o tipo Especialidade
-interface Especialidade {
+// ✅ Definir o tipo Procedimentos
+interface Procedimento {
   id: number;
+  // especialidadeId: number;
   nome: string;
-  codigo: string;
+  codigo: number;
+  tipo: "SESSÃO" | "MENSAL";
   status: "Ativo" | "Inativo";
 }
 
-export default function Especialidades() {
-  const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
+export default function Procedimentos() {
+  const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalEspecialidades, setTotalEspecialidades] = useState(0);
+  const [totalProcedimentos, setTotalProcedimentos] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [especialidadeSelecionada, setEspecialidadeSelecionada] =
-    useState<Especialidade | null>(null);
+  const [procedimentoSelecionado, setProcedimentoSelecionado] =
+    useState<Procedimento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
 
-  const carregarEspecialidades = async () => {
+  const carregarProcedimentos = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/especialidades", {
+      const { data } = await http.get("/procedimentos", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
@@ -62,52 +66,81 @@ export default function Especialidades() {
         },
       });
 
-      setEspecialidades(data.data);
+      setProcedimentos(data.data);
       setTotalPaginas(data.totalPages);
-      setTotalEspecialidades(data.total);
+      setTotalProcedimentos(data.total);
     } catch (error) {
-      console.error("Erro ao buscar especialidades:", error);
+      console.error("Erro ao buscar procedimentos:", error);
     } finally {
       setCarregando(false);
     }
   };
 
-  // ✅ Atualiza status da especialidade (Ativo/Inativo)
-  const alterarStatusEspecialidade = async () => {
-    if (!especialidadeSelecionada) return;
+  const alterarStatusProcedimento = async () => {
+    if (!procedimentoSelecionado) return;
     setLoadingInativar(true);
     const novoStatus =
-      especialidadeSelecionada.status === "Ativo" ? "Inativo" : "Ativo";
-
+      procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
       await http.patch(
-        `/especialidades/${especialidadeSelecionada.id}`,
+        `/procedimentos/${procedimentoSelecionado.id}`,
         {
           status: novoStatus,
         }
       );
-      setEspecialidades((especialidades) =>
-        especialidades.map((especialidade) =>
-          especialidade.id === especialidadeSelecionada.id
-            ? { ...especialidade, status: novoStatus }
-            : especialidade
+      setProcedimentos((procedimentos) =>
+        procedimentos.map((procedimento) =>
+          procedimento.id === procedimentoSelecionado.id
+            ? { ...procedimento, status: novoStatus }
+            : procedimento
         )
+      );
+      toast.success(
+        `Status do procedimento alterado para ${novoStatus} com sucesso!`,
+        {
+          style: {
+            backgroundColor: "green", // Estilos diretamente aplicados
+            color: "white",
+            padding: "1rem",
+            borderLeft: "4px solid green",
+          },
+        }
       );
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao alterar status da especialidade:", error);
+      console.error("Erro ao alterar status do procedimento:", error);
     } finally {
       setLoadingInativar(false);
     }
   };
 
   useEffect(() => {
-    carregarEspecialidades();
+    carregarProcedimentos();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message, {
+        style: {
+          backgroundColor: "green", // Estilos diretamente aplicados
+          color: "white",
+          padding: "1rem",
+          borderLeft: "4px solid green",
+        },
+      });
+    } else if (type == "error") {
+      toast.error(message, {
+        className: "toast-error",
+      });
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    carregarEspecialidades();
+    carregarProcedimentos();
   };
 
   return (
@@ -115,17 +148,17 @@ export default function Especialidades() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Especialidades" },
+          { label: "Lista de Procedimentos" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Especialidades</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Procedimentos</h1>
 
-      {/* Barra de Pesquisa e Botão Nova Especialidade */}
+      {/* Barra de Pesquisa e Botão Novo Procedimento */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar especialidade"
+            placeholder="Pesquisar procedimento"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -136,11 +169,11 @@ export default function Especialidades() {
           </Button>
         </div>
 
-        {/* ✅ Botão Novo Cliente */}
+        {/* ✅ Botão Novo Procedimento */}
         <Button asChild>
-          <Link href="/painel/especialidades/novo">
+          <Link href="/painel/procedimentos/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Nova Especialidade
+            Novo Procedimento
           </Link>
         </Button>
       </div>
@@ -153,43 +186,48 @@ export default function Especialidades() {
         </div>
       ) : (
         <>
-          {/* Tabela de Especialidades */}
+          {/* Tabela de Procedimentos */}
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1">Especialidade</TableHead>
+                <TableHead className="h-12-1">Procedimento</TableHead>
                 <TableHead className="h-12-1">Código</TableHead>
+                <TableHead className="h-12-1">Tipo</TableHead>
                 <TableHead className="h-12-1">Status</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="text-center">
-              {especialidades.map((especialidade) => (
+              {procedimentos.map((procedimento) => (
                 <TableRow
-                  key={especialidade.id}
+                  key={procedimento.id}
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
-                  <TableCell>{especialidade.id}</TableCell>
-                  <TableCell>{especialidade.nome}</TableCell>
-                  <TableCell>{especialidade.codigo}</TableCell>
-                  <TableCell
+                  <TableCell>{procedimento.id}</TableCell>
+                  <TableCell>{procedimento.nome}</TableCell>
+                  <TableCell>{procedimento.codigo}</TableCell>
+                  <TableCell>
+                    <Badge>{procedimento.tipo}</Badge>
+                  </TableCell>
+                  <TableCell>{procedimento.status}</TableCell>
+                  {/* <TableCell
                     className={`${
-                      especialidade.status === "Ativo"
+                      procedimento.status === "Ativo"
                         ? "text-green-500"
                         : "text-red-500"
                     }`}
                   >
-                    {especialidade.status}
-                  </TableCell>
+                    {procedimento.status}
+                  </TableCell> */}
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
-                    {especialidade.status === "Ativo" && (
+                    {procedimento.status === "Ativo" && (
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
                             <Link
-                              href={`/painel/especialidades/editar/${especialidade.id}`}
+                              href={`/painel/procedimentos/editar/${procedimento.id}`}
                             >
                               <Button size="icon" variant="outline">
                                 <Edit className="h-5 w-5" />
@@ -201,7 +239,7 @@ export default function Especialidades() {
                               side="top"
                               className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                             >
-                              Editar Especialidade
+                              Editar Procedimento
                             </Tooltip.Content>
                           </Tooltip.Portal>
                         </Tooltip.Root>
@@ -215,13 +253,13 @@ export default function Especialidades() {
                             size="icon"
                             variant="outline"
                             onClick={() => {
-                              setEspecialidadeSelecionada(especialidade);
+                              setProcedimentoSelecionado(procedimento);
                               setIsDialogOpen(true);
                             }}
                           >
                             <Power
                               className={`h-5 w-5 ${
-                                especialidade.status === "Ativo"
+                                procedimento.status === "Ativo"
                                   ? "text-red-500"
                                   : "text-green-500"
                               }`}
@@ -233,9 +271,9 @@ export default function Especialidades() {
                             side="top"
                             className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                           >
-                            {especialidade.status === "Ativo"
-                              ? "Inativar Especialidade"
-                              : "Ativar Especialidade"}
+                            {procedimento.status === "Ativo"
+                              ? "Inativar Procedimento"
+                              : "Ativar Procedimento"}
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
@@ -245,11 +283,11 @@ export default function Especialidades() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Especialidades */}
+          {/* Totalizador de Procedimentos */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalEspecialidades)}{" "}
-              de {totalEspecialidades} especialidades
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalProcedimentos)} de{" "}
+              {totalProcedimentos} procedimentos
             </div>
           </div>
 
@@ -304,10 +342,10 @@ export default function Especialidades() {
           </DialogHeader>
           <p>
             Tem certeza que deseja{" "}
-            {especialidadeSelecionada?.status === "Ativo"
+            {procedimentoSelecionado?.status === "Ativo"
               ? "inativar"
               : "ativar"}{" "}
-            esta especialidade?
+            esta procedimento?
           </p>
           <DialogFooter>
             <Button
@@ -319,12 +357,12 @@ export default function Especialidades() {
             </Button>
             <Button
               variant="default"
-              onClick={alterarStatusEspecialidade}
+              onClick={alterarStatusProcedimento}
               disabled={loadingInativar}
             >
               {loadingInativar ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
-              ) : especialidadeSelecionada?.status === "Ativo" ? (
+              ) : procedimentoSelecionado?.status === "Ativo" ? (
                 "Inativar"
               ) : (
                 "Ativar"

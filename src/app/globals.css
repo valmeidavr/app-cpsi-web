@@ -29,6 +29,14 @@ body {
   @apply bg-background text-foreground;
 }
 
+.toast-success {
+  background-color: green;
+  color: white;
+  padding: 1rem;
+  border-left: 4px solid green;
+}
+
+ 
 /* 🔹 Define variáveis de cores para temas claro e escuro */
 @layer base {
   :root {

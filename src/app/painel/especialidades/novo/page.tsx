@@ -46,7 +46,6 @@ export default function NovaEspecialidade() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-      console.log("Especialidade", values);
       await createEspecialidade(values);
 
       router.push("/painel/especialidades?status=success");
@@ -59,7 +58,6 @@ export default function NovaEspecialidade() {
     } finally {
       setLoading(false);
     }
-    console.log(values);
     setLoading(false);
   };
 

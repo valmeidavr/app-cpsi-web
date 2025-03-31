@@ -81,7 +81,6 @@ export default function UsuarioRegistrationForm() {
       return;
     }
     try {
-      console.log("Usuário", values);
       await createUsuario(values);
 
       router.push("/painel/usuarios?status=success");
@@ -94,7 +93,7 @@ export default function UsuarioRegistrationForm() {
     } finally {
       setLoading(false);
     }
-    console.log(values);
+
     setLoading(false);
   };
 
