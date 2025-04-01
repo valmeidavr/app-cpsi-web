@@ -11,6 +11,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "BoxIcon",
+        "label": "Convenios",
+        "href": "/painel/convenios",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "BookXIcon",
         "label": "Especialidades",
         "href": "/painel/especialidades",
