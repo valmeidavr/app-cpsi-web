@@ -1,11 +1,11 @@
 "use server";
 
-import { httpServer } from "@/util/httpServer";
+import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
 export async function getUsuarios() {
-  const { data } = await httpServer.get("/users");
+  const { data } = await http.get("/users");
   return data;
 }
 
@@ -32,7 +32,7 @@ export async function createUsuario({
 }: createUsuariosPayload) {
   try {
      grupoIds = Object.values(grupoIds);
-    await httpServer.post("/users", {
+    await http.post("/users", {
       nome,
       email,
       senha,
@@ -46,14 +46,14 @@ export async function createUsuario({
 }
 
 export async function getUsuarioById(id: string) {
-  const { data } = await httpServer.get(`/users/${id}`);
+  const { data } = await http.get(`/users/${id}`);
   return data;
 }
 
 export async function updateUsuario(id: string, body: updateUsuariosPayload) {
   try {
     body.grupoIds = Object.values(body.grupoIds);
-    const { data } = await httpServer.patch(
+    const { data } = await http.patch(
       `/users/${id}`,
       body
     );
@@ -70,7 +70,7 @@ export async function updateUsuario(id: string, body: updateUsuariosPayload) {
 
 export async function deleteUsuario(id: number) {
   try {
-    const response = await httpServer.delete(
+    const response = await http.delete(
       `/users/${id}`
     );
     revalidatePath("painel/usuarios");

@@ -33,6 +33,12 @@
         "label": "Clientes",
         "href": "/painel/clientes",
         "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Users",
+        "label": "Tabela Faturamentos",
+        "href": "/painel/tabela_faturamentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]
   },
