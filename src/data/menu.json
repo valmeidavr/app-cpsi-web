@@ -11,6 +11,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "HandshakeIcon",
+        "label": "Convenios",
+        "href": "/painel/convenios",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "BookXIcon",
         "label": "Especialidades",
         "href": "/painel/especialidades",
@@ -35,7 +41,7 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "Users",
+        "icon": "TableIcon",
         "label": "Tabela Faturamentos",
         "href": "/painel/tabela_faturamentos",
         "requiredGroups": ["ADMIN", "GESTOR"]
@@ -43,7 +49,7 @@
     ]
   },
   {
-    "icon": "LockKeyhole",
+    "icon": "LockKeyholeIcon",
     "label": "Segurança",
     "href": "#",
     "subItems": [

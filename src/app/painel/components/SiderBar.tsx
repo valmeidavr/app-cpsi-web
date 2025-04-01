@@ -19,6 +19,9 @@ import {
   GraduationCap,
   CalendarCheck,
   LockKeyhole,
+  HandshakeIcon,
+  TableIcon,
+  LockKeyholeIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -42,6 +45,9 @@ const iconMap: { [key: string]: React.ElementType } = {
   Users,
   UserPlus,
   LockKeyhole,
+  HandshakeIcon,
+  TableIcon,
+  LockKeyholeIcon,
 };
 
 interface MenuItem {
