@@ -1,6 +1,6 @@
 "use server";
 
-import { httpServer } from "@/util/httpServer";
+import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
@@ -9,7 +9,7 @@ export async function getProcedimentos(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await httpServer.get("/procedimentos", {
+  const { data } = await http.get("/procedimentos", {
     params: { page, limit, search },
   });
   return data;
@@ -35,7 +35,7 @@ export async function createProcedimento({
 }: createProcedimentoPayload) {
 ;
   try {
-    const { data } = await httpServer.post("/procedimentos", {
+    const { data } = await http.post("/procedimentos", {
       nome,
       codigo,
       tipo,
@@ -48,7 +48,7 @@ export async function createProcedimento({
 }
 
 export async function getProcedimentoById(id: string) {
-  const { data } = await httpServer.get(
+  const { data } = await http.get(
     `/procedimentos/${id}`
   );
   return data;
@@ -59,7 +59,7 @@ export async function updateProcedimento(
   body: updateProcedimentoPayload
 ) {
   try {
-    const { data } = await httpServer.patch(
+    const { data } = await http.patch(
       `/procedimentos/${id}`,
       body
     );
@@ -76,7 +76,7 @@ export async function updateProcedimento(
 
 export async function deleteProcedimento(id: number) {
   try {
-    const response = await httpServer.delete(`/procedimentos/${id}`);
+    const response = await http.delete(`/procedimentos/${id}`);
     revalidatePath("painel/procedimentos");
   } catch {
     return {
