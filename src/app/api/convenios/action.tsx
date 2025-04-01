@@ -1,7 +1,6 @@
 "use server";
 
 import { http } from "@/util/http";
-import { httpServer } from "@/util/httpServer";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 
@@ -10,7 +9,7 @@ export async function getConvenios(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await httpServer.get("/convenios", {
+  const { data } = await http.get("/convenios", {
     params: { page, limit, search },
   });
   return data;
@@ -35,7 +34,7 @@ export async function createConvenio({
 
 }: createConvenioPayload) {
   try {
-    await httpServer.post("/convenios", {
+    await http.post("/convenios", {
       nome,
       regras,
       tabelaFaturamentosId
@@ -61,7 +60,7 @@ export async function updateConvenio(
 ) {
 
   try {
-    const { data } = await httpServer.patch(
+    const { data } = await http.patch(
       `/convenios/${id}`,
       body
     );

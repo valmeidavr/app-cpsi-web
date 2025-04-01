@@ -30,12 +30,14 @@ import {
 
 //Helpers
 import { http } from "@/util/http";
+import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
 
 // ✅ Definir o tipo convenio
 interface convenio {
   id: number;
   nome: string;
   regras: string;
+  tabelaFaturamentosId: number;
 }
 
 export default function Convenios() {
@@ -45,7 +47,9 @@ export default function Convenios() {
   const [totalconvenios, setTotalconvenios] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-
+  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
+    TabelaFaturamentoDTO[]
+  >([]);
 
   const carregarConvenios = async () => {
     setCarregando(true);
@@ -57,7 +61,6 @@ export default function Convenios() {
           search: termoBusca,
         },
       });
-
       setConvenios(data.data);
       setTotalPaginas(data.totalPages);
       setTotalconvenios(data.total);
@@ -68,9 +71,15 @@ export default function Convenios() {
     }
   };
 
- 
+  const fetchTabelaFaturamento = async () => {
+    try {
+      const { data } = await http.get("/tabela-faturamentos");
+      setTabelaFaturamento(data.data);
+    } catch (error: any) {}
+  };
 
   useEffect(() => {
+    fetchTabelaFaturamento();
     carregarConvenios();
   }, [paginaAtual]);
 
@@ -127,8 +136,11 @@ export default function Convenios() {
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1">convenio</TableHead>
+                <TableHead className="h-12-1 flex items-center justify-start">
+                  Convênio
+                </TableHead>
                 <TableHead className="h-12-1">Regra</TableHead>
+                <TableHead className="h-12-1">Tabela</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -139,35 +151,40 @@ export default function Convenios() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{convenio.id}</TableCell>
-                  <TableCell>{convenio.nome}</TableCell>
+                  <TableCell className="flex items-center justify-start">
+                    {convenio.nome}
+                  </TableCell>
                   <TableCell>{convenio.regras}</TableCell>
-                 
+                  {tabelaFaturamentos
+                    .filter(
+                      (tabela) => tabela.id == convenio.tabelaFaturamentosId
+                    )
+                    .map((tabela) => (
+                      <TableCell key={tabela.id}>{tabela.nome}</TableCell>
+                    ))}
+
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
-                    
-                      <Tooltip.Provider>
-                        <Tooltip.Root>
-                          <Tooltip.Trigger asChild>
-                            <Link
-                              href={`/painel/convenios/editar/${convenio.id}`}
-                            >
-                              <Button size="icon" variant="outline">
-                                <Edit className="h-5 w-5" />
-                              </Button>
-                            </Link>
-                          </Tooltip.Trigger>
-                          <Tooltip.Portal>
-                            <Tooltip.Content
-                              side="top"
-                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                            >
-                              Editar convenio
-                            </Tooltip.Content>
-                          </Tooltip.Portal>
-                        </Tooltip.Root>
-                      </Tooltip.Provider>
-                    
-                   
+                    <Tooltip.Provider>
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <Link
+                            href={`/painel/convenios/editar/${convenio.id}`}
+                          >
+                            <Button size="icon" variant="outline">
+                              <Edit className="h-5 w-5" />
+                            </Button>
+                          </Link>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Editar Convênio
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </Tooltip.Provider>
                   </TableCell>
                 </TableRow>
               ))}
@@ -176,8 +193,8 @@ export default function Convenios() {
           {/* Totalizador de convenios */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)}{" "}
-              de {totalconvenios} convenios
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
+              {totalconvenios} convenios
             </div>
           </div>
 
@@ -223,8 +240,6 @@ export default function Convenios() {
           </div>
         </>
       )}
-
-     
     </div>
   );
 }

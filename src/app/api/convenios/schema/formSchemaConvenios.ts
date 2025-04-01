@@ -12,5 +12,8 @@ export const formSchema = z.object({
   regras: z.string().min(1, { message: "O campo é obrigatório" }),
   tabelaFaturamentosId: z
     .union([z.string(), z.number()])
-    .transform((val) => Number(val)),
+    .transform((val) => Number(val))
+    .refine((val) => !isNaN(val) && val > 0, {
+      message: "O campo é obrigatório.",
+    }),
 });

@@ -25,21 +25,29 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import {
-  getConvenioById,
-  updateConvenio,
-} from "@/app/api/convenios/action";
+import { getConvenioById, updateConvenio } from "@/app/api/convenios/action";
 import { formSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
+import { http } from "@/util/http";
 
 export default function EditarConvenio() {
   const [loading, setLoading] = useState(false);
   const [convenio, setConvenio] = useState(null);
   const params = useParams();
   const convenioId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
+    TabelaFaturamentoDTO[]
+  >([]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -53,10 +61,19 @@ export default function EditarConvenio() {
 
   const router = useRouter();
 
+  const fetchTabelaFaturamento = async () => {
+    try {
+      const { data } = await http.get("/tabela-faturamentos", {});
+
+      setTabelaFaturamento(data.data);
+    } catch (error: any) {}
+  };
+
   useEffect(() => {
     async function fetchData() {
       try {
         if (!convenioId) redirect("/painel/convenios");
+        await fetchTabelaFaturamento();
         const data = await getConvenioById(convenioId);
         setConvenio(data);
 
@@ -69,7 +86,6 @@ export default function EditarConvenio() {
         console.error("Erro ao carregar usuário:", error);
       }
     }
-    fetchData();
     fetchData();
   }, []);
 
@@ -88,12 +104,11 @@ export default function EditarConvenio() {
     }
   };
 
-
-    const regrasOption = [
-      { value: "CONVENIO", label: "CONVÊNIO" },
-      { value: "AAPVR", label: "AAPVR" },
-      { value: "PARTICULAR", label: "PARTICULAR" },
-    ];
+  const regrasOption = [
+    { value: "CONVENIO", label: "CONVÊNIO" },
+    { value: "AAPVR", label: "AAPVR" },
+    { value: "PARTICULAR", label: "PARTICULAR" },
+  ];
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -114,7 +129,7 @@ export default function EditarConvenio() {
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Convenio *</FormLabel>
+                  <FormLabel>Nome *</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -135,7 +150,7 @@ export default function EditarConvenio() {
               name="regras"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo *</FormLabel>
+                  <FormLabel>Regras *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
@@ -168,7 +183,7 @@ export default function EditarConvenio() {
               name="tabelaFaturamentosId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Especialidade *</FormLabel>
+                  <FormLabel>Tabela *</FormLabel>
                   <Select
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
@@ -187,14 +202,14 @@ export default function EditarConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* {especialidadeOptions.map((option) => (
+                      {tabelaFaturamentos.map((option) => (
                         <SelectItem
                           key={option.id}
                           value={option.id.toString()}
                         >
                           {option.nome}
                         </SelectItem>
-                      ))} */}
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />

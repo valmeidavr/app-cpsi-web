@@ -1,7 +1,7 @@
 "use client";
 
 //React
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
 //Zod
@@ -34,9 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { http } from "@/util/http";
+import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
 
 export default function NovoConvenio() {
   const [loading, setLoading] = useState(false);
+  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
+    TabelaFaturamentoDTO[]
+  >([]);
 
   const router = useRouter();
   const form = useForm({
@@ -67,6 +72,18 @@ export default function NovoConvenio() {
     setLoading(false);
   };
 
+  const fetchTabelaFaturamento = async () => {
+    try {
+      const { data } = await http.get("/tabela-faturamentos", {});
+
+      setTabelaFaturamento(data.data);
+    } catch (error: any) {}
+  };
+
+  useEffect(() => {
+    fetchTabelaFaturamento();
+  }, []);
+
   const regrasOption = [
     { value: "CONVENIO", label: "CONVÊNIO" },
     { value: "AAPVR", label: "AAPVR" },
@@ -92,7 +109,7 @@ export default function NovoConvenio() {
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Convênio *</FormLabel>
+                  <FormLabel>Nome *</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -112,7 +129,7 @@ export default function NovoConvenio() {
               name="regras"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo *</FormLabel>
+                  <FormLabel>Regras *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
@@ -145,7 +162,7 @@ export default function NovoConvenio() {
               name="tabelaFaturamentosId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Especialidade *</FormLabel>
+                  <FormLabel>Tabela de Faturamento *</FormLabel>
                   <Select
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
@@ -164,14 +181,14 @@ export default function NovoConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {/* {especialidadeOptions.map((option) => (
+                      {tabelaFaturamentos.map((option) => (
                         <SelectItem
                           key={option.id}
                           value={option.id.toString()}
                         >
                           {option.nome}
                         </SelectItem>
-                      ))} */}
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />
