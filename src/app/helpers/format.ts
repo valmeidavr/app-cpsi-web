@@ -34,3 +34,23 @@ export const formatCPFInput = (value: string) => {
 
   return cpf.slice(0, 14); // Garante que não passe de 14 caracteres
 };
+export const formatRGInput = (value: string) => {
+  // Remove qualquer caractere não numérico
+  let rawValue = value.replace(/\D/g, "");
+
+  // Aplica a máscara do RG no formato XX.XXX.XXX-X
+  if (rawValue.length <= 2) {
+    return rawValue;
+  } else if (rawValue.length <= 5) {
+    return `${rawValue.slice(0, 2)}.${rawValue.slice(2)}`;
+  } else if (rawValue.length <= 8) {
+    return `${rawValue.slice(0, 2)}.${rawValue.slice(2, 5)}.${rawValue.slice(
+      5
+    )}`;
+  } else {
+    return `${rawValue.slice(0, 2)}.${rawValue.slice(2, 5)}.${rawValue.slice(
+      5,
+      8
+    )}-${rawValue.slice(8, 9)}`;
+  }
+};

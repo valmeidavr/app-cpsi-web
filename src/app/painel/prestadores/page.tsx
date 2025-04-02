@@ -32,19 +32,25 @@ import { Badge } from "@/components/ui/badge";
 //Helpers
 import { http } from "@/util/http";
 import { toast } from "sonner";
-import { PrestadorDTO } from "@/app/api/prestadores/action";
 
 
+interface PrestadorProps{
+  id: number | string,
+  nome: string,
+  cpf: string,
+  status: string,
+  celular: string
+}
 
 export default function Prestadores() {
-  const [prestadores, setPrestadores] = useState<PrestadorDTO[]>([]);
+  const [prestadores, setPrestadores] = useState<PrestadorProps[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalPrestadores, setTotalPrestadores] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [prestadorSelecionado, setPrestadorSelecionado] =
-    useState<PrestadorDTO | null>(null);
+    useState<PrestadorProps | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
 
@@ -88,17 +94,9 @@ export default function Prestadores() {
             : prestador
         )
       );
-      toast.success(
-        `Status do prestador alterado para ${novoStatus} com sucesso!`,
-        {
-          style: {
-            backgroundColor: "green", // Estilos diretamente aplicados
-            color: "white",
-            padding: "1rem",
-            borderLeft: "4px solid green",
-          },
-        }
-      );
+     novoStatus === "Ativo"
+       ? toast.success(`Status do cliente alterado para ${novoStatus}!`)
+       : toast.error(`Status do cliente alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do prestador:", error);
@@ -114,18 +112,9 @@ export default function Prestadores() {
     const type = params.get("type");
 
     if (message && type == "success") {
-      toast.success(message, {
-        style: {
-          backgroundColor: "green", // Estilos diretamente aplicados
-          color: "white",
-          padding: "1rem",
-          borderLeft: "4px solid green",
-        },
-      });
+      toast.success(message);
     } else if (type == "error") {
-      toast.error(message, {
-        className: "toast-error",
-      });
+      toast.error(message);
     }
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
@@ -199,12 +188,11 @@ export default function Prestadores() {
                 >
                   <TableCell>{prestador.id}</TableCell>
                   <TableCell>{prestador.nome}</TableCell>
-                  <TableCell>{prestador.}</TableCell>
+                  <TableCell>{prestador.cpf}</TableCell>
                   <TableCell>
-                    <Badge>{prestador.tipo}</Badge>
+                    <Badge>{prestador.celular}</Badge>
                   </TableCell>
-                  <TableCell>{prestador.status}</TableCell>
-                  {/* <TableCell
+                  <TableCell
                     className={`${
                       prestador.status === "Ativo"
                         ? "text-green-500"
@@ -212,7 +200,7 @@ export default function Prestadores() {
                     }`}
                   >
                     {prestador.status}
-                  </TableCell> */}
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
                     {prestador.status === "Ativo" && (
