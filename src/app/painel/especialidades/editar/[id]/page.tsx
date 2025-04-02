@@ -67,7 +67,6 @@ export default function EditarEspecialidade() {
       }
     }
     fetchData();
-    fetchData();
   }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {

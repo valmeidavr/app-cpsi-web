@@ -19,14 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+
 
 //Helpers
 import { toast } from "sonner";
@@ -108,7 +101,7 @@ export default function Convenios() {
           { label: "Lista de convenios" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de convenios</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
 
       {/* Barra de Pesquisa e Botão Nova convenio */}
       <div className="flex justify-between items-center mb-4">
@@ -130,7 +123,7 @@ export default function Convenios() {
         <Button asChild>
           <Link href="/painel/convenios/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Nova convenio
+            Novo Convênio
           </Link>
         </Button>
       </div>

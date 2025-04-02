@@ -14,7 +14,7 @@ http.interceptors.request.use(async (request) => {
     // Lado do servidor (usando cookies do Next.js)
     // O código para o servidor pode ser inserido aqui, no contexto correto
     const { cookies } = require("next/headers"); // Importação dinâmica para garantir que só seja usada no servidor
-    const cookiesStore = cookies();
+    const cookiesStore = await cookies(); // Await the cookies() function
     token = cookiesStore.get("accessToken")?.value;
   } else {
     // Lado do cliente (usando cookies do cliente com getCookie)
