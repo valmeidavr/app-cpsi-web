@@ -30,6 +30,7 @@ import {
 
 //Helpers
 import { http } from "@/util/http";
+import { toast } from "sonner";
 
 // ✅ Definir o tipo Especialidade
 interface Especialidade {
@@ -80,12 +81,9 @@ export default function Especialidades() {
       especialidadeSelecionada.status === "Ativo" ? "Inativo" : "Ativo";
 
     try {
-      await http.patch(
-        `/especialidades/${especialidadeSelecionada.id}`,
-        {
-          status: novoStatus,
-        }
-      );
+      await http.patch(`/especialidades/${especialidadeSelecionada.id}`, {
+        status: novoStatus,
+      });
       setEspecialidades((especialidades) =>
         especialidades.map((especialidade) =>
           especialidade.id === especialidadeSelecionada.id
@@ -93,6 +91,10 @@ export default function Especialidades() {
             : especialidade
         )
       );
+      novoStatus === "Ativo"
+        ? toast.success(`Status da especialidade alterado para ${novoStatus}!`)
+        : toast.error(`Status da especialidade alterado para ${novoStatus}!`);
+      setIsDialogOpen(false);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status da especialidade:", error);
@@ -103,6 +105,17 @@ export default function Especialidades() {
 
   useEffect(() => {
     carregarEspecialidades();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message);
+    } else if (type == "error") {
+      toast.error(message);
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {
