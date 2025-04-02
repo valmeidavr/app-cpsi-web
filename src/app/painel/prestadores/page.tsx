@@ -174,8 +174,8 @@ export default function Prestadores() {
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
                 <TableHead className="h-12-1">Prestador</TableHead>
-                <TableHead className="h-12-1">Código</TableHead>
-                <TableHead className="h-12-1">Tipo</TableHead>
+                <TableHead className="h-12-1">CPF</TableHead>
+                <TableHead className="h-12-1">Celular</TableHead>
                 <TableHead className="h-12-1">Status</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
