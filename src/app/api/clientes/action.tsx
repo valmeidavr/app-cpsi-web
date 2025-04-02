@@ -19,16 +19,17 @@ export async function createCliente(body: CreateCliente) {
       body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
     }
     body.cpf = limparCPF(String(body.cpf));
-    body.cep = limparCEP(String(body.cep));
+    if (body.cep) {
+      body.cep = limparCEP(String(body.cep));
+    }
+
     body.telefone1 = limparTelefone(String(body.telefone1));
     if (body.telefone2) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
 
     await http.post("/clientes", body);
-
-    toast.success("Cliente criado com sucesso!");
-    revalidatePath("/painel/clientes"); // 🔄 Revalida os dados para refletir a alteração
+    revalidatePath("/painel/clientes"); 
   } catch (error: any) {
     console.error("Erro ao criar cliente:", error);
     toast.error(error.response?.data?.message || "Erro ao criar cliente.");
@@ -65,7 +66,6 @@ export async function updateCliente(id: string, body: CreateCliente) {
     body.telefone2 = limparTelefone(String(body.telefone2));
 
     await http.patch(`/clientes/${id}`, body);
-    toast.success("Cliente atualizado com sucesso!");
     revalidatePath("painel/clientes");
   } catch (error) {
     return {

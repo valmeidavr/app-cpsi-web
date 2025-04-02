@@ -56,7 +56,7 @@ export default function Procedimentos() {
     useState<Procedimento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-
+  const [especialidades, setEspecialidades] = useState<EspecialidadeDTO[]>([]);
   const carregarProcedimentos = async () => {
     setCarregando(true);
     try {
@@ -76,6 +76,13 @@ export default function Procedimentos() {
     } finally {
       setCarregando(false);
     }
+  };
+
+  const fetchEspecialidades = async () => {
+    try {
+      const { data } = await http.get("/especialidades");
+      setEspecialidades(data.data);
+    } catch (error: any) {}
   };
 
   const alterarStatusProcedimento = async () => {
@@ -106,6 +113,7 @@ export default function Procedimentos() {
   };
 
   useEffect(() => {
+    fetchEspecialidades();
     carregarProcedimentos();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
@@ -194,7 +202,14 @@ export default function Procedimentos() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {procedimento.especialidadeId}
+                      {especialidades
+                        .filter(
+                          (especialidade) =>
+                            especialidade.id == procedimento.especialidadeId
+                        )
+                        .map((especialidade) => (
+                          <TableCell key={especialidade.id}>{especialidade.nome}</TableCell>
+                        ))}
                     </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">

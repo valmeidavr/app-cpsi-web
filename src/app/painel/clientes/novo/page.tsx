@@ -89,9 +89,9 @@ export default function CustomerRegistrationForm() {
       const queryParams = new URLSearchParams(currentUrl.search);
 
       queryParams.set("type", "success");
-      queryParams.set("message", "Especialidade salva com sucesso!");
+      queryParams.set("message", "Cliente salvo com sucesso!");
 
-      router.push(`/painel/especialidades?${queryParams.toString()}`);
+      router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar cliente";
