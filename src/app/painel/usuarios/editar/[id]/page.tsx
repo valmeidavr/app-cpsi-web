@@ -126,8 +126,12 @@ export default function UsuarioUpdateForm() {
       if (!userId) redirect("/painel/usuarios");
 
       const data = await updateUsuario(userId, values);
+      const queryParams = new URLSearchParams();
 
-      router.push("/painel/usuarios?status=updated");
+      queryParams.set("type", "success");
+      queryParams.set("message", "Usuário atualizado com sucesso!");
+
+      router.push(`/painel/usuarios?${queryParams.toString()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
