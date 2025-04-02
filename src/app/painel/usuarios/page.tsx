@@ -223,11 +223,12 @@ export default function UsuariosPage() {
                         </div>
                       ))}
                     </TableCell>
-                    <TableCell className="flex gap-2">
+                    <TableCell className="flex gap-2 justify-center items-center h-[83px] w-full">
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
                             <Link
+                              className="h-10"
                               href={`/painel/usuarios/editar/${usuario.id}`}
                             >
                               <Button size="icon" variant="outline">
