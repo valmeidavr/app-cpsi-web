@@ -96,7 +96,12 @@ export default function EditarConvenio() {
 
       const data = await updateConvenio(convenioId, values);
 
-      router.push("/painel/convenios?status=updated");
+      const queryParams = new URLSearchParams();
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Convênio atualizado com sucesso!");
+
+      router.push(`/painel/convenios?${queryParams.toString()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

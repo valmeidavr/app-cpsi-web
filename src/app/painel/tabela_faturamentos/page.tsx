@@ -97,17 +97,10 @@ export default function TabelaFaturamentos() {
     try {
       await createTabelaFaturamento(values);
       carregarTabelaFaturamentos();
-      toast.success("Tabela faturamento criada com sucesso!", {
-        style: {
-          backgroundColor: "green",
-          color: "white",
-          padding: "1rem",
-          borderLeft: "4px solid green",
-        },
-      });
+      toast.success("Tabela criada com sucesso!");
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar tabelaFaturamento";
+        error.response?.data?.message || "Erro ao salvar Tabela";
 
       // Exibindo toast de erro
       toast.error(errorMessage);
@@ -119,6 +112,17 @@ export default function TabelaFaturamentos() {
 
   useEffect(() => {
     carregarTabelaFaturamentos();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message);
+    } else if (type == "error") {
+      toast.error(message);
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
   return (
     <div className="container mx-auto">

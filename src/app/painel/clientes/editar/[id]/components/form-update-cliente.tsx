@@ -2,6 +2,7 @@
 //components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Form,
   FormControl,
@@ -84,11 +85,14 @@ const FormUpdateCliente = ({ cliente }: FormUpdateClienteProps) => {
     try {
       if (cliente.id) await updateCliente(cliente.id, values);
 
-      router.push(
-        "/painel/clientes?status=success&message=Usuario%20atualizado%20com%20sucesso"
-      );
-    } catch (error) {
-      console.error("Erro ao criar cliente:", error);
+      const queryParams = new URLSearchParams();
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Cliente atualizado com sucesso!");
+
+      router.push(`/painel/clientes?${queryParams.toString()}`);
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }

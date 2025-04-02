@@ -60,7 +60,6 @@ export default function NovoProcedimento() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
-
       await createProcedimento({
         ...values,
         especialidadeId: Number(values.especialidadeId),
@@ -69,7 +68,7 @@ export default function NovoProcedimento() {
       const queryParams = new URLSearchParams(currentUrl.search);
 
       queryParams.set("type", "success");
-      queryParams.set("message", "salvo com sucesso");
+      queryParams.set("message", "Procedimento salvo com sucesso!");
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error: any) {
@@ -86,10 +85,7 @@ export default function NovoProcedimento() {
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await http.get(
-        "/especialidades",
-        {}
-      );
+      const { data } = await http.get("/especialidades", {});
 
       setEspecialidadeOptions(data.data);
     } catch (error: any) {}

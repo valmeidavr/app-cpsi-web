@@ -33,10 +33,12 @@ import { Badge } from "@/components/ui/badge";
 import { http } from "@/util/http";
 import { toast } from "sonner";
 
+import { EspecialidadeDTO } from "@/app/types/Especialidade";
+
 // ✅ Definir o tipo Procedimentos
 interface Procedimento {
   id: number;
-  // especialidadeId: number;
+  especialidadeId: 0;
   nome: string;
   codigo: number;
   tipo: "SESSÃO" | "MENSAL";
@@ -82,12 +84,9 @@ export default function Procedimentos() {
     const novoStatus =
       procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
-      await http.patch(
-        `/procedimentos/${procedimentoSelecionado.id}`,
-        {
-          status: novoStatus,
-        }
-      );
+      await http.patch(`/procedimentos/${procedimentoSelecionado.id}`, {
+        status: novoStatus,
+      });
       setProcedimentos((procedimentos) =>
         procedimentos.map((procedimento) =>
           procedimento.id === procedimentoSelecionado.id
@@ -95,17 +94,9 @@ export default function Procedimentos() {
             : procedimento
         )
       );
-      toast.success(
-        `Status do procedimento alterado para ${novoStatus} com sucesso!`,
-        {
-          style: {
-            backgroundColor: "green", // Estilos diretamente aplicados
-            color: "white",
-            padding: "1rem",
-            borderLeft: "4px solid green",
-          },
-        }
-      );
+      novoStatus === "Ativo"
+        ? toast.success(`Status do procedimento alterado para ${novoStatus}!`)
+        : toast.error(`Status do procedimento alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do procedimento:", error);
@@ -121,18 +112,9 @@ export default function Procedimentos() {
     const type = params.get("type");
 
     if (message && type == "success") {
-      toast.success(message, {
-        style: {
-          backgroundColor: "green", // Estilos diretamente aplicados
-          color: "white",
-          padding: "1rem",
-          borderLeft: "4px solid green",
-        },
-      });
+      toast.success(message);
     } else if (type == "error") {
-      toast.error(message, {
-        className: "toast-error",
-      });
+      toast.error(message);
     }
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
@@ -194,7 +176,7 @@ export default function Procedimentos() {
                 <TableHead className="h-12-1">Procedimento</TableHead>
                 <TableHead className="h-12-1">Código</TableHead>
                 <TableHead className="h-12-1">Tipo</TableHead>
-                <TableHead className="h-12-1">Status</TableHead>
+                <TableHead className="h-12-1">Especialidade</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -210,16 +192,11 @@ export default function Procedimentos() {
                   <TableCell>
                     <Badge>{procedimento.tipo}</Badge>
                   </TableCell>
-                  <TableCell>{procedimento.status}</TableCell>
-                  {/* <TableCell
-                    className={`${
-                      procedimento.status === "Ativo"
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }`}
-                  >
-                    {procedimento.status}
-                  </TableCell> */}
+                  <TableCell>
+                    <Badge variant="outline">
+                      {procedimento.especialidadeId}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
                     {procedimento.status === "Ativo" && (

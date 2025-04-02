@@ -59,10 +59,16 @@ export default function NovoConvenio() {
     try {
       await createConvenio(values);
 
-      router.push("/painel/convenios?status=success");
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Convênio salvo com sucesso!");
+
+      router.push(`/painel/convenios?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar convenio";
+        error.response?.data?.message || "Erro ao salvar convênio";
 
       // Exibindo toast de erro
       toast.error(errorMessage);

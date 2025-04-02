@@ -34,6 +34,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
+import { toast } from "sonner";
 
 // ✅ Definir o tipo Cliente
 interface Cliente {
@@ -97,6 +98,9 @@ export default function ClientesPage() {
             : cliente
         )
       );
+      novoStatus === "Ativo"
+        ? toast.success(`Status do cliente alterado para ${novoStatus}!`)
+        : toast.error(`Status do cliente alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do cliente:", error);
@@ -107,6 +111,17 @@ export default function ClientesPage() {
 
   useEffect(() => {
     carregarClientes();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message);
+    } else if (type == "error") {
+      toast.error(message);
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {

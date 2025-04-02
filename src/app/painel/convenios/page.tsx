@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dialog";
 
 //Helpers
+import { toast } from "sonner";
 import { http } from "@/util/http";
 import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
 
@@ -81,6 +82,17 @@ export default function Convenios() {
   useEffect(() => {
     fetchTabelaFaturamento();
     carregarConvenios();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message);
+    } else if (type == "error") {
+      toast.error(message);
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {
