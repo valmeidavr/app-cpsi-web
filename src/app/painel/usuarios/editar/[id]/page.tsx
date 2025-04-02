@@ -25,7 +25,7 @@ import { SistemaComGrupos } from "@/app/types/Usuario";
 import { http } from "@/util/http";
 import { formSchemaUpdate } from "@/app/api/usuarios/schema/formShemaUpdateUsuario";
 
-export default function UsuarioUpdateForm() {
+export default function EditarUsuario() {
   const [loading, setLoading] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<Record<number, number>>(
     {}

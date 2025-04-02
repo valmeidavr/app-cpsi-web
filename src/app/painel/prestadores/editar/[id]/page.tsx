@@ -1,7 +1,6 @@
 "use client";
-import { getClienteById } from "@/app/api/clientes/action";
+
 import { useEffect, useState } from "react";
-import { Cliente } from "@/app/types/Cliente";
 import { redirect, useParams } from "next/navigation";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
@@ -24,16 +23,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
-import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
+import {
+  formatCPFInput,
+  formatRGInput,
+  formatTelefoneInput,
+} from "@/app/helpers/format";
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 //api
-import { updateCliente } from "@/app/api/clientes/action";
-import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
+
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { format, isValid, parse } from "date-fns";
+import {
+  getPrestadorById,
+  PrestadorDTO,
+  updatePrestador,
+} from "@/app/api/prestadores/action";
+import { formSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
 
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
@@ -41,70 +49,70 @@ const sexOptions = [
   { value: "outro", label: "Outro" },
 ];
 
-export interface FormUpdateClienteProps {
-  cliente: Cliente;
-}
-
-export default function EditarCliente() {
-  const [cliente, setCliente] = useState<Cliente | null>(null);
+export default function EditarPrestador() {
+  const [prestador, setPrestador] = useState<PrestadorDTO | null>(null);
   const [loading, setLoading] = useState(false);
   const params = useParams();
-  const clienteId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const prestadorId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const router = useRouter();
 
-  //Definindo valores default com os dado do cliente
+  //Definindo valores default com os dado do prestador
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
-      email: "",
       dtnascimento: "",
-      sexo: "",
+      rg: "",
       cpf: "",
+      sexo: "",
       cep: "",
       logradouro: "",
       numero: "",
       bairro: "",
       cidade: "",
       uf: "",
-      telefone1: "",
-      telefone2: "",
+      telefone: "",
+      celular: "",
+      complemento: "",
     },
   });
 
   //Formatação dos Campos
   useEffect(() => {
-    if (cliente) {
-      const formattedPhone1 = formatTelefoneInput(cliente.telefone1 || "");
-      const formattedPhone2 = formatTelefoneInput(cliente.telefone2 || "");
-      const formattedCPF = formatCPFInput(cliente.cpf || "");
+    if (prestador) {
+      const formattedTelefone = formatTelefoneInput(prestador.telefone || "");
+      const formattedCelular = formatTelefoneInput(prestador.celular || "");
+      const formattedCPF = formatCPFInput(prestador.cpf || "");
+      const formattedRG = formatRGInput(prestador.cpf || "");
 
-      form.setValue("telefone1", formattedPhone1);
-      form.setValue("telefone2", formattedPhone2);
+      form.setValue("telefone", formattedTelefone);
+      form.setValue("celular", formattedCelular);
       form.setValue("cpf", formattedCPF);
-      form.setValue("cep", cliente.cep || "");
-      form.setValue("logradouro", cliente.logradouro || "");
-      form.setValue("bairro", cliente.bairro || "");
-      form.setValue("uf", cliente.uf || "");
-      form.setValue("numero", cliente.numero || "");
-      form.setValue("cidade", cliente.cidade || "");
+      form.setValue("rg", formattedRG);
+      form.setValue("cep", prestador.cep || "");
+      form.setValue("logradouro", prestador.logradouro || "");
+      form.setValue("bairro", prestador.bairro || "");
+      form.setValue("uf", prestador.uf || "");
+      form.setValue("numero", prestador.numero || "");
+      form.setValue("cidade", prestador.cidade || "");
     }
-  }, [cliente, form]);
+  }, [prestador, form]);
 
   //Função de submeter os dados
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
+    console.log(values);
     try {
-      if (clienteId) await updateCliente(clienteId, values);
+      if (prestadorId) await updatePrestador(prestadorId, values);
 
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
-      queryParams.set("message", "Cliente atualizado com sucesso!");
+      queryParams.set("message", "Prestador atualizado com sucesso!");
 
-      router.push(`/painel/clientes?${queryParams.toString()}`);
+      router.push(`/painel/prestadores?${queryParams.toString()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -121,24 +129,25 @@ export default function EditarCliente() {
   useEffect(() => {
     async function fetchData() {
       try {
-        if (!clienteId) redirect("painel/clientes");
-        const data = await getClienteById(+clienteId);
-        setCliente(data);
+        if (!prestadorId) redirect("painel/prestadors");
+        const data = await getPrestadorById(prestadorId);
+        setPrestador(data);
 
         form.reset({
           nome: data.nome,
-          email: data.email,
           dtnascimento: data.dtnascimento,
-          sexo: data.sexo,
+          rg: data.rg,
           cpf: data.cpf,
-          cep: data.cep,
+          sexo: data.sexo,
+          cep: data.cep.replace(/^(\d{5})(\d{0,3})/, "$1-$2"),
           logradouro: data.logradouro,
           numero: data.numero,
           bairro: data.bairro,
           cidade: data.cidade,
           uf: data.uf,
-          telefone1: data.telefone1,
-          telefone2: data.telefone2,
+          telefone: data.telefone,
+          celular: data.celular,
+          complemento: data.complemento,
         });
       } catch (error) {
         console.error("Erro ao carregar usuário:", error);
@@ -152,8 +161,8 @@ export default function EditarCliente() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Clientes", href: "/painel/clientes" },
-          { label: "Editar Cliente" }, // Último item sem link
+          { label: "Prestadores", href: "/painel/prestadores" },
+          { label: "Editar Prestador" }, // Último item sem link
         ]}
       />
 
@@ -161,12 +170,12 @@ export default function EditarCliente() {
         {" "}
         {/* overflow-hidden */}
         <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Prestador</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField
                 control={form.control}
                 name="nome"
@@ -189,33 +198,6 @@ export default function EditarCliente() {
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email *</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        {...field}
-                        value={field.value || ""}
-                        className={`border ${
-                          form.formState.errors.email
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary`}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 mt-1 font-light" />
-                  </FormItem>
-                )}
-              />
-            </div>
-            {/* 🔹 Linha 2: Data de nascimento + Sexo */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="dtnascimento"
@@ -234,12 +216,12 @@ export default function EditarCliente() {
                       }
                     }
                   }, [field.value]);
+
                   return (
                     <FormItem>
                       <FormLabel>Data de Nascimento *</FormLabel>
                       <FormControl>
                         <Input
-                        
                           placeholder="DD/MM/AAAA"
                           maxLength={10}
                           value={field.value || ""}
@@ -249,11 +231,11 @@ export default function EditarCliente() {
                               : "border-gray-300"
                           } focus:ring-2 focus:ring-primary`}
                           onChange={(e) => {
-                            let inputDate = e.target.value.replace(/\D/g, "");
+                            let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
                             let formatted = inputDate
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .replace(/(\d{2})(\d)/, "$1/$2")
-                              .slice(0, 10);
+                              .slice(0, 10); // Garante que não haja mais de 10 caracteres
 
                             field.onChange(formatted);
                           }}
@@ -321,6 +303,39 @@ export default function EditarCliente() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <FormField
                 control={form.control}
+                name="rg"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>RG *</FormLabel>
+                    <FormControl>
+                      <Input
+                        maxLength={12}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          let rawValue = e.target.value.replace(/\D/g, "");
+                          const inputEvent = e.nativeEvent as InputEvent;
+
+                          if (
+                            inputEvent.inputType === "deleteContentBackward"
+                          ) {
+                            field.onChange(rawValue);
+                          } else {
+                            field.onChange(formatRGInput(rawValue));
+                          }
+                        }}
+                        className={
+                          form.formState.errors.rg
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="cpf"
                 render={({ field }) => (
                   <FormItem>
@@ -358,46 +373,63 @@ export default function EditarCliente() {
               <FormField
                 control={form.control}
                 name="cep"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CEP</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="00000-000"
-                        maxLength={9}
-                        value={field.value || ""}
-                        onChange={(e) => {
-                          let rawValue = e.target.value.replace(/\D/g, ""); 
-                          const inputEvent = e.nativeEvent as InputEvent;
+                render={({ field }) => {
+                  useEffect(() => {
+                    if (field.value) {
+                      const rawValue = field.value.replace(/\D/g, "");
 
-                          if (
-                            inputEvent.inputType === "deleteContentBackward"
-                          ) {
-                            // Se o usuário estiver apagando, não aplica a formatação
-                            field.onChange(rawValue);
-                          } else {
-                            // Aplica a máscara ao digitar
-                            const formattedValue = rawValue.replace(
-                              /^(\d{5})(\d)/,
-                              "$1-$2"
-                            );
-                 
-                            field.onChange(formattedValue);
-                          }
+                      // Aplica a máscara automaticamente ao carregar o valor
+                      if (rawValue.length <= 5) {
+                        field.onChange(rawValue); // Sem formatação
+                      } else {
+                        const formattedValue = rawValue.replace(
+                          /^(\d{5})(\d{0,3})/,
+                          "$1-$2"
+                        );
+                        console.log(formattedValue);
+                        field.onChange(formattedValue);
+                      }
+                    }
+                  }, [field.value]); // Executa sempre que field.value mudar
 
-                          // Chama a função para buscar o endereço baseado no CEP digitado
-                          handleCEPChangeHandler(e);
-                        }}
-                        className={`border ${
-                          form.formState.errors.cep
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary`}
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 mt-1 font-light" />
-                  </FormItem>
-                )}
+                  return (
+                    <FormItem>
+                      <FormLabel>CEP</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="00000-000"
+                          maxLength={9}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            // Quando o usuário digitar, remove caracteres não numéricos
+                            let rawValue = e.target.value;
+
+                            // Se o valor tiver mais de 5 caracteres, aplica a máscara
+                            if (rawValue.length <= 5) {
+                              field.onChange(rawValue); // Sem formatação ainda
+                            } else {
+                              // Aplica a máscara 'XXXXX-XXX'
+                              const formattedValue = rawValue.replace(
+                                /^(\d{5})(\d{0,3})/,
+                                "$1-$2"
+                              );
+                              field.onChange(formattedValue);
+                            }
+
+                            // Chama a função para buscar o endereço baseado no CEP digitado
+                            handleCEPChangeHandler(e);
+                          }}
+                          className={`border ${
+                            form.formState.errors.cep
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  );
+                }}
               />
 
               <FormField
@@ -540,56 +572,38 @@ export default function EditarCliente() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="telefone1"
-                render={({ field }) => {
-                  useEffect(() => {
-                    if (field.value) {
-                      const parsedDate = parse(
-                        field.value,
-                        "yyyy-MM-dd",
-                        new Date()
-                      );
-
-                      if (isValid(parsedDate)) {
-                        const formattedDate = format(parsedDate, "dd/MM/yyyy");
-                        field.onChange(formattedDate);
-                      }
-                    }
-                  }, [field.value]);
-
-                  return (
-                    <FormItem>
-                      <FormLabel>Telefone 1 *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Telefone"
-                          maxLength={15}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            const formattedPhone = formatTelefoneInput(
-                              e.target.value
-                            );
-                            field.onChange(formattedPhone);
-                          }}
-                          className={`border ${
-                            form.formState.errors.telefone1
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  );
-                }}
-              />
-
-              <FormField
-                control={form.control}
-                name="telefone2"
+                name="celular"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefone 2</FormLabel>
+                    <FormLabel>Celular*</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Celular"
+                        maxLength={15}
+                        value={field.value || ""}
+                        onChange={(e) => {
+                          const formattedPhone = formatTelefoneInput(
+                            e.target.value
+                          );
+                          field.onChange(formattedPhone);
+                        }}
+                        className={`border ${
+                          form.formState.errors.celular
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="telefone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Telefone"
@@ -602,7 +616,7 @@ export default function EditarCliente() {
                           field.onChange(formattedPhone);
                         }}
                         className={`border ${
-                          form.formState.errors.telefone2
+                          form.formState.errors.telefone
                             ? "border-red-500"
                             : "border-gray-300"
                         } focus:ring-2 focus:ring-primary`}

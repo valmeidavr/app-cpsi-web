@@ -44,7 +44,7 @@ import { redirect, useParams } from "next/navigation";
 import { http } from "@/util/http";
 import { EspecialidadeDTO } from "@/app/types/Especialidade";
 
-export default function NovoProcedimento() {
+export default function EditarProcedimento() {
   const [loading, setLoading] = useState(false);
   const [procedimento, setProcedimento] =
     useState<updateProcedimentoPayload | null>(null);

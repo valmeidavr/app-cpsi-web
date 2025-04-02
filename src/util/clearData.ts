@@ -14,6 +14,9 @@ export const limparDataNascimento = (dtnascimento: string): string => {
 export const limparCPF = (cpf: string): string => {
   return cpf.replace(/\D/g, "").slice(0, 11);
 };
+export const limparRG = (cpf: string): string => {
+  return cpf.replace(/\D/g, "").slice(0, 11);
+};
 
 //Formatando telefone e CPF
 
