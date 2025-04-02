@@ -67,7 +67,6 @@ export default function EditarEspecialidade() {
       }
     }
     fetchData();
-    fetchData();
   }, []);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -76,8 +75,12 @@ export default function EditarEspecialidade() {
       if (!especialidadeId) redirect("/painel/especialidades");
 
       const data = await updateEspecialidade(especialidadeId, values);
+      const queryParams = new URLSearchParams();
 
-      router.push("/painel/especialidades?status=updated");
+      queryParams.set("type", "success");
+      queryParams.set("message", "Especialidade atualizada com sucesso!");
+
+      router.push(`/painel/especialidades?${queryParams.toString()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

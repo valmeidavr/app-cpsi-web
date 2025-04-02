@@ -26,17 +26,21 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
 
-
 //Helpers
 import { redirect, useParams } from "next/navigation";
-import { getTabelaFaturamentoById, updateTabelaFaturamento } from "@/app/api/tabela_faturamentos/action";
+import {
+  getTabelaFaturamentoById,
+  updateTabelaFaturamento,
+} from "@/app/api/tabela_faturamentos/action";
 import { formSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
 
 export default function EditarTabelaFaturamento() {
   const [loading, setLoading] = useState(false);
   const [tabelaFaturamento, setTabelaFaturamento] = useState(null);
   const params = useParams();
-  const tabelaFaturamentoId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const tabelaFaturamentoId = Array.isArray(params.id)
+    ? params.id[0]
+    : params.id;
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -71,8 +75,12 @@ export default function EditarTabelaFaturamento() {
       if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
 
       const data = await updateTabelaFaturamento(tabelaFaturamentoId, values);
+      const queryParams = new URLSearchParams();
 
-      router.push("/painel/tabela_faturamentos?type=sucess");
+      queryParams.set("type", "success");
+      queryParams.set("message", "Tabela atualizada com sucesso!");
+
+      router.push(`/painel/tabela_faturamentos?${queryParams.toString()}`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -85,11 +93,13 @@ export default function EditarTabelaFaturamento() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "TabelaFaturamentos", href: "/painel/tabelaFaturamentos" },
+          { label: "TabelaFaturamentos", href: "/painel/tabela_faturamentos" },
           { label: "Editar Tabela de Faturamento" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-6 mt-5">Editar Tabela Faturamento</h1>
+      <h1 className="text-2xl font-bold mb-6 mt-5">
+        Editar Tabela Faturamento
+      </h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

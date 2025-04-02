@@ -84,10 +84,17 @@ export default function CustomerRegistrationForm() {
     }
     try {
       await createCliente(values);
-      router.push("/painel/clientes&status=success");
+
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Cliente salvo com sucesso!");
+
+      router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar usuário";
+        error.response?.data?.message || "Erro ao salvar cliente";
 
       // Exibindo toast de erro
       toast.error(errorMessage);
@@ -105,9 +112,7 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingEmail(true);
     try {
-      const { data } = await http.get(
-        `/clientes/findByEmail/${email}`
-      );
+      const { data } = await http.get(`/clientes/findByEmail/${email}`);
       if (data) {
         setEmailError("Este email já está em uso.");
       } else {
@@ -129,9 +134,7 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingCpf(true);
     try {
-      const { data } = await http.get(
-        `/clientes/findByCpf/${cpf}`
-      );
+      const { data } = await http.get(`/clientes/findByCpf/${cpf}`);
       if (data) {
         setCpfError("Este cpf já está em uso.");
       } else {

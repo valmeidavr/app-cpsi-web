@@ -91,6 +91,17 @@ export default function UsuariosPage() {
 
   useEffect(() => {
     carregarUsuarios();
+    const params = new URLSearchParams(window.location.search);
+    const message = params.get("message");
+    const type = params.get("type");
+
+    if (message && type == "success") {
+      toast.success(message);
+    } else if (type == "error") {
+      toast.error(message);
+    }
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
   const handleSearch = () => {
@@ -106,10 +117,10 @@ export default function UsuariosPage() {
       setUsuarios((prevUsuarios) =>
         prevUsuarios.filter((usuario) => usuario.id !== usuarioSelecionado.id)
       );
-      toast.warning("Usuário deletado com sucesso!");
+      toast.error("Usuário deletado!");
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao alterar status do cliente:", error);
+      console.error("Erro ao deletar usuário:", error);
     } finally {
       setLoadingInativar(false);
     }

@@ -48,7 +48,13 @@ export default function NovaEspecialidade() {
     try {
       await createEspecialidade(values);
 
-      router.push("/painel/especialidades?status=success");
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Especialidade salva com sucesso!");
+
+      router.push(`/painel/especialidades?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar especialidade";

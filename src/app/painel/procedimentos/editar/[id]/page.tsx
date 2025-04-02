@@ -89,8 +89,6 @@ export default function NovoProcedimento() {
     fetchData();
   }, []);
 
-
-  
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setLoading(true);
     try {
@@ -103,7 +101,7 @@ export default function NovoProcedimento() {
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
-      queryParams.set("message", "Procedimento Atualizado com Sucesso");
+      queryParams.set("message", "Procedimento atualizado com sucesso");
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error: any) {
@@ -115,16 +113,13 @@ export default function NovoProcedimento() {
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await http.get(
-        "/especialidades",
-        {}
-      );
+      const { data } = await http.get("/especialidades", {});
       setEspecialidadeOptions(data.data);
     } catch (error: any) {}
   };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
-    { value: "SESSAO", label: "SESSÃO" },
+    { value: "SESSÃO", label: "SESSÃO" },
     { value: "MENSAL", label: "MENSAL" },
   ];
 
@@ -228,7 +223,7 @@ export default function NovoProcedimento() {
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
                       field.onChange(Number(value));
-                    }} 
+                    }}
                   >
                     <FormControl
                       className={

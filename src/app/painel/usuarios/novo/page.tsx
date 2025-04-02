@@ -83,7 +83,13 @@ export default function UsuarioRegistrationForm() {
     try {
       await createUsuario(values);
 
-      router.push("/painel/usuarios?status=success");
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
+
+      queryParams.set("type", "success");
+      queryParams.set("message", "Usuário salvo com sucesso!");
+
+      router.push(`/painel/usuarios?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar usuário";
@@ -105,9 +111,7 @@ export default function UsuarioRegistrationForm() {
 
     setIsCheckingEmail(true);
     try {
-      const { data } = await http.get(
-        `/users/findByEmail/${email}`
-      );
+      const { data } = await http.get(`/users/findByEmail/${email}`);
       if (data) {
         setEmailError("Este email já está em uso.");
       } else {
