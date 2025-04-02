@@ -36,6 +36,7 @@
     "react-day-picker": "8.10.1",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
+    "react-input-mask": "^2.0.4",
     "react-paginate": "^8.3.0",
     "react-text-mask": "^5.5.0",
     "react-toastify": "^11.0.5",

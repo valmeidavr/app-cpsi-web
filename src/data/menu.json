@@ -41,6 +41,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "Users",
+        "label": "Prestadores",
+        "href": "/painel/prestadores",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "TableIcon",
         "label": "Tabela Faturamentos",
         "href": "/painel/tabela_faturamentos",
