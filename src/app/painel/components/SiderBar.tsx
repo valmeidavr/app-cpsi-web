@@ -22,6 +22,8 @@ import {
   HandshakeIcon,
   TableIcon,
   LockKeyholeIcon,
+  HousePlus,
+  Wrench,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -48,6 +50,8 @@ const iconMap: { [key: string]: React.ElementType } = {
   HandshakeIcon,
   TableIcon,
   LockKeyholeIcon,
+  HousePlus,
+  Wrench,
 };
 
 interface MenuItem {

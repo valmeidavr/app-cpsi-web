@@ -12,7 +12,7 @@
       },
       {
         "icon": "HandshakeIcon",
-        "label": "Convenios",
+        "label": "Convênios",
         "href": "/painel/convenios",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
@@ -41,7 +41,7 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "Users",
+        "icon": "Wrench",
         "label": "Prestadores",
         "href": "/painel/prestadores",
         "requiredGroups": ["ADMIN", "GESTOR"]
@@ -50,6 +50,12 @@
         "icon": "TableIcon",
         "label": "Tabela Faturamentos",
         "href": "/painel/tabela_faturamentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "HousePlus",
+        "label": "Unidades",
+        "href": "/painel/unidades",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]
