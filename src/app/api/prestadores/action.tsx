@@ -25,32 +25,31 @@ export async function getPrestadors(
 }
 
 export type PrestadorDTO = z.infer<typeof formSchema>;
+
 export async function createPrestador(body: PrestadorDTO) {
+  body.cpf = limparCPF(String(body.cpf));
+  body.celular = limparTelefone(String(body.celular));
+  body.rg = limparRG(body.rg);
+
   if (body.dtnascimento) {
     const parsedDate = parse(body.dtnascimento, "dd/MM/yyyy", new Date());
 
-    // Verifique se a data é válida antes de tentar formatá-la
     if (isValid(parsedDate)) {
-      // Formate a data para o formato yyyy-MM-dd
       body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
     } else {
       console.error("Data de nascimento inválida:", body.dtnascimento);
     }
   }
-  body.cpf = limparCPF(String(body.cpf));
+
   if (body.cep) {
     body.cep = limparCEP(String(body.cep));
   }
-  body.celular = limparTelefone(String(body.celular));
   if (body.telefone) {
     body.telefone = limparTelefone(String(body.telefone));
   }
-  body.rg = limparRG(body.rg);
-  console.log("boyd:", body);
+
   try {
     const { data } = await http.post("http://localhost:3000/prestadores", body);
-
-    console.log("data:", data);
     revalidatePath("/painel/prestadores");
   } catch (error: any) {
     console.error("Erro ao criar prestador:", error.message);
@@ -63,13 +62,11 @@ export async function getPrestadorById(id: string) {
 }
 
 export async function updatePrestador(id: string, body: PrestadorDTO) {
-  console.log(body);
+  
+  
   if (body.dtnascimento) {
     const parsedDate = parse(body.dtnascimento, "dd/MM/yyyy", new Date());
-
-    // Verifique se a data é válida antes de tentar formatá-la
     if (isValid(parsedDate)) {
-      // Formate a data para o formato yyyy-MM-dd
       body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
     } else {
       console.error("Data de nascimento inválida:", body.dtnascimento);
@@ -85,12 +82,13 @@ export async function updatePrestador(id: string, body: PrestadorDTO) {
   if (body.rg) {
     body.rg = limparRG(body.rg);
   }
-  body.celular = limparTelefone(String(body.celular));
   if (body.telefone) {
     body.telefone = limparTelefone(String(body.telefone));
   }
-  console.log("body:", body);
-  console.log("id", id);
+  if (body.celular) {
+    body.celular = limparTelefone(String(body.celular));
+  }
+
   try {
     const { data } = await http.patch(
       `http://localhost:3000/prestadores/${id}`,
