@@ -16,7 +16,14 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
+import {
+  Loader2,
+  Search,
+  Edit,
+  Power,
+  Plus,
+  MessageCircle,
+} from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import {
@@ -32,14 +39,14 @@ import { Badge } from "@/components/ui/badge";
 //Helpers
 import { http } from "@/util/http";
 import { toast } from "sonner";
+import { formatarCPF, formatarTelefone } from "@/util/clearData";
 
-
-interface PrestadorProps{
-  id: number | string,
-  nome: string,
-  cpf: string,
-  status: string,
-  celular: string
+interface PrestadorProps {
+  id: number | string;
+  nome: string;
+  cpf: string;
+  status: string;
+  celular: string;
 }
 
 export default function Prestadores() {
@@ -81,12 +88,9 @@ export default function Prestadores() {
     const novoStatus =
       prestadorSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
-      await http.patch(
-        `/prestadores/${prestadorSelecionado.id}`,
-        {
-          status: novoStatus,
-        }
-      );
+      await http.patch(`/prestadores/${prestadorSelecionado.id}`, {
+        status: novoStatus,
+      });
       setPrestadores((prestadores) =>
         prestadores.map((prestador) =>
           prestador.id === prestadorSelecionado.id
@@ -94,9 +98,9 @@ export default function Prestadores() {
             : prestador
         )
       );
-     novoStatus === "Ativo"
-       ? toast.success(`Status do cliente alterado para ${novoStatus}!`)
-       : toast.error(`Status do cliente alterado para ${novoStatus}!`);
+      novoStatus === "Ativo"
+        ? toast.success(`Status do cliente alterado para ${novoStatus}!`)
+        : toast.error(`Status do cliente alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do prestador:", error);
@@ -175,7 +179,7 @@ export default function Prestadores() {
                 <TableHead className="h-12-1">ID</TableHead>
                 <TableHead className="h-12-1">Prestador</TableHead>
                 <TableHead className="h-12-1">CPF</TableHead>
-                <TableHead className="h-12-1">Celular</TableHead>
+                <TableHead className="h-12-1">Telefone</TableHead>
                 <TableHead className="h-12-1">Status</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
@@ -188,9 +192,37 @@ export default function Prestadores() {
                 >
                   <TableCell>{prestador.id}</TableCell>
                   <TableCell>{prestador.nome}</TableCell>
-                  <TableCell>{prestador.cpf}</TableCell>
+                  <TableCell>{formatarCPF(prestador.cpf)}</TableCell>
                   <TableCell>
-                    <Badge>{prestador.celular}</Badge>
+                    {prestador.celular}
+                    {/* {formatarTelefone(prestador.celular)} */}
+                    {/* <Tooltip.Provider>
+                      <Tooltip.Root>
+                        <div className="flex gap-0.5 items-center">
+                          <MessageCircle className="w-4 h-4" />
+                          <Tooltip.Trigger asChild>
+                            <a
+                              target="_blank"
+                              className="hover:text-blue-500 text-[13px]"
+                              href={`https://wa.me/55${prestador.celular.replace(
+                                /\D/g,
+                                ""
+                              )}`}
+                            >
+                              {formatarTelefone(prestador.celular)}
+                            </a>
+                          </Tooltip.Trigger>
+                        </div>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Abrir WhatsApp
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </Tooltip.Provider> */}
                   </TableCell>
                   <TableCell
                     className={`${
@@ -323,9 +355,7 @@ export default function Prestadores() {
           </DialogHeader>
           <p>
             Tem certeza que deseja{" "}
-            {prestadorSelecionado?.status === "Ativo"
-              ? "inativar"
-              : "ativar"}{" "}
+            {prestadorSelecionado?.status === "Ativo" ? "inativar" : "ativar"}{" "}
             esta prestador?
           </p>
           <DialogFooter>
