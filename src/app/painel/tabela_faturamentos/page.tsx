@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
+import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -55,6 +55,8 @@ export default function TabelaFaturamentos() {
   const [totalTabelaFaturamentos, setTotalTabelaFaturamentos] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [isFormVisible, setIsFormVisible] = useState(false);
+
   const carregarTabelaFaturamentos = async () => {
     setCarregando(true);
     try {
@@ -98,6 +100,7 @@ export default function TabelaFaturamentos() {
       await createTabelaFaturamento(values);
       carregarTabelaFaturamentos();
       toast.success("Tabela criada com sucesso!");
+      form.reset();
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar Tabela";
@@ -124,72 +127,82 @@ export default function TabelaFaturamentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
+
+  const toggleForm = () => {
+    setIsFormVisible(!isFormVisible);
+  };
+
   return (
     <div className="container mx-auto">
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Tabela Faturamentos" },
+          { label: "Tabelas Faturamentos" },
         ]}
       />
 
-      <div>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campos de Nome e Código */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-end">
-              <FormField
-                control={form.control}
-                name="nome"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome *</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className={`border ${
-                          form.formState.errors.nome
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary`}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Botão de Envio */}
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2 max-w-[200px]"
+      {/* Formulário condicional */}
+      {isFormVisible && (
+        <div className="space-y-4 animate-fade-in mb-8">
+          <div className="border-b">
+            <h1 className="text-2xl font-bold mb-4 mt-5">Nova Tabela</h1>
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-4"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" /> Adicionar
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-end">
+                  <FormField
+                    control={form.control}
+                    name="nome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            placeholder="Digite o nome da tabela"
+                            {...field}
+                            className={`border ${
+                              form.formState.errors.nome
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            } focus:ring-2 focus:ring-primary`}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-      <h1 className="text-2xl font-bold mb-4 mt-5">
-        Lista de Tabela Faturamentos
-      </h1>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="flex items-center gap-2 max-w-[200px]"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" /> Adicionar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        </div>
+      )}
 
-      {/* Barra de Pesquisa e Botão Nova Especialidade */}
+      <h1 className="text-2xl font-bold mb-4 mt-5">Tabelas Faturamentos</h1>
+
+      {/* Barra de Pesquisa e Botão Nova Tabela */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar tabela de faturamentos"
+            placeholder="Pesquisar tabelas"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -197,6 +210,22 @@ export default function TabelaFaturamentos() {
           <Button variant="secondary" onClick={handleSearch}>
             <Search className="w-4 h-4" />
             Buscar
+          </Button>
+        </div>
+
+        <div className="flex justify-start w-fit">
+          <Button onClick={toggleForm} className="flex items-center gap-2">
+            {isFormVisible ? (
+              <>
+                <X className="w-4 h-4" />
+                Cancelar
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                Nova Tabela
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -255,12 +284,12 @@ export default function TabelaFaturamentos() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de TabelaFaturamentos */}
+          {/* Totalizador de Tabelas */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando{" "}
               {Math.min((paginaAtual + 1) * 5, totalTabelaFaturamentos)} de{" "}
-              {totalTabelaFaturamentos} tabelaFaturamentos
+              {totalTabelaFaturamentos} tabelas
             </div>
           </div>
 
