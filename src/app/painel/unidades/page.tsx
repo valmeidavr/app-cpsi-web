@@ -46,10 +46,6 @@ interface Unidade {
   nome: string;
 }
 
-interface ToggleUnitFormProps {
-  children: React.ReactNode;
-}
-
 export default function Unidades() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -199,7 +195,7 @@ export default function Unidades() {
 
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Unidades</h1>
 
-      {/* Barra de Pesquisa e Botão Nova Especialidade */}
+      {/* Barra de Pesquisa e Botão Nova Unidade */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
