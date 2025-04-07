@@ -18,7 +18,7 @@ export async function getPrestadors(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/prestadores", {
+  const { data } = await http.get("http://localhost:3000/prestadores", {
     params: { page, limit, search },
   });
   return data;
@@ -46,11 +46,11 @@ export async function createPrestador(body: PrestadorDTO) {
     body.telefone = limparTelefone(String(body.telefone));
   }
   body.rg = limparRG(body.rg);
-  console.log("boyd:", body);
+  // console.log("body:", body);
   try {
-    const { data } = await http.post("http://localhost:3000/prestadores", body);
+    const { data } = await http.post(`http://localhost:3000/prestadores`, body);
 
-    console.log("data:", data);
+    // console.log("data:", data);
     revalidatePath("/painel/prestadores");
   } catch (error: any) {
     console.error("Erro ao criar prestador:", error.message);
