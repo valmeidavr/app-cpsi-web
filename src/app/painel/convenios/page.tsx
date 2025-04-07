@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
-
+import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { toast } from "sonner";
@@ -108,7 +108,7 @@ export default function Convenios() {
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar convenio"
+            placeholder="Pesquisar convênio"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -141,9 +141,7 @@ export default function Convenios() {
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1 flex items-center justify-start">
-                  Convênio
-                </TableHead>
+                <TableHead className="h-12-1">Convênio</TableHead>
                 <TableHead className="h-12-1">Regra</TableHead>
                 <TableHead className="h-12-1">Tabela</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
@@ -156,18 +154,21 @@ export default function Convenios() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{convenio.id}</TableCell>
-                  <TableCell className="flex items-center justify-start">
-                    {convenio.nome}
+                  <TableCell>{convenio.nome}</TableCell>
+                  <TableCell>
+                    <Badge>{convenio.regras}</Badge>
                   </TableCell>
-                  <TableCell>{convenio.regras}</TableCell>
-                  {tabelaFaturamentos
-                    .filter(
-                      (tabela) => tabela.id == convenio.tabelaFaturamentosId
-                    )
-                    .map((tabela) => (
-                      <TableCell key={tabela.id}>{tabela.nome}</TableCell>
-                    ))}
-
+                  <TableCell>
+                    <Badge variant="outline">
+                      {tabelaFaturamentos
+                        .filter(
+                          (tabela) => tabela.id == convenio.tabelaFaturamentosId
+                        )
+                        .map((tabela) => (
+                          <div key={tabela.id}>{tabela.nome}</div>
+                        ))}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
