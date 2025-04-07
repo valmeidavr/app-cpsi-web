@@ -98,6 +98,7 @@ export default function Turmas() {
       });
 
       setTurmas(data.data);
+      console.log(data.data)
       setTotalPaginas(data.totalPages);
       setTotalTurmas(data.total);
     } catch (error) {
@@ -220,14 +221,19 @@ export default function Turmas() {
                   <TableCell>{turma.nome}</TableCell>
                   <TableCell>{turma.procedimento.nome}</TableCell>
                   <TableCell>
-                    {" "}
-                    {(() => {
-                      const nomeArray = turma.prestador.nome.split(" "); // Divide por espaço
-                      const primeiroUltimoNome = `${nomeArray[0]} ${
-                        nomeArray[nomeArray.length - 1]
-                      }`;
-                      return primeiroUltimoNome;
-                    })()}
+                    {turma.prestador ? (
+                      (() => {
+                        const nomeArray = turma.prestador.nome.split(" ");
+                        const primeiroUltimoNome = `${nomeArray[0]} ${
+                          nomeArray[nomeArray.length - 1]
+                        }`;
+                        return primeiroUltimoNome;
+                      })()
+                    ) : (
+                      <span className="text-gray-400 italic">
+                        Prestador não definido
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell>
                     {formatDate(turma.dataInicio, "dd/MM/yyyy")}

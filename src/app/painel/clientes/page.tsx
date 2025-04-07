@@ -205,7 +205,7 @@ export default function ClientesPage() {
                               className="hover:text-blue-500"
                               href={`mailto:${cliente.email}`}
                             >
-                              {cliente.email}
+                              {cliente.email}\
                             </a>
                           </Tooltip.Trigger>
                         </div>
@@ -234,7 +234,7 @@ export default function ClientesPage() {
                                 ""
                               )}`}
                             >
-                              {formatarTelefone(cliente.telefone1)}
+                              {cliente.telefone1 ?? formatarTelefone(cliente.telefone1)}
                             </a>
                           </Tooltip.Trigger>
                         </div>

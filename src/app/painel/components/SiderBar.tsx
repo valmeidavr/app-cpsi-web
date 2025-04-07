@@ -24,6 +24,8 @@ import {
   LockKeyholeIcon,
   HousePlus,
   Wrench,
+  DollarSign,
+  ClipboardList,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -52,6 +54,8 @@ const iconMap: { [key: string]: React.ElementType } = {
   LockKeyholeIcon,
   HousePlus,
   Wrench,
+  DollarSign,
+  ClipboardList,
 };
 
 interface MenuItem {

@@ -8,10 +8,19 @@ export const formatCPF = (cpf: string) => {
     .replace(/\D/g, "")
     .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 };
+export const formatValor = (valor: number | string) => {
+  const numero = typeof valor === "string" ? parseFloat(valor) : valor;
 
+  if (isNaN(numero)) return "R$ 0,00";
+
+  return numero.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+};
 
 // Helper function to format phone number
-export  const formatTelefoneInput = (value: string) => {
+export const formatTelefoneInput = (value: string) => {
   return value
     .replace(/\D/g, "") // Remove tudo que não for número
     .replace(/^(\d{2})(\d)/, "($1) $2") // Adiciona parênteses no DDD

@@ -61,6 +61,19 @@
     ]
   },
   {
+    "icon": "DollarSign",
+    "label": "Financeiro",
+    "href": "#",
+    "subItems": [
+      {
+        "icon": "ClipboardList",
+        "label": "Movimento de Caixa",
+        "href": "/painel/lancamentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      }
+    ]
+  },
+  {
     "icon": "LockKeyholeIcon",
     "label": "Segurança",
     "href": "#",
