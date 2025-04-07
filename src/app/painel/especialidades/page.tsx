@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Dialog,
@@ -185,7 +186,9 @@ export default function Especialidades() {
                 >
                   <TableCell>{especialidade.id}</TableCell>
                   <TableCell>{especialidade.nome}</TableCell>
-                  <TableCell>{especialidade.codigo}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{especialidade.codigo}</Badge>
+                  </TableCell>
                   <TableCell
                     className={`${
                       especialidade.status === "Ativo"
