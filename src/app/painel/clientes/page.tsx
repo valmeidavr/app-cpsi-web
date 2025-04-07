@@ -23,6 +23,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
@@ -175,12 +176,12 @@ export default function ClientesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>CPF</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead className="h-12-1">ID</TableHead>
+                <TableHead className="h-12-1">Nome</TableHead>
+                <TableHead className="h-12-1">CPF</TableHead>
+                <TableHead className="h-12-1">Email</TableHead>
+                <TableHead className="h-12-1">Telefone</TableHead>
+                <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -192,7 +193,7 @@ export default function ClientesPage() {
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>
                   <TableCell className="text-[13px]">
-                    {formatarCPF(cliente.cpf)}
+                    <Badge variant="outline">{formatarCPF(cliente.cpf)}</Badge>
                   </TableCell>
                   <TableCell>
                     <Tooltip.Provider>
