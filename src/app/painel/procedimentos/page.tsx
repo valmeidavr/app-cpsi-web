@@ -134,7 +134,7 @@ export default function Procedimentos() {
   };
 
   return (
-    <div className="container mx-auto">
+    <>
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
@@ -208,7 +208,7 @@ export default function Procedimentos() {
                             especialidade.id == procedimento.especialidadeId
                         )
                         .map((especialidade) => (
-                          <TableCell key={especialidade.id}>{especialidade.nome}</TableCell>
+                          <div key={especialidade.id}>{especialidade.nome}</div>
                         ))}
                     </Badge>
                   </TableCell>
@@ -363,6 +363,6 @@ export default function Procedimentos() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
