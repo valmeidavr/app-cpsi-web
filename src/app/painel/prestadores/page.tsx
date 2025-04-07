@@ -99,8 +99,8 @@ export default function Prestadores() {
         )
       );
       novoStatus === "Ativo"
-        ? toast.success(`Status do cliente alterado para ${novoStatus}!`)
-        : toast.error(`Status do cliente alterado para ${novoStatus}!`);
+        ? toast.success(`Status do prestador alterado para ${novoStatus}!`)
+        : toast.error(`Status do prestador alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do prestador:", error);
@@ -116,7 +116,7 @@ export default function Prestadores() {
     const type = params.get("type");
 
     if (message && type == "success") {
-      toast.success(message);
+      toast.success("Prestador salvo com sucesso!");
     } else if (type == "error") {
       toast.error(message);
     }
@@ -179,7 +179,7 @@ export default function Prestadores() {
                 <TableHead className="h-12-1">ID</TableHead>
                 <TableHead className="h-12-1">Prestador</TableHead>
                 <TableHead className="h-12-1">CPF</TableHead>
-                <TableHead className="h-12-1">Telefone</TableHead>
+                <TableHead className="h-12-1">Celular</TableHead>
                 <TableHead className="h-12-1">Status</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
@@ -194,9 +194,7 @@ export default function Prestadores() {
                   <TableCell>{prestador.nome}</TableCell>
                   <TableCell>{formatarCPF(prestador.cpf)}</TableCell>
                   <TableCell>
-                    {prestador.celular}
-                    {/* {formatarTelefone(prestador.celular)} */}
-                    {/* <Tooltip.Provider>
+                    <Tooltip.Provider>
                       <Tooltip.Root>
                         <div className="flex gap-0.5 items-center">
                           <MessageCircle className="w-4 h-4" />
@@ -222,7 +220,7 @@ export default function Prestadores() {
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
-                    </Tooltip.Provider> */}
+                    </Tooltip.Provider>
                   </TableCell>
                   <TableCell
                     className={`${
