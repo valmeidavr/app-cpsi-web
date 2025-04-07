@@ -192,7 +192,11 @@ export default function Prestadores() {
                 >
                   <TableCell>{prestador.id}</TableCell>
                   <TableCell>{prestador.nome}</TableCell>
-                  <TableCell>{formatarCPF(prestador.cpf)}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {formatarCPF(prestador.cpf)}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Tooltip.Provider>
                       <Tooltip.Root>
