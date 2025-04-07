@@ -233,12 +233,12 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               alt="Grupo AAP-VR"
               width={40}
               height={40}
-              className="mr-2"
+              className="mr-5"
             />
             <span className="text-ml font-bold">AAP-VR / CPSI</span>
           </Link>
         ) : (
-          <div className="w-8 h-8" /> // Placeholder para manter o espaçamento
+          <div className=" h-8" /> // Placeholder para manter o espaçamento
         )}
         <Button
           variant="ghost"

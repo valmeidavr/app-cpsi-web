@@ -75,7 +75,7 @@ export const formSchema = z.object({
     .refine(
       (value) => {
         if (value) {
-          return /^\(\d{2}\) \d{5}-\d{4}$/.test(value);
+          return /^\(\d{2}\) \d{4}-\d{4}$/.test(value);
         }
         return true;
       },
