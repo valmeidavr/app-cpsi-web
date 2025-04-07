@@ -93,8 +93,11 @@ export default function EditarTabelaFaturamento() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "TabelaFaturamentos", href: "/painel/tabela_faturamentos" },
-          { label: "Editar Tabela de Faturamento" },
+          {
+            label: "Tabelas Faturamentos",
+            href: "/painel/tabela_faturamentos",
+          },
+          { label: "Editar Tabela Faturamento" },
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">
