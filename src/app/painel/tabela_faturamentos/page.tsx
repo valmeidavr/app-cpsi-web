@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { Save } from "lucide-react";
@@ -254,7 +255,9 @@ export default function TabelaFaturamentos() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{tabelaFaturamento.id}</TableCell>
-                  <TableCell>{tabelaFaturamento.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{tabelaFaturamento.nome}</Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
 
