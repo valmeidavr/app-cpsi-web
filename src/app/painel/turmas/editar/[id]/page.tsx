@@ -67,7 +67,7 @@ export default function EditarTurma() {
 
   const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
-    console.log(values);
+ 
     try {
       if (turmaId) await updateTurma(turmaId, values);
 
@@ -88,7 +88,7 @@ export default function EditarTurma() {
   const fetchTurmas = async () => {
     try {
       const { data } = await getPrestadors();
-      console.log("Turmas:", data);
+ 
       setPrestadores(data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos turmas");
@@ -97,7 +97,7 @@ export default function EditarTurma() {
   const fetchProcedimentos = async () => {
     try {
       const { data } = await getProcedimentos();
-      console.log("Procedimentos:", data);
+
       setProcedimentos(data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos procedimentos");
@@ -112,7 +112,7 @@ export default function EditarTurma() {
         await fetchProcedimentos();
         const data = await getTurmaById(turmaId);
         setTurma(data);
-        console.log(data);
+
         form.reset({
           nome: data.nome,
           horarioInicio: data.horario.split(" - ")[0],

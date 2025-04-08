@@ -105,7 +105,7 @@ export default function EditarPrestador() {
   //Função de submeter os dados
   const onSubmit = async (values: z.infer<typeof updatePrestadorSchema>) => {
     setLoading(true);
-    console.log(values);
+
     try {
       if (prestadorId) await updatePrestador(prestadorId, values);
 
@@ -390,7 +390,7 @@ export default function EditarPrestador() {
                           /^(\d{5})(\d{0,3})/,
                           "$1-$2"
                         );
-                        console.log(formattedValue);
+        
                         field.onChange(formattedValue);
                       }
                     }

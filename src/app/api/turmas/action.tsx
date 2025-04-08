@@ -53,7 +53,7 @@ export async function createTurma(body: CreateTurmaDTO) {
 
 export async function getTurmaById(id: string) {
   const { data } = await http.get(`http://localhost:3000/turmas/${id}`);
-  console.log(data);
+
   return data;
 }
 
@@ -78,7 +78,7 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
     horario: `${horarioInicio} - ${horarioFim}`,
   };
 
-  console.log("bodyFormatado", bodyFormatado);
+
   try {
     await http.patch(`http://localhost:3000/turmas/${id}`, bodyFormatado);
     revalidatePath("painel/turmas");

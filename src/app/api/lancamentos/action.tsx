@@ -1,6 +1,5 @@
 "use server";
 
-import type { LancamentoDTO } from "@/app/types/Lancamento";
 import { http } from "@/util/http";
 import { format, isValid, parse } from "date-fns";
 import { revalidatePath } from "next/cache";
@@ -32,7 +31,6 @@ export async function createLancamento(body: CreateLancamentoDTO) {
         console.error("Data de nascimento inválida:", body.data_lancamento);
       }
     }
-    console.log("body:", body);
     const { data } = await http.post("http://localhost:3000/lancamentos", body);
     // revalidatePath("/painel/lancamentos");
   } catch (error: any) {

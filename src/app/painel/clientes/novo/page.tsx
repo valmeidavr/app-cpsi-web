@@ -32,8 +32,7 @@ import {
 import { toast } from "sonner";
 
 //API
-import { createCliente, findByCpf, findByEmail } from "@/app/api/clientes/action";
-
+import { createCliente } from "@/app/api/clientes/action";
 
 //helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
@@ -113,7 +112,7 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingEmail(true);
     try {
-      const { data } = await findByEmail(email);
+      const { data } = await http.get(`/clientes/findByEmail/${email}`);
       if (data) {
         setEmailError("Este email já está em uso.");
       } else {
@@ -135,7 +134,10 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingCpf(true);
     try {
-      const { data } = await findByCpf(cpf);
+      const data = await http.get(
+        `http://localhost:3000/clientes/findByCpf/${cpf}`
+      );
+
       if (data) {
         setCpfError("Este cpf já está em uso.");
       } else {

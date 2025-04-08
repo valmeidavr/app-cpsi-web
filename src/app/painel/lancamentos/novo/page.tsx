@@ -121,8 +121,8 @@ export default function NovoLancamento() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lancamentos", href: "/painel/lancamentos" },
-          { label: "Novo Lancamento" }, // Último item sem link
+          { label: "Lançamentos", href: "/painel/lancamentos" },
+          { label: "Novo Lançamento" }, // Último item sem link
         ]}
       />
       <Form {...form}>

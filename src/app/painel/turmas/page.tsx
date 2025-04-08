@@ -76,7 +76,6 @@ export default function Turmas() {
       });
 
       setTurmas(data.data);
-      console.log(data.data)
       setTotalPaginas(data.totalPages);
       setTotalTurmas(data.total);
     } catch (error) {

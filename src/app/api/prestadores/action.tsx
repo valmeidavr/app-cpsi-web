@@ -50,11 +50,11 @@ export async function createPrestador(body: CreatePrestadorDTO) {
     body.telefone = limparTelefone(String(body.telefone));
   }
   body.rg = limparRG(body.rg);
-  // console.log("body:", body);
+;
   try {
     const { data } = await http.post(`http://localhost:3000/prestadores`, body);
 
-    // console.log("data:", data);
+
     revalidatePath("/painel/prestadores");
   } catch (error: any) {
     console.error("Erro ao criar prestador:", error.message);
@@ -67,7 +67,7 @@ export async function getPrestadorById(id: string) {
 }
 
 export async function updatePrestador(id: string, body: UpdatePrestadorDTO) {
-  console.log(body);
+ 
   if (body.dtnascimento) {
     const parsedDate = parse(body.dtnascimento, "dd/MM/yyyy", new Date());
     if (isValid(parsedDate)) {

@@ -37,17 +37,16 @@ export async function createUsuario({
   grupoIds,
 }: CreateUsuarioDTO) {
   try {
-    const grupos = grupoIds ? Object.values(grupoIds) : [];
-    await http.post("/users", {
+    const gruposIds = grupoIds ? Object.values(grupoIds) : [];
+    const data = await http.post("http://localhost:3000/users", {
       nome,
       email,
       senha,
-      grupoIds,
+      grupoIds: gruposIds,
     });
     revalidatePath("/painel/usuarios");
   } catch (error: any) {
     console.error("Erro ao criar usuarios:", error);
-    toast.error(error.response?.data?.message || "Erro ao criar usuarios.");
   }
 }
 

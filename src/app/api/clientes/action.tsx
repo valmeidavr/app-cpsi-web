@@ -55,14 +55,6 @@ export async function getClienteById(id: number): Promise<Cliente> {
 
   return data;
 }
-export async function findByEmail(email: string) {
-  const { data } = await http.get(`/clientes/findByEmail/${email}`);
-  return data;
-}
-export async function findByCpf(cpf: string) {
-  const { data } = await http.get(`/clientes/findByCpf/${cpf}`);
-  return data;
-}
 
 export async function updateCliente(id: string, body: UpdateClienteDTO) {
   try {

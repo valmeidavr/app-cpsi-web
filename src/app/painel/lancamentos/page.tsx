@@ -95,11 +95,11 @@ export default function Lancamentos() {
       if (filters?.data_lancamento && filters.data_lancamento.trim() !== "") {
         params.data_lancamento = filters.data_lancamento;
       }
-      console.log(params);
+
       const { data } = await http.get("http://localhost:3000/lancamentos", {
         params,
       });
-      console.log("data", data);
+  
       setLancamentos(data.data);
       setTotalPaginas(data.totalPages);
       setTotalLancamentos(data.total);
@@ -164,7 +164,6 @@ export default function Lancamentos() {
   }, [paginaAtual]);
 
   const handleSearch = (values: any) => {
-    console.log(values);
     setPaginaAtual(0);
     carregarLancamentos(values);
   };
@@ -174,10 +173,10 @@ export default function Lancamentos() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Lancamentos" },
+          { label: "Lista de Lançamentos" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lancamentos</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
 
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(handleSearch)}>

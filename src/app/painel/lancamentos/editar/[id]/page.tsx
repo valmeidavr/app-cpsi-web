@@ -126,7 +126,7 @@ export default function EditarLancamento() {
       await Promise.all([fetchCaixas(), fetchPlanoContas(), fetchUsuario()]);
       const data = await getLancamentoById(lancamentoId as string);
       setLancamento(data);
-      console.log(data);
+
       form.reset({
         valor: formatValor(data.valor) as unknown as number,
         descricao: data.descricao,
@@ -155,7 +155,7 @@ export default function EditarLancamento() {
   const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
-      console.log("values:", values);
+
       await updateLancamento(lancamentoId as string, values);
       router.push(
         "/painel/lancamentos?type=success&message=Atualizado com sucesso"
@@ -183,7 +183,7 @@ export default function EditarLancamento() {
         </div>
       ) : (
         <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Novo Lançamento</h1>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Lançamento</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
