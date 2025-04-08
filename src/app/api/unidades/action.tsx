@@ -3,6 +3,8 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import { createUnidadeSchema, updateUnidadeSchema } from "./schema/formSchemaUnidades";
 
 export async function getUnidades(
   page: number = 1,
@@ -15,13 +17,9 @@ export async function getUnidades(
   return data;
 }
 
-type createUnidadePayload = {
-  nome: string;
-};
-type updateUnidadePayload = {
-  nome: string;
-};
-export async function createUnidade({ nome }: createUnidadePayload) {
+export type CreateUnidadeDTO = z.infer<typeof createUnidadeSchema>;
+export type UpdateUnidadeDTO = z.infer<typeof updateUnidadeSchema>;
+export async function createUnidade({ nome }: CreateUnidadeDTO) {
   try {
     await http.post("/unidades", {
       nome,
@@ -38,7 +36,7 @@ export async function getUnidadeById(id: string) {
   return data;
 }
 
-export async function updateUnidade(id: string, body: updateUnidadePayload) {
+export async function updateUnidade(id: string, body: UpdateUnidadeDTO) {
   try {
     const { data } = await http.patch(`/unidades/${id}`, body);
     revalidatePath("painel/unidades?status=success");

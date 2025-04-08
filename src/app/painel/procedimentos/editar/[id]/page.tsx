@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,27 +36,25 @@ import {
 import {
   getProcedimentoById,
   updateProcedimento,
-  updateProcedimentoPayload,
 } from "@/app/api/procedimentos/action";
-import { formSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
+import { updateProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
+import { getEspecialidades } from "@/app/api/especialidades/action";
 
-//Helpers
-import { redirect, useParams } from "next/navigation";
-import { http } from "@/util/http";
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
+//Types
+import { Especialidade } from "@/app/types/Especialidade";
+import { Procedimento } from "@/app/types/Procedimento";
 
 export default function EditarProcedimento() {
   const [loading, setLoading] = useState(false);
-  const [procedimento, setProcedimento] =
-    useState<updateProcedimentoPayload | null>(null);
+  const [procedimento, setProcedimento] = useState<Procedimento | null>(null);
   const [especialidadeOptions, setEspecialidadeOptions] = useState<
-    EspecialidadeDTO[]
+    Especialidade[]
   >([]);
   const params = useParams();
   const procedimentoId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(updateProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -89,7 +88,7 @@ export default function EditarProcedimento() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof updateProcedimentoSchema>) => {
     setLoading(true);
     try {
       if (!procedimentoId) redirect("/painel/procedimentos");
@@ -113,8 +112,8 @@ export default function EditarProcedimento() {
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await http.get("/especialidades", {});
-      setEspecialidadeOptions(data.data);
+      const { data } = await getEspecialidades();
+      setEspecialidadeOptions(data);
     } catch (error: any) {}
   };
   // Mockup de opçoes de Tipo

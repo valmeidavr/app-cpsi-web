@@ -1,7 +1,11 @@
 "use client";
+//react
 
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
+//Components
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
@@ -22,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+//helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import {
   formatCPFInput,
@@ -31,18 +36,15 @@ import {
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//api
-
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+//API
 import { format, isValid, parse } from "date-fns";
 import {
   getPrestadorById,
-  PrestadorDTO,
   updatePrestador,
 } from "@/app/api/prestadores/action";
-import { formSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
-
+import { updatePrestadorSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
+//Types
+import { Prestador } from "@/app/types/Prestador";
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
   { value: "Feminino", label: "Feminino" },
@@ -50,7 +52,7 @@ const sexOptions = [
 ];
 
 export default function EditarPrestador() {
-  const [prestador, setPrestador] = useState<PrestadorDTO | null>(null);
+  const [prestador, setPrestador] = useState<Prestador | null>(null);
   const [loading, setLoading] = useState(false);
   const params = useParams();
   const prestadorId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -58,8 +60,8 @@ export default function EditarPrestador() {
   const router = useRouter();
 
   //Definindo valores default com os dado do prestador
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof updatePrestadorSchema>>({
+    resolver: zodResolver(updatePrestadorSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -101,7 +103,7 @@ export default function EditarPrestador() {
   }, [prestador, form]);
 
   //Função de submeter os dados
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof updatePrestadorSchema>) => {
     setLoading(true);
     console.log(values);
     try {
@@ -241,14 +243,16 @@ export default function EditarPrestador() {
                           }}
                           onBlur={() => {
                             const parsedDate = parse(
-                              field.value,
+                              field.value as string,
                               "dd/MM/yyyy",
                               new Date()
                             );
                             const currentDate = new Date();
                             const minYear = 1920;
 
-                            const year = parseInt(field.value.split("/")[2]);
+                            const year = parseInt(
+                             field.value? field.value.split("/")[2] : ""
+                            );
 
                             if (
                               !isValid(parsedDate) ||

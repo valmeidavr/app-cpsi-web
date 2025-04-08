@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchema = z.object({
+export const createTabelaFaturamentoSchema = z.object({
   nome: z
     .string()
     .min(1, { message: "O campo é obrigatório" })
@@ -10,3 +10,5 @@ export const formSchema = z.object({
       message: "O nome não pode conter números ou símbolos",
     }),
 });
+
+export const updateTabelaFaturamentoSchema = createTabelaFaturamentoSchema.partial();

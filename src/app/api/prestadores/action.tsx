@@ -4,7 +4,7 @@ import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 import { z } from "zod";
-import { formSchema } from "./schema/formSchemaPretadores";
+import { createPrestadorSchema, updatePrestadorSchema } from "./schema/formSchemaPretadores";
 import { format, isValid, parse } from "date-fns";
 import {
   limparCEP,
@@ -24,9 +24,11 @@ export async function getPrestadors(
   return data;
 }
 
-export type PrestadorDTO = z.infer<typeof formSchema>;
+export type CreatePrestadorDTO = z.infer<typeof createPrestadorSchema>;
+export type UpdatePrestadorDTO = z.infer<typeof updatePrestadorSchema>;
 
-export async function createPrestador(body: PrestadorDTO) {
+
+export async function createPrestador(body: CreatePrestadorDTO) {
   body.cpf = limparCPF(String(body.cpf));
   body.celular = limparTelefone(String(body.celular));
   body.rg = limparRG(body.rg);
@@ -64,7 +66,7 @@ export async function getPrestadorById(id: string) {
   return data;
 }
 
-export async function updatePrestador(id: string, body: PrestadorDTO) {
+export async function updatePrestador(id: string, body: UpdatePrestadorDTO) {
   console.log(body);
   if (body.dtnascimento) {
     const parsedDate = parse(body.dtnascimento, "dd/MM/yyyy", new Date());

@@ -1,7 +1,10 @@
 "use client";
-
+//react
 import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+//Components
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
@@ -22,34 +25,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { handleCEPChange } from "@/app/helpers/handleCEP";
-import {
-  formatCPFInput,
-  formatRGInput,
-  formatTelefoneInput,
-} from "@/app/helpers/format";
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//api
-
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { format, isValid, parse } from "date-fns";
-import { getTurmaById, TurmaDTO, updateTurma } from "@/app/api/turmas/action";
-import { formSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
-import { Prestador, Procedimento } from "../../page";
+//API
+import { getTurmaById, updateTurma } from "@/app/api/turmas/action";
 import { getPrestadors } from "@/app/api/prestadores/action";
 import { getProcedimentos } from "@/app/api/procedimentos/action";
+import { createTurmaSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
 
-const sexOptions = [
-  { value: "Masculino", label: "Masculino" },
-  { value: "Feminino", label: "Feminino" },
-  { value: "outro", label: "Outro" },
-];
+//Types
+import { Turma } from "@/app/types/Turma";
+import { Prestador } from "@/app/types/Prestador";
+import { Procedimento } from "@/app/types/Procedimento";
 
 export default function EditarTurma() {
-  const [turma, setTurma] = useState<TurmaDTO | null>(null);
+  const [turma, setTurma] = useState<Turma | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const params = useParams();
@@ -59,8 +50,8 @@ export default function EditarTurma() {
   const router = useRouter();
 
   //Definindo valores default com os dado do turma
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof createTurmaSchema>>({
+    resolver: zodResolver(createTurmaSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -74,7 +65,7 @@ export default function EditarTurma() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
     console.log(values);
     try {

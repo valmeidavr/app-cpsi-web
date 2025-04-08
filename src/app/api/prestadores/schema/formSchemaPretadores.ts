@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchema = z.object({
+export const createPrestadorSchema = z.object({
   nome: z
     .string()
     .min(3, { message: "O nome deve ter pelo menos 3 caracteres" })
@@ -97,3 +97,4 @@ export const formSchema = z.object({
 
   complemento: z.string().optional(),
 });
+export const updatePrestadorSchema = createPrestadorSchema.partial();

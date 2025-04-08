@@ -1,6 +1,7 @@
 "use client";
-
+//React
 import { useEffect, useState } from "react";
+//Components
 import {
   Table,
   TableBody,
@@ -11,23 +12,12 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Loader2,
-  Search,
-  Edit,
-  Power,
-  Plus,
-  Eye,
-  Trash,
-  Mail,
-} from "lucide-react";
+import { Loader2, Search, Edit, Plus, Trash, Mail } from "lucide-react";
 import ReactPaginate from "react-paginate";
-import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { deleteUsuario } from "@/app/api/usuarios/action";
 import {
   DialogFooter,
   DialogHeader,
@@ -36,21 +26,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-// ✅ Definir o tipo Usuario
-interface Usuario {
-  id: number;
-  nome: string;
-  email: string;
-  grupos: {
-    grupo: {
-      id: number;
-      nome: string;
-      sistema: {
-        nome: string;
-      };
-    };
-  }[];
-}
+
+//API
+import { deleteUsuario } from "@/app/api/usuarios/action";
+import { http } from "@/util/http";
+//Types
+import { Usuario } from "@/app/types/Usuario";
 
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);

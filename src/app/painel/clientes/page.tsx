@@ -35,16 +35,8 @@ import {
 } from "@/components/ui/dialog";
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 import { toast } from "sonner";
+import { Cliente } from "@/app/types/Cliente";
 
-// ✅ Definir o tipo Cliente
-interface Cliente {
-  id: number;
-  nome: string;
-  email: string;
-  cpf: string;
-  telefone1: string;
-  status: "Ativo" | "Inativo";
-}
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);

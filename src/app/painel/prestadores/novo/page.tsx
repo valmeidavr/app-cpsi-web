@@ -35,7 +35,7 @@ import {
 //Helpers
 import { useRouter } from "next/navigation";
 import { createPrestador } from "@/app/api/prestadores/action";
-import { formSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
+
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { http } from "@/util/http";
 import { isValid, parse } from "date-fns";
@@ -44,6 +44,7 @@ import {
   formatRGInput,
   formatTelefoneInput,
 } from "@/app/helpers/format";
+import { createPrestadorSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
   { value: "Feminino", label: "Feminino" },
@@ -59,7 +60,7 @@ export default function NovoPrestador() {
   const router = useRouter();
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createPrestadorSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -115,7 +116,7 @@ export default function NovoPrestador() {
     const newTimeoutCpfId = setTimeout(() => checkCpf(cpf), 500);
     setTimeoutCpfId(newTimeoutCpfId);
   };
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createPrestadorSchema>) => {
     setLoading(true);
     try {
       await createPrestador(values);

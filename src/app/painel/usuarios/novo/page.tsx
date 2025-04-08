@@ -1,7 +1,13 @@
 "use client";
+
+//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import {
@@ -14,14 +20,16 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { formSchema } from "@/app/api/usuarios/schema/formSchemaUsuarios";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+
+//API
 import { createUsuario } from "@/app/api/usuarios/action";
-import { useRouter } from "next/navigation";
-import { z } from "zod";
+import { createUsuarioSchema } from "@/app/api/usuarios/schema/formSchemaUsuarios";
+//Types
 import { SistemaComGrupos } from "@/app/types/Usuario";
+//Helpers
 import { http } from "@/util/http";
 
 export default function UsuarioRegistrationForm() {
@@ -50,7 +58,7 @@ export default function UsuarioRegistrationForm() {
   const router = useRouter();
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createUsuarioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -74,7 +82,7 @@ export default function UsuarioRegistrationForm() {
     form.setValue(`grupoIds.${sistemaId}`, grupoId, { shouldValidate: true });
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createUsuarioSchema>) => {
     setLoading(true);
     if (emailError) {
       toast.error("Corrija os erros antes de enviar o formulário.");

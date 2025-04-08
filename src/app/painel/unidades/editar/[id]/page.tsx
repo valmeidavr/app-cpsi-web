@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
+import { redirect, useParams } from "next/navigation";
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,11 +25,12 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
+import { getUnidadeById, updateUnidade } from "@/app/api/unidades/action";
+import { updateUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
 
 //Helpers
-import { redirect, useParams } from "next/navigation";
-import { getUnidadeById, updateUnidade } from "@/app/api/unidades/action";
-import { formSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
+
+
 
 export default function EditarUnidade() {
   const [loading, setLoading] = useState(false);
@@ -38,7 +39,7 @@ export default function EditarUnidade() {
   const unidadeId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(updateUnidadeSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -64,7 +65,7 @@ export default function EditarUnidade() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof updateUnidadeSchema>) => {
     setLoading(true);
     try {
       if (!unidadeId) redirect("/painel/unidades");

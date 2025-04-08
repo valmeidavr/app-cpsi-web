@@ -3,6 +3,11 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import {
+  createTabelaFaturamentoSchema,
+  updateTabelaFaturamentoSchema,
+} from "./schema/formSchemaEspecialidade";
 
 export async function getTabelaFaturamentos(
   page: number = 1,
@@ -15,20 +20,18 @@ export async function getTabelaFaturamentos(
   return data;
 }
 
-type createTabelaFaturamentoPayload = {
-  nome: string;
- 
-};
-type updateTabelaFaturamentoPayload = {
-  nome: string;
- 
-};
+export type CreateTabelaFaturamentoDTO = z.infer<
+  typeof createTabelaFaturamentoSchema
+>;
+export type UpdateTabelaFaturamentoDTO = z.infer<
+  typeof updateTabelaFaturamentoSchema
+>;
 export async function createTabelaFaturamento({
-  nome
-}: createTabelaFaturamentoPayload) {
+  nome,
+}: CreateTabelaFaturamentoDTO) {
   try {
     await http.post("/tabela-faturamentos", {
-      nome
+      nome,
     });
     revalidatePath("/painel/tabela-faturamentos");
   } catch (error: any) {
@@ -46,14 +49,10 @@ export async function getTabelaFaturamentoById(id: string) {
 
 export async function updateTabelaFaturamento(
   id: string,
-  body: updateTabelaFaturamentoPayload
+  body: UpdateTabelaFaturamentoDTO
 ) {
-
   try {
-    const { data } = await http.patch(
-      `/tabela-faturamentos/${id}`,
-      body
-    );
+    const { data } = await http.patch(`/tabela-faturamentos/${id}`, body);
     revalidatePath("painel/tabela-faturamentos?status=success");
     return data;
   } catch (error) {
@@ -67,9 +66,7 @@ export async function updateTabelaFaturamento(
 
 export async function deleteTabelaFaturamento(id: number) {
   try {
-    const response = await http.delete(
-      `/tabela-faturamentos/${id}`
-    );
+    const response = await http.delete(`/tabela-faturamentos/${id}`);
     revalidatePath("painel/tabela-faturamentos");
   } catch {
     return {

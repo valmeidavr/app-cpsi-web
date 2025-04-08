@@ -2,17 +2,11 @@
 
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
-import { toast } from "sonner";
-import { string, z } from "zod";
 
-import { format, isValid, parse, parseISO } from "date-fns";
-import {
-  limparCEP,
-  limparCPF,
-  limparRG,
-  limparTelefone,
-} from "@/util/clearData";
-import { formSchema } from "./schema/formSchemaTurmas";
+
+import { format, isValid, parse } from "date-fns";
+import { createTurmaSchema, updateTurmaSchema } from "./schema/formSchemaTurmas";
+import { z } from "zod";
 
 export async function getTurmas(
   page: number = 1,
@@ -24,28 +18,9 @@ export async function getTurmas(
   });
   return data;
 }
-
-export type TurmaDTO = {
-  nome: string;
-  horarioInicio: string;
-  horarioFim: string;
-  dataInicio: string;
-  dataFim?: string;
-  limiteVagas: number;
-  procedimentosId: number;
-  prestadoresId: number;
-};
-export type UpdateTurmaDTO = {
-  nome?: string;
-  horarioInicio?: string;
-  horarioFim?: string;
-  dataInicio?: string;
-  dataFim?: string;
-  limiteVagas?: number;
-  procedimentosId?: number;
-  prestadoresId?: number;
-};
-export async function createTurma(body: TurmaDTO) {
+export type CreateTurmaDTO = z.infer<typeof createTurmaSchema>;
+export type UpdateTurmaDTO = z.infer<typeof updateTurmaSchema>;
+export async function createTurma(body: CreateTurmaDTO) {
   if (body.dataInicio) {
     const dataInicio = parse(body.dataInicio, "dd/MM/yyyy", new Date());
     if (isValid(dataInicio)) {
@@ -116,9 +91,11 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
   }
 }
 
-export async function finalizarTurma(id: number, body: UpdateTurmaDTO) { 
+export async function finalizarTurma(id: number, body: UpdateTurmaDTO) {
   try {
-     await http.patch(`http://localhost:3000/turmas/${id}`, { dataFim: body.dataFim });
+    await http.patch(`http://localhost:3000/turmas/${id}`, {
+      dataFim: body.dataFim,
+    });
     revalidatePath("/painel/turmas");
   } catch (error) {
     console.error("Erro na requisição:", error);

@@ -4,7 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
+import { redirect, useParams } from "next/navigation";
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,14 +25,14 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-
-//Helpers
-import { redirect, useParams } from "next/navigation";
+import { updateTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
 import {
-  getTabelaFaturamentoById,
   updateTabelaFaturamento,
+  getTabelaFaturamentoById,
 } from "@/app/api/tabela_faturamentos/action";
-import { formSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
+
+
+
 
 export default function EditarTabelaFaturamento() {
   const [loading, setLoading] = useState(false);
@@ -43,7 +43,7 @@ export default function EditarTabelaFaturamento() {
     : params.id;
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(updateTabelaFaturamentoSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -69,12 +69,17 @@ export default function EditarTabelaFaturamento() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof updateTabelaFaturamentoSchema>
+  ) => {
     setLoading(true);
     try {
       if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
 
-      const data = await updateTabelaFaturamento(tabelaFaturamentoId, values);
+      const data = await updateTabelaFaturamento(
+        tabelaFaturamentoId,
+        values
+      );
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");

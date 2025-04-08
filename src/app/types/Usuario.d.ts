@@ -18,7 +18,7 @@ export type Grupo = {
   sistema: Sistema;
 };
 
-export type UsuarioComGrupos = {
+export type Usuario = {
   id: number;
   nome: string;
   email: string;

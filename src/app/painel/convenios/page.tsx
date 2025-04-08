@@ -3,6 +3,7 @@
 //React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
+import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
 
 //Components
@@ -17,32 +18,26 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
+import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-import Link from "next/link";
-
 
 //Helpers
-import { toast } from "sonner";
 import { http } from "@/util/http";
-import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
+
+//Types
+import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
+import { Convenio } from "@/app/types/Convenios";
 
 // ✅ Definir o tipo convenio
-interface convenio {
-  id: number;
-  nome: string;
-  regras: string;
-  tabelaFaturamentosId: number;
-}
-
 export default function Convenios() {
-  const [convenios, setConvenios] = useState<convenio[]>([]);
+  const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalconvenios, setTotalconvenios] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamentoDTO[]
+    TabelaFaturamento[]
   >([]);
 
   const carregarConvenios = async () => {

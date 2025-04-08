@@ -1,7 +1,7 @@
 import * as z from "zod";
 import { parse, isValid, format } from "date-fns";
 
-export const formSchema = z.object({
+export const createClienteSchema = z.object({
   nome: z
     .string()
     .min(3, { message: "O nome deve ter pelo menos 3 caracteres" })
@@ -44,9 +44,7 @@ export const formSchema = z.object({
     message: "Formato de CPF inválido",
   }),
 
-  cep: z
-    .string()
-    .optional(),
+  cep: z.string().optional(),
 
   logradouro: z.string().optional(),
   numero: z.string().optional(),
@@ -58,7 +56,7 @@ export const formSchema = z.object({
     .string()
     .regex(/^\(?\d{2}\)?\s?9?\d{4}-\d{4}$/, { message: "Telefone inválido" }),
 
-  telefone2: z
-    .string()
-    .optional(),
+  telefone2: z.string().optional(),
 });
+
+export const updateClienteSchema = createClienteSchema.partial();

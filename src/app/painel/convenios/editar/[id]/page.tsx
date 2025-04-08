@@ -26,7 +26,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
 import { getConvenioById, updateConvenio } from "@/app/api/convenios/action";
-import { formSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
@@ -37,8 +36,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
+import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import { http } from "@/util/http";
+import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 export default function EditarConvenio() {
   const [loading, setLoading] = useState(false);
@@ -46,11 +46,11 @@ export default function EditarConvenio() {
   const params = useParams();
   const convenioId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamentoDTO[]
+    TabelaFaturamento[]
   >([]);
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createConvenioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -89,7 +89,7 @@ export default function EditarConvenio() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
       if (!convenioId) redirect("/painel/convenios");

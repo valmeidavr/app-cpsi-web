@@ -3,9 +3,14 @@
 //React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
-import * as Tooltip from "@radix-ui/react-tooltip";
+import { FormProvider, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+//Zod
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 //Components
+import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
   TableBody,
@@ -27,13 +32,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-
-//Helpers
-import { http } from "@/util/http";
-import { toast } from "sonner";
-import { PrestadorDTO } from "@/app/api/prestadores/action";
-import { formatDate } from "date-fns";
 import {
   FormControl,
   FormField,
@@ -41,46 +39,26 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { FormProvider, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { toast } from "sonner";
+//API
 import { finalizarTurma, updateTurma } from "@/app/api/turmas/action";
-import { useRouter } from "next/navigation";
-import { revalidatePath } from "next/cache";
 
-export type Prestador = {
-  id: number;
-  nome: string;
-};
+//Helpers
+import { http } from "@/util/http";
+import { formatDate } from "date-fns";
 
-export type Procedimento = {
-  id: number;
-  nome: string;
-  especialidadeId: number;
-};
-interface TurmaProps {
-  id: number;
-  nome: string;
-  horario: string;
-  dataInicio: string;
-  dataFim: string;
-  limiteVagas: number;
-  prestadoresId: number;
-  procedimentosId: number;
-  createdAt: string;
-  updatedAt: string;
-  prestador: Prestador;
-  procedimento: Procedimento;
-}
+//Types
+import { Turma } from "@/app/types/Turma";
+
 
 export default function Turmas() {
-  const [turmas, setTurmas] = useState<TurmaProps[]>([]);
+  const [turmas, setTurmas] = useState<Turma[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalTurmas, setTotalTurmas] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [turmaSelecionado, setTurmaSelecionado] = useState<TurmaProps | null>(
+  const [turmaSelecionado, setTurmaSelecionado] = useState<Turma | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);

@@ -2,6 +2,7 @@
 
 //React
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 //Zod
@@ -32,22 +33,19 @@ import {
 
 //API
 import { createProcedimento } from "@/app/api/procedimentos/action";
-import { formSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
-
-//Helpers
-import { useRouter } from "next/navigation";
 import { getEspecialidades } from "@/app/api/especialidades/action";
-import { http } from "@/util/http";
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
+import { createProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
+//Types
+import { Especialidade } from "@/app/types/Especialidade";
 
 export default function NovoProcedimento() {
   const [loading, setLoading] = useState(false);
   const [especialidadeOptions, setEspecialidadeOptions] = useState<
-    EspecialidadeDTO[]
+    Especialidade[]
   >([]);
   const router = useRouter();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -57,7 +55,7 @@ export default function NovoProcedimento() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createProcedimentoSchema>) => {
     setLoading(true);
     try {
       await createProcedimento({
@@ -85,9 +83,9 @@ export default function NovoProcedimento() {
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await http.get("/especialidades", {});
+      const { data } = await getEspecialidades();
 
-      setEspecialidadeOptions(data.data);
+      setEspecialidadeOptions(data);
     } catch (error: any) {}
   };
   // Mockup de opçoes de Tipo

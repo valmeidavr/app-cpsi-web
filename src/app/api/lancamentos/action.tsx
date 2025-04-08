@@ -1,8 +1,11 @@
 "use server";
 
+import type { LancamentoDTO } from "@/app/types/Lancamento";
 import { http } from "@/util/http";
 import { format, isValid, parse } from "date-fns";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
 export async function getLancamentos(
   page: number = 1,
@@ -15,41 +18,10 @@ export async function getLancamentos(
   return data;
 }
 
-type CreateLancamentoPayload = {
-  valor: number;
-  descricao: string;
-  data_lancamento: string;
-  tipo: "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA";
-  clientes_Id?: number | null;
-  plano_contas_id: number;
-  caixas_id: number;
-  lancamentos_original_id?: number | null;
-  id_transferencia?: number | null;
-  motivo_estorno?: string | null;
-  motivo_transferencia?: string | null;
-  forma_pagamento: "DINHEIRO" | "CARTAO" | "CHEQUE" | "BOLETO" | "PIX";
-  status_pagamento: "PENDENTE" | "PAGO";
-  agendas_id?: number | null;
-  usuario_id: number;
-};
-type updateLancamentoPayload = {
-  valor: number;
-  descricao: string;
-  data_lancamento: string;
-  tipo: "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA";
-  clientes_Id?: number | null;
-  plano_contas_id: number;
-  caixas_id: number;
-  lancamentos_original_id?: number | null;
-  id_transferencia?: number | null;
-  motivo_estorno?: string | null;
-  motivo_transferencia?: string | null;
-  forma_pagamento: "DINHEIRO" | "CARTAO" | "CHEQUE" | "BOLETO" | "PIX";
-  status_pagamento: "PENDENTE" | "PAGO";
-  agendas_id?: number | null;
-  usuario_id: number;
-};
-export async function createLancamento(body: CreateLancamentoPayload) {
+export type CreateLancamentoDTO = z.infer<typeof createLancamentoSchema>;
+export type UpdateLancamentoDTO = z.infer<typeof updateLancamentoSchema>;
+
+export async function createLancamento(body: CreateLancamentoDTO) {
   try {
     if (body.data_lancamento) {
       const parsedDate = parse(body.data_lancamento, "yyyy-MM-dd", new Date());
@@ -73,10 +45,7 @@ export async function getLancamentoById(id: string) {
   return data;
 }
 
-export async function updateLancamento(
-  id: string,
-  body: updateLancamentoPayload
-) {
+export async function updateLancamento(id: string, body: UpdateLancamentoDTO) {
   try {
     const { data } = await http.patch(
       `http://localhost:3000/lancamentos/${id}`,
@@ -95,7 +64,9 @@ export async function updateLancamento(
 
 export async function deleteLancamento(id: number) {
   try {
-    const response = await http.delete(`http://localhost:3000/lancamentos/${id}`);
+    const response = await http.delete(
+      `http://localhost:3000/lancamentos/${id}`
+    );
     revalidatePath("painel/lancamentos");
   } catch {
     return {

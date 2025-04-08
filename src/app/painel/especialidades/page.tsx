@@ -31,14 +31,10 @@ import {
 //Helpers
 import { http } from "@/util/http";
 import { toast } from "sonner";
+import { Especialidade } from "@/app/types/Especialidade";
 
 // ✅ Definir o tipo Especialidade
-interface Especialidade {
-  id: number;
-  nome: string;
-  codigo: string;
-  status: "Ativo" | "Inativo";
-}
+
 
 export default function Especialidades() {
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);

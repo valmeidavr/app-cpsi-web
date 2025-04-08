@@ -3,6 +3,7 @@
 //React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,14 +32,15 @@ import {
 } from "@/components/ui/select";
 
 //API
-
-//Helpers
-import { useRouter } from "next/navigation";
-import { formSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
 import { createTurma } from "@/app/api/turmas/action";
 import { getPrestadors } from "@/app/api/prestadores/action";
-import { Prestador, Procedimento } from "../page";
 import { getProcedimentos } from "@/app/api/procedimentos/action";
+import { createTurmaSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
+
+//Types
+import { Prestador } from "@/app/types/Prestador";
+import { Procedimento } from "@/app/types/Procedimento";
+
 
 export default function NovoTurma() {
   const [loading, setLoading] = useState(false);
@@ -48,7 +50,7 @@ export default function NovoTurma() {
   const router = useRouter();
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createTurmaSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -84,7 +86,7 @@ export default function NovoTurma() {
     fetchProcedimentos();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
     try {
       await createTurma(values);

@@ -2,10 +2,11 @@
 
 //React
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ReactPaginate from "react-paginate";
-import * as Tooltip from "@radix-ui/react-tooltip";
 
 //Components
+import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
   TableBody,
@@ -29,22 +30,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { toast } from "sonner";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
+//API
+import { createUnidade } from "@/app/api/unidades/action";
+import { createUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
 //Helpers
 import { http } from "@/util/http";
-import { toast } from "sonner";
-import { createUnidade } from "@/app/api/unidades/action";
-import { formSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
-import { useRouter } from "next/navigation";
-
-interface Unidade {
-  id: number;
-  nome: string;
-}
+//Types
+import { Unidade } from "@/app/types/Unidades";
 
 export default function Unidades() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
@@ -85,14 +82,14 @@ export default function Unidades() {
 
   const router = useRouter();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createUnidadeSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createUnidadeSchema>) => {
     setLoading(true);
     try {
       await createUnidade(values);

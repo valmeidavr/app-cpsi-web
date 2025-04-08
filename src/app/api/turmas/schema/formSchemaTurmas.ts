@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const formSchema = z.object({
+export const createTurmaSchema = z.object({
   nome: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   horarioInicio: z.string(),
   horarioFim: z.string(),
@@ -18,3 +18,4 @@ export const formSchema = z.object({
     .transform((val) => Number(val))
     .refine((val) => val > 0, { message: "Campo obrigatório" }),
 });
+export const updateTurmaSchema = createTurmaSchema.partial();

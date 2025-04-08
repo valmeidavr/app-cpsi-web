@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
+import { useRouter } from "next/navigation";
 
 //Components
 import {
@@ -16,7 +17,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
+import { Loader2, Search, Edit, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -26,25 +27,21 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { toast } from "sonner";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
+//API
+import { createTabelaFaturamento } from "@/app/api/tabela_faturamentos/action";
+import { createTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
 //Helpers
 import { http } from "@/util/http";
-import { toast } from "sonner";
-import { createTabelaFaturamento } from "@/app/api/tabela_faturamentos/action";
-import { formSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
-import { useRouter } from "next/navigation";
+//Types
+import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 
-interface TabelaFaturamento {
-  id: number;
-  nome: string;
-}
 
 export default function TabelaFaturamentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
@@ -87,14 +84,14 @@ export default function TabelaFaturamentos() {
 
   const router = useRouter();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createTabelaFaturamentoSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createTabelaFaturamentoSchema>) => {
     setLoading(true);
     try {
       await createTabelaFaturamento(values);

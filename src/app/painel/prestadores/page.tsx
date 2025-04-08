@@ -35,29 +35,23 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 //Helpers
 import { http } from "@/util/http";
-import { toast } from "sonner";
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
-
-interface PrestadorProps {
-  id: number | string;
-  nome: string;
-  cpf: string;
-  status: string;
-  celular: string;
-}
+//Types
+import { Prestador } from "@/app/types/Prestador";
 
 export default function Prestadores() {
-  const [prestadores, setPrestadores] = useState<PrestadorProps[]>([]);
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalPrestadores, setTotalPrestadores] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [prestadorSelecionado, setPrestadorSelecionado] =
-    useState<PrestadorProps | null>(null);
+    useState<Prestador | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
 
@@ -202,12 +196,13 @@ export default function Prestadores() {
                             <a
                               target="_blank"
                               className="hover:text-blue-500 text-[13px]"
-                              href={`https://wa.me/55${prestador.celular.replace(
-                                /\D/g,
-                                ""
-                              )}`}
+                              href={`https://wa.me/55${prestador.celular
+                                ?.toString()
+                                .replace(/\D/g, "")}`}
                             >
-                              {formatarTelefone(prestador.celular)}
+                              {prestador.celular
+                                ? formatarTelefone(prestador.celular)
+                                : prestador.celular}
                             </a>
                           </Tooltip.Trigger>
                         </div>

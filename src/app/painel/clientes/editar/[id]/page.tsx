@@ -1,12 +1,14 @@
 "use client";
-import { getClienteById } from "@/app/api/clientes/action";
+// React
+import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Cliente } from "@/app/types/Cliente";
 import { redirect, useParams } from "next/navigation";
-import Breadcrumb from "@/components/ui/Breadcrumb";
+//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import Breadcrumb from "@/components/ui/Breadcrumb";
 import {
   Form,
   FormControl,
@@ -23,17 +25,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { format, isValid, parse } from "date-fns";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//api
+//API
 import { updateCliente } from "@/app/api/clientes/action";
-import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-import { format, isValid, parse } from "date-fns";
+import { getClienteById } from "@/app/api/clientes/action";
+import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
+//Types
+import { Cliente } from "@/app/types/Cliente";
 
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
@@ -41,9 +44,7 @@ const sexOptions = [
   { value: "outro", label: "Outro" },
 ];
 
-export interface FormUpdateClienteProps {
-  cliente: Cliente;
-}
+
 
 export default function EditarCliente() {
   const [cliente, setCliente] = useState<Cliente | null>(null);
@@ -54,8 +55,8 @@ export default function EditarCliente() {
   const router = useRouter();
 
   //Definindo valores default com os dado do cliente
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof createClienteSchema>>({
+    resolver: zodResolver(createClienteSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -94,7 +95,7 @@ export default function EditarCliente() {
   }, [cliente, form]);
 
   //Função de submeter os dados
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     try {
       if (clienteId) await updateCliente(clienteId, values);
@@ -239,7 +240,6 @@ export default function EditarCliente() {
                       <FormLabel>Data de Nascimento *</FormLabel>
                       <FormControl>
                         <Input
-                        
                           placeholder="DD/MM/AAAA"
                           maxLength={10}
                           value={field.value || ""}
@@ -367,7 +367,7 @@ export default function EditarCliente() {
                         maxLength={9}
                         value={field.value || ""}
                         onChange={(e) => {
-                          let rawValue = e.target.value.replace(/\D/g, ""); 
+                          let rawValue = e.target.value.replace(/\D/g, "");
                           const inputEvent = e.nativeEvent as InputEvent;
 
                           if (
@@ -381,7 +381,7 @@ export default function EditarCliente() {
                               /^(\d{5})(\d)/,
                               "$1-$2"
                             );
-                 
+
                             field.onChange(formattedValue);
                           }
 

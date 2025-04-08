@@ -1,7 +1,14 @@
 "use client";
+//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { redirect, useParams, useRouter } from "next/navigation";
+
+//Zod
+import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+
+//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Eye, EyeOff } from "lucide-react";
 import {
@@ -14,16 +21,17 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+
+//API
 import { getUsuarioById, updateUsuario } from "@/app/api/usuarios/action";
-import { redirect, useParams, useRouter } from "next/navigation";
-import { z } from "zod";
+import { updateUsuarioSchema } from "@/app/api/usuarios/schema/formShemaUpdateUsuario";
+//Helpers
 import { SistemaComGrupos } from "@/app/types/Usuario";
+//Types
 import { http } from "@/util/http";
-import { formSchemaUpdate } from "@/app/api/usuarios/schema/formShemaUpdateUsuario";
 
 export default function EditarUsuario() {
   const [loading, setLoading] = useState(false);
@@ -96,7 +104,7 @@ export default function EditarUsuario() {
   }, [userId, sistemas]);
 
   const form = useForm({
-    resolver: zodResolver(formSchemaUpdate),
+    resolver: zodResolver(updateUsuarioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -120,7 +128,7 @@ export default function EditarUsuario() {
     form.setValue(`grupoIds.${sistemaId}`, grupoId, { shouldValidate: true });
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchemaUpdate>) => {
+  const onSubmit = async (values: z.infer<typeof updateUsuarioSchema>) => {
     setLoading(true);
     try {
       if (!userId) redirect("/painel/usuarios");

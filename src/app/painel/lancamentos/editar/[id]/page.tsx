@@ -3,6 +3,12 @@
 //React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import {
+  redirect,
+  useParams,
+  useRouter,
+  useSearchParams,
+} from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,34 +37,31 @@ import {
 } from "@/components/ui/select";
 
 //API
-
-//Helpers
 import {
-  redirect,
-  useParams,
-  useRouter,
-  useSearchParams,
-} from "next/navigation";
-
-import { formSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-import {
-  createLancamento,
   getLancamentoById,
   updateLancamento,
 } from "@/app/api/lancamentos/action";
 import { http } from "@/util/http";
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
+import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
 import { getUsuarios } from "@/app/api/usuarios/action";
-import { Lancamento } from "../../page";
+
+//Helpers
 import { formatValor } from "@/app/helpers/format";
+
+//Types
+import { Lancamento } from "@/app/types/Lancamento";
+import { Caixa } from "@/app/types/Caixa";
+import { PlanoConta } from "@/app/types/PlanoConta";
+import { Usuario } from "@/app/types/Usuario";
+
 
 export default function EditarLancamento() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [lancamento, setLancamento] = useState<Lancamento[]>([]);
-  const [caixas, setCaixas] = useState<EspecialidadeDTO[]>([]);
-  const [planoConta, setPlanoConta] = useState<EspecialidadeDTO[]>([]);
-  const [usuarios, setUsuarios] = useState<EspecialidadeDTO[]>([]);
+  const [caixas, setCaixas] = useState<Caixa[]>([]);
+  const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const router = useRouter();
   const params = useParams();
   const lancamentoId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -72,7 +75,7 @@ export default function EditarLancamento() {
       : undefined
   ) as "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA" | undefined;
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createLancamentoSchema),
     mode: "onChange",
     defaultValues: {
       valor: "" as unknown as number,
@@ -149,12 +152,14 @@ export default function EditarLancamento() {
     }
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
       console.log("values:", values);
       await updateLancamento(lancamentoId as string, values);
-       router.push("/painel/lancamentos?type=success&message=Atualizado com sucesso");
+      router.push(
+        "/painel/lancamentos?type=success&message=Atualizado com sucesso"
+      );
     } catch (error) {
       toast.error("Erro ao salvar lancamento");
     } finally {

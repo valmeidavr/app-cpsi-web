@@ -4,6 +4,7 @@ import type React from "react";
 import { parse, isValid } from "date-fns";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,15 +31,15 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 
-//api
-import { createCliente } from "@/app/api/clientes/action";
-import { formSchema } from "@/app/api/clientes/shema/formSchemaCliente";
+//API
+import { createCliente, findByCpf, findByEmail } from "@/app/api/clientes/action";
+
 
 //helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
-import { useRouter } from "next/navigation";
 import { http } from "@/util/http";
+import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 
 // Mockup de opções de sexo
 const sexOptions = [
@@ -58,8 +59,8 @@ export default function CustomerRegistrationForm() {
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<z.infer<typeof createClienteSchema>>({
+    resolver: zodResolver(createClienteSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -76,7 +77,7 @@ export default function CustomerRegistrationForm() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     if (emailError || cpfError) {
       toast.error("Corrija os erros antes de enviar o formulário.");
@@ -112,7 +113,7 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingEmail(true);
     try {
-      const { data } = await http.get(`/clientes/findByEmail/${email}`);
+      const { data } = await findByEmail(email);
       if (data) {
         setEmailError("Este email já está em uso.");
       } else {
@@ -134,7 +135,7 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingCpf(true);
     try {
-      const { data } = await http.get(`/clientes/findByCpf/${cpf}`);
+      const { data } = await findByCpf(cpf);
       if (data) {
         setCpfError("Este cpf já está em uso.");
       } else {

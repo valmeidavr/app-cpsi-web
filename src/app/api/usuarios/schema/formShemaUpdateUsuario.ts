@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchemaUpdate = z
+export const updateUsuarioSchema = z
   .object({
     nome: z
       .string()

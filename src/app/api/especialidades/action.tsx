@@ -3,6 +3,11 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import {
+  createEspecialidadeSchema,
+  updateEspecialidadeSchema,
+} from "./schema/formSchemaEspecialidade";
 
 export async function getEspecialidades(
   page: number = 1,
@@ -14,19 +19,10 @@ export async function getEspecialidades(
   });
   return data;
 }
+export type CreateEspecialidadeDTO = z.infer<typeof createEspecialidadeSchema>;
+export type UpdateEspecialidadeDTO = z.infer<typeof updateEspecialidadeSchema>;
 
-type createEspecialidadePayload = {
-  nome: string;
-  codigo: string;
-};
-type updateEspecialidadePayload = {
-  nome: string;
-  codigo: string;
-};
-export async function createEspecialidade({
-  nome,
-  codigo,
-}: createEspecialidadePayload) {
+export async function createEspecialidade({ nome, codigo }: CreateEspecialidadeDTO) {
   try {
     await http.post("/especialidades", {
       nome,
@@ -46,16 +42,9 @@ export async function getEspecialidadeById(id: string) {
   return data;
 }
 
-export async function updateEspecialidade(
-  id: string,
-  body: updateEspecialidadePayload
-) {
-
+export async function updateEspecialidade(id: string, body: UpdateEspecialidadeDTO) {
   try {
-    const { data } = await http.patch(
-      `/especialidades/${id}`,
-      body
-    );
+    const { data } = await http.patch(`/especialidades/${id}`, body);
     revalidatePath("painel/especialidades?status=success");
     return data;
   } catch (error) {
@@ -69,9 +58,7 @@ export async function updateEspecialidade(
 
 export async function deleteEspecialidade(id: number) {
   try {
-    const response = await http.delete(
-      `/especialidades/${id}`
-    );
+    const response = await http.delete(`/especialidades/${id}`);
     revalidatePath("painel/especialidades");
   } catch {
     return {

@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchema = z.object({
+export const createLancamentoSchema = z.object({
   valor: z
     .union([
       z.string().transform((val) => {
@@ -29,7 +29,8 @@ export const formSchema = z.object({
   clientes_Id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
-    .optional().nullable(),
+    .optional()
+    .nullable(),
 
   plano_contas_id: z
     .union([z.string(), z.number()])
@@ -80,3 +81,4 @@ export const formSchema = z.object({
     })
     .transform((val) => Number(val)),
 });
+export const updateLancamentoSchema = createLancamentoSchema.partial();

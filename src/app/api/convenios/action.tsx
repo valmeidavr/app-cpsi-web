@@ -3,6 +3,8 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import { createConvenioSchema, updateConvenioSchema } from "./schema/formSchemaConvenios";
 
 export async function getConvenios(
   page: number = 1,
@@ -15,37 +17,23 @@ export async function getConvenios(
   return data;
 }
 
-type createConvenioPayload = {
-  nome: string;
-  regras: string;
-  tabelaFaturamentosId: number
- 
-};
-type updateConvenioPayload = {
-  nome: string;
-  regras: string;
-  tabelaFaturamentosId: number
- 
-};
+export type CreateConvenioDTO = z.infer<typeof createConvenioSchema>;
+export type UpdateConvenioDTO = z.infer<typeof updateConvenioSchema>;
 export async function createConvenio({
   nome,
   regras,
-  tabelaFaturamentosId
-
-}: createConvenioPayload) {
+  tabelaFaturamentosId,
+}: CreateConvenioDTO) {
   try {
     await http.post("/convenios", {
       nome,
       regras,
-      tabelaFaturamentosId
-    
+      tabelaFaturamentosId,
     });
     revalidatePath("/painel/convenios");
   } catch (error: any) {
     console.error("Erro ao criar convenio:", error);
-    toast.error(
-      error.response?.data?.message || "Erro ao criar convenio."
-    );
+    toast.error(error.response?.data?.message || "Erro ao criar convenio.");
   }
 }
 
@@ -54,16 +42,9 @@ export async function getConvenioById(id: string) {
   return data;
 }
 
-export async function updateConvenio(
-  id: string,
-  body: updateConvenioPayload
-) {
-
+export async function updateConvenio(id: string, body: UpdateConvenioDTO) {
   try {
-    const { data } = await http.patch(
-      `/convenios/${id}`,
-      body
-    );
+    const { data } = await http.patch(`http://localhost:3000/convenios/${id}`, body);
     revalidatePath("painel/convenios?status=success");
     return data;
   } catch (error) {

@@ -1,9 +1,6 @@
 "use server";
 import {
   Cliente,
-  ClientePaginacao,
-  CreateCliente,
-  Status,
 } from "@/app/types/Cliente";
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
@@ -11,8 +8,13 @@ import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { createClienteSchema, updateClienteSchema } from "./shema/formSchemaCliente";
+import { z } from "zod";
 
-export async function createCliente(body: CreateCliente) {
+export type CreateClienteDTO = z.infer<typeof createClienteSchema>;
+export type UpdateClienteDTO = z.infer<typeof updateClienteSchema>;
+
+export async function createCliente(body: CreateClienteDTO) {
   try {
     if (body.dtnascimento) {
       const parsedDate = new Date(body.dtnascimento);
@@ -29,7 +31,7 @@ export async function createCliente(body: CreateCliente) {
     }
 
     await http.post("/clientes", body);
-    revalidatePath("/painel/clientes"); 
+    revalidatePath("/painel/clientes");
   } catch (error: any) {
     console.error("Erro ao criar cliente:", error);
     toast.error(error.response?.data?.message || "Erro ao criar cliente.");
@@ -53,8 +55,16 @@ export async function getClienteById(id: number): Promise<Cliente> {
 
   return data;
 }
+export async function findByEmail(email: string) {
+  const { data } = await http.get(`/clientes/findByEmail/${email}`);
+  return data;
+}
+export async function findByCpf(cpf: string) {
+  const { data } = await http.get(`/clientes/findByCpf/${cpf}`);
+  return data;
+}
 
-export async function updateCliente(id: string, body: CreateCliente) {
+export async function updateCliente(id: string, body: UpdateClienteDTO) {
   try {
     if (body.dtnascimento) {
       const parsedDate = new Date(body.dtnascimento);

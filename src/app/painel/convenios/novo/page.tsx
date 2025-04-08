@@ -26,7 +26,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 //Helpers
 import { useRouter } from "next/navigation";
 import { createConvenio } from "@/app/api/convenios/action";
-import { formSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
+
 import {
   Select,
   SelectContent,
@@ -35,17 +35,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { http } from "@/util/http";
-import { TabelaFaturamentoDTO } from "@/app/types/TabelaFaturamento";
+import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
+import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 export default function NovoConvenio() {
   const [loading, setLoading] = useState(false);
   const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamentoDTO[]
+    TabelaFaturamento[]
   >([]);
 
   const router = useRouter();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createConvenioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -54,7 +55,7 @@ export default function NovoConvenio() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
       await createConvenio(values);

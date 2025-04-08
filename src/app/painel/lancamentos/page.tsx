@@ -2,9 +2,9 @@
 
 //React
 import { useEffect, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-
 //Components
 import {
   Table,
@@ -36,12 +36,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-
-//Helpers
-import { http } from "@/util/http";
-import { toast } from "sonner";
-
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
 import { formatDate } from "date-fns";
 import {
   Form,
@@ -58,42 +52,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { FormProvider, useForm } from "react-hook-form";
-import { getUsuarios } from "@/app/api/usuarios/action";
-import { Prestador } from "../turmas/page";
-import { Cliente } from "@/app/types/Cliente";
+import { toast } from "sonner";
+//Helpers
+import { http } from "@/util/http";
+//API
 import { deleteLancamento } from "@/app/api/lancamentos/action";
-
-type PlanoConta = {
-  id: number;
-  nome: string;
-};
-
-type Caixa = {
-  id: number;
-  nome: string;
-};
-type Usuario = {
-  id: number;
-  nome: string;
-};
-// ✅ Definir o tipo Lancamentos
-export interface Lancamento {
-  id: number;
-  data_lancamento: string;
-  valor: number;
-  tipo: string;
-  forma_pagamento: string;
-  status_pagamento: string;
-  motivo_estorno: string;
-  motivo_transferencia: string;
-  usuario_id: number;
-  plano_contas_id: number;
-  caixas_id: number;
-  plano_conta: PlanoConta;
-  caixa: Caixa;
-  usuario: Usuario;
-}
+//Types
+import { Lancamento } from "@/app/types/Lancamento";
+import { Caixa } from "@/app/types/Caixa";
+import { PlanoConta } from "@/app/types/PlanoConta";
 
 export default function Lancamentos() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
@@ -106,8 +73,8 @@ export default function Lancamentos() {
     useState<Lancamento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-  const [caixas, setCaixas] = useState<EspecialidadeDTO[]>([]);
-  const [planoConta, setPlanoConta] = useState<EspecialidadeDTO[]>([]);
+  const [caixas, setCaixas] = useState<Caixa[]>([]);
+  const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
   const carregarLancamentos = async (filters?: any) => {
     setCarregando(true);
     try {
@@ -339,7 +306,9 @@ export default function Lancamentos() {
         <>
           {lancamentos.length === 0 ? (
             <div className="flex justify-center items-center w-full h-40">
-              <span className="ml-2 text-gray-500">Nenhuma lançamento encontrado ...</span>
+              <span className="ml-2 text-gray-500">
+                Nenhuma lançamento encontrado ...
+              </span>
             </div>
           ) : (
             <Table className="mt-8">

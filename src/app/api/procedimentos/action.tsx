@@ -3,6 +3,11 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import {
+  createProcedimentoSchema,
+  updateProcedimentoSchema,
+} from "./schema/formSchemaProcedimentos";
 
 export async function getProcedimentos(
   page: number = 1,
@@ -15,32 +20,11 @@ export async function getProcedimentos(
   return data;
 }
 
-type createProcedimentoPayload = {
-  nome: string;
-  codigo: string;
-  tipo: string;
-  especialidadeId: number
-};
-export type updateProcedimentoPayload = {
-  nome: string;
-  codigo: string;
-  tipo: string;
-  especialidadeId: number;
-};
-export async function createProcedimento({
-  nome,
-  codigo,
-  tipo,
-  especialidadeId
-}: createProcedimentoPayload) {
-;
+export type CreateProcedimentoDTO = z.infer<typeof createProcedimentoSchema>;
+export type UpdateProcedimentoDTO = z.infer<typeof updateProcedimentoSchema>;
+export async function createProcedimento(body: CreateProcedimentoDTO) {
   try {
-    const { data } = await http.post("/procedimentos", {
-      nome,
-      codigo,
-      tipo,
-      especialidadeId,
-    });
+    await http.post("http://localhost:3000/procedimentos", body);
     revalidatePath("/painel/procedimentos");
   } catch (error: any) {
     console.error("Erro ao criar procedimento:", error);
@@ -48,21 +32,16 @@ export async function createProcedimento({
 }
 
 export async function getProcedimentoById(id: string) {
-  const { data } = await http.get(
-    `/procedimentos/${id}`
-  );
+  const { data } = await http.get(`/procedimentos/${id}`);
   return data;
 }
 
 export async function updateProcedimento(
   id: string,
-  body: updateProcedimentoPayload
+  body: UpdateProcedimentoDTO
 ) {
   try {
-    const { data } = await http.patch(
-      `/procedimentos/${id}`,
-      body
-    );
+    const { data } = await http.patch(`/procedimentos/${id}`, body);
     revalidatePath("painel/procedimentos");
     return data;
   } catch (error) {

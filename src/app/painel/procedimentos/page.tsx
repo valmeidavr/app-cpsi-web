@@ -3,9 +3,9 @@
 //React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
-import * as Tooltip from "@radix-ui/react-tooltip";
 
 //Components
+import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
   TableBody,
@@ -28,22 +28,14 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-
+import { toast } from "sonner";
+//API
+import { getEspecialidades } from "@/app/api/especialidades/action";
 //Helpers
 import { http } from "@/util/http";
-import { toast } from "sonner";
-
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
-
-// ✅ Definir o tipo Procedimentos
-interface Procedimento {
-  id: number;
-  especialidadeId: 0;
-  nome: string;
-  codigo: number;
-  tipo: "SESSÃO" | "MENSAL";
-  status: "Ativo" | "Inativo";
-}
+//Types
+import { Especialidade } from "@/app/types/Especialidade";
+import { Procedimento } from "@/app/types/Procedimento";
 
 export default function Procedimentos() {
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
@@ -56,7 +48,7 @@ export default function Procedimentos() {
     useState<Procedimento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-  const [especialidades, setEspecialidades] = useState<EspecialidadeDTO[]>([]);
+  const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const carregarProcedimentos = async () => {
     setCarregando(true);
     try {
@@ -80,8 +72,8 @@ export default function Procedimentos() {
 
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await http.get("/especialidades");
-      setEspecialidades(data.data);
+      const { data } = await getEspecialidades();
+      setEspecialidades(data);
     } catch (error: any) {}
   };
 
@@ -208,7 +200,9 @@ export default function Procedimentos() {
                             especialidade.id == procedimento.especialidadeId
                         )
                         .map((especialidade) => (
-                          <TableCell key={especialidade.id}>{especialidade.nome}</TableCell>
+                          <TableCell key={especialidade.id}>
+                            {especialidade.nome}
+                          </TableCell>
                         ))}
                     </Badge>
                   </TableCell>

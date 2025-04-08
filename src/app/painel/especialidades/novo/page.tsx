@@ -25,17 +25,18 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
 import { createEspecialidade } from "@/app/api/especialidades/action";
-import { formSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
+
 
 //Helpers
 import { useRouter } from "next/navigation";
+import { createEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 export default function NovaEspecialidade() {
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createEspecialidadeSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -43,7 +44,9 @@ export default function NovaEspecialidade() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof createEspecialidadeSchema>
+  ) => {
     setLoading(true);
     try {
       await createEspecialidade(values);

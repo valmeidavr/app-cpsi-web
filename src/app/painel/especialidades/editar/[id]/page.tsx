@@ -29,19 +29,21 @@ import {
   getEspecialidadeById,
   updateEspecialidade,
 } from "@/app/api/especialidades/action";
-import { formSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
+
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
+import { Especialidade } from "@/app/types/Especialidade";
+import { updateEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 export default function EditarEspecialidade() {
   const [loading, setLoading] = useState(false);
-  const [especialidade, setEspecialidade] = useState(null);
+  const [especialidade, setEspecialidade] = useState<Especialidade>();
   const params = useParams();
   const especialidadeId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(updateEspecialidadeSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -69,7 +71,7 @@ export default function EditarEspecialidade() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof updateEspecialidadeSchema>) => {
     setLoading(true);
     try {
       if (!especialidadeId) redirect("/painel/especialidades");

@@ -3,6 +3,9 @@
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
+import { z } from "zod";
+import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
+import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
 
 export async function getUsuarios() {
   const { data } = await http.get("/users");
@@ -23,15 +26,18 @@ type updateUsuariosPayload = {
   grupoIds?: any;
   confirmedsenha?: string;
 };
+
+export type CreateUsuarioDTO = z.infer<typeof createUsuarioSchema>;
+export type UpdateUsuarioDTO = z.infer<typeof updateUsuarioSchema>;
 export async function createUsuario({
   nome,
   email,
   senha,
   confirmedsenha,
   grupoIds,
-}: createUsuariosPayload) {
+}: CreateUsuarioDTO) {
   try {
-     grupoIds = Object.values(grupoIds);
+    const grupos = grupoIds ? Object.values(grupoIds) : [];
     await http.post("/users", {
       nome,
       email,
@@ -53,10 +59,7 @@ export async function getUsuarioById(id: string) {
 export async function updateUsuario(id: string, body: updateUsuariosPayload) {
   try {
     body.grupoIds = Object.values(body.grupoIds);
-    const { data } = await http.patch(
-      `/users/${id}`,
-      body
-    );
+    const { data } = await http.patch(`/users/${id}`, body);
     revalidatePath("painel/usuarios?status=success");
     return data;
   } catch (error) {
@@ -70,9 +73,7 @@ export async function updateUsuario(id: string, body: updateUsuariosPayload) {
 
 export async function deleteUsuario(id: number) {
   try {
-    const response = await http.delete(
-      `/users/${id}`
-    );
+    const response = await http.delete(`/users/${id}`);
     revalidatePath("painel/usuarios");
   } catch {
     return {

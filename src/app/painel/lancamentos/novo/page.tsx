@@ -3,6 +3,7 @@
 //React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import {  useRouter, useSearchParams } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,22 +32,23 @@ import {
 } from "@/components/ui/select";
 
 //API
-
-//Helpers
-import {  useRouter, useSearchParams } from "next/navigation";
-
-import { formSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-import { createLancamento } from "@/app/api/lancamentos/action";
-import { http } from "@/util/http";
-import { EspecialidadeDTO } from "@/app/types/Especialidade";
 import { getUsuarios } from "@/app/api/usuarios/action";
+import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
+import { createLancamento } from "@/app/api/lancamentos/action";
+
+//helpers
+import { http } from "@/util/http";
+//Types
+import { PlanoConta } from "@/app/types/PlanoConta";
+import { Usuario } from "@/app/types/Usuario";
+import { Caixa } from "@/app/types/Caixa";
 
 
 export default function NovoLancamento() {
   const [loading, setLoading] = useState(false);
-  const [caixas, setCaixas] = useState<EspecialidadeDTO[]>([]);
-  const [planoConta, setPlanoConta] = useState<EspecialidadeDTO[]>([]);
-  const [usuarios, setUsuarios] = useState<EspecialidadeDTO[]>([]);
+  const [caixas, setCaixas] = useState<Caixa[]>([]);
+  const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tipo = (
@@ -57,7 +59,7 @@ export default function NovoLancamento() {
       : undefined
   ) as "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA" | undefined;
   const form = useForm({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(createLancamentoSchema),
     mode: "onChange",
     defaultValues: {
       valor: 0,
@@ -102,7 +104,7 @@ export default function NovoLancamento() {
     fetchPlanoContas();
     fetchUsuario();
   }, []);
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
       await createLancamento(values);

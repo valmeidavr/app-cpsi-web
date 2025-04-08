@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const formSchema = z.object({
+export const createConvenioSchema = z.object({
   nome: z
     .string()
     .min(1, { message: "O campo é obrigatório" })
@@ -17,3 +17,4 @@ export const formSchema = z.object({
       message: "O campo é obrigatório.",
     }),
 });
+export const updateConvenioSchema = createConvenioSchema.partial();
