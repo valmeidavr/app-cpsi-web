@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { Save } from "lucide-react";
@@ -249,7 +250,9 @@ export default function Unidades() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{unidade.id}</TableCell>
-                  <TableCell>{unidade.nome}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline">{unidade.nome}</Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
 
