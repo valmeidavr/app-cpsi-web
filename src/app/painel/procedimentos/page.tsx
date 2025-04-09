@@ -200,9 +200,6 @@ export default function Procedimentos() {
                             especialidade.id == procedimento.especialidadeId
                         )
                         .map((especialidade) => (
-                          <TableCell key={especialidade.id}>
-                            {especialidade.nome}
-                          </TableCell>
                           <div key={especialidade.id}>{especialidade.nome}</div>
                         ))}
                     </Badge>

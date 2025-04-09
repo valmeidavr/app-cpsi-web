@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { http } from "@/util/http";
