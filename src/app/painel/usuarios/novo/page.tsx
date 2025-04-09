@@ -43,14 +43,18 @@ export default function UsuarioRegistrationForm() {
   const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
     async function fetchSistemas() {
+      setCarregando(true);
       try {
         const { data } = await http.get("/sistemas");
         setSistemas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Erro ao carregar sistemas:", error);
+      } finally {
+        setCarregando(false);
       }
     }
     fetchSistemas();
@@ -283,46 +287,56 @@ export default function UsuarioRegistrationForm() {
               )}
             />
           </div>
+
           {/* Seção de Sistemas e Grupos */}
 
-          <div className="space-y-4">
-            {sistemas.map((sistema) => (
-              <div key={sistema.id} className="border p-4 rounded-md">
-                <h3 className="font-bold mb-2">{sistema.nome}</h3>
-                <RadioGroup
-                  value={selectedGroups[sistema.id]?.toString() || ""}
-                  onValueChange={(value: any) =>
-                    handleGroupChange(sistema.id, Number(value))
-                  }
-                  className="space-y-2"
-                >
-                  {sistema.grupos.map((grupo) => (
-                    <FormField
-                      key={grupo.id}
-                      control={form.control}
-                      name={`grupoIds.${sistema.id}`}
-                      render={() => (
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem
-                              id={`grupo-${sistema.id}-${grupo.id}`}
-                              value={grupo.id.toString()}
-                            />
-                          </FormControl>
-                          <Label
-                            htmlFor={`grupo-${sistema.id}-${grupo.id}`}
-                            className="cursor-pointer"
-                          >
-                            {grupo.nome}
-                          </Label>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </RadioGroup>
-              </div>
-            ))}
-          </div>
+          <h1 className="text-lg font-bold mb-4 mt-5">Definir Credenciais</h1>
+
+          {carregando ? (
+            <div className="flex justify-center items-center w-full h-40">
+              <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+              <span className="ml-2 text-gray-500">Carregando ...</span>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sistemas.map((sistema) => (
+                <div key={sistema.id} className="border p-4 rounded-md">
+                  <h3 className="font-bold mb-2">{sistema.nome}</h3>
+                  <RadioGroup
+                    value={selectedGroups[sistema.id]?.toString() || ""}
+                    onValueChange={(value: any) =>
+                      handleGroupChange(sistema.id, Number(value))
+                    }
+                    className="space-y-2"
+                  >
+                    {sistema.grupos.map((grupo) => (
+                      <FormField
+                        key={grupo.id}
+                        control={form.control}
+                        name={`grupoIds.${sistema.id}`}
+                        render={() => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <RadioGroupItem
+                                id={`grupo-${sistema.id}-${grupo.id}`}
+                                value={grupo.id.toString()}
+                              />
+                            </FormControl>
+                            <Label
+                              htmlFor={`grupo-${sistema.id}-${grupo.id}`}
+                              className="cursor-pointer"
+                            >
+                              {grupo.nome}
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Botão de Envio */}
           <Button
