@@ -11,7 +11,7 @@ import { z } from "zod";
 
 //Components
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Calendar } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -297,16 +297,19 @@ export default function NovoLancamento() {
                 <FormItem>
                   <FormLabel>Data Lançamento *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      className={
-                        form.formState.errors.data_lancamento
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    />
+                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
+                      <Calendar className="w-4 h-4" />
+                      <Input
+                        type="date"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        className={
+                          form.formState.errors.data_lancamento
+                            ? "border-red-500 input-modified focus-visible:ring-0"
+                            : "border-gray-300 input-modified focus-visible:ring-0"
+                        }
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1" />
                 </FormItem>
