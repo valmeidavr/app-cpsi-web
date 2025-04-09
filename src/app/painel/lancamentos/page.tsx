@@ -104,7 +104,7 @@ export default function Lancamentos() {
       setTotalPaginas(data.totalPages);
       setTotalLancamentos(data.total);
     } catch (error) {
-      console.error("Erro ao buscar lancamentos:", error);
+      console.error("Erro ao buscar lançamentos:", error);
     } finally {
       setCarregando(false);
     }
@@ -137,7 +137,7 @@ export default function Lancamentos() {
     try {
       await deleteLancamento(lancamentoSelecionado.id);
       await carregarLancamentos();
-      toast.error("Lançamento finalizada com sucesso!");
+      toast.error("Lançamento salvo com sucesso!");
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do lançamento:", error);
@@ -174,10 +174,10 @@ export default function Lancamentos() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Lancamentos" },
+          { label: "Lista de Lançamentos" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lancamentos</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
 
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(handleSearch)}>
@@ -318,7 +318,7 @@ export default function Lancamentos() {
                   <TableHead className="h-12-1">Data</TableHead>
                   <TableHead className="h-12-1">Caixa</TableHead>
                   <TableHead className="h-12-1">Entrada</TableHead>
-                  <TableHead className="h-12-1">Saida</TableHead>
+                  <TableHead className="h-12-1">Saída</TableHead>
                   <TableHead className="h-12-1">Plano de Conta</TableHead>
                   <TableHead className="h-12-1">Pagante</TableHead>
                   <TableHead className="h-12-1">Ações</TableHead>
@@ -423,7 +423,7 @@ export default function Lancamentos() {
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalLancamentos)} de{" "}
-              {totalLancamentos} lancamentos
+              {totalLancamentos} lançamentos
             </div>
           </div>
 

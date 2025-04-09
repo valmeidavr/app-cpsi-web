@@ -54,7 +54,6 @@ import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
 import { Usuario } from "@/app/types/Usuario";
 
-
 export default function EditarLancamento() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -146,7 +145,7 @@ export default function EditarLancamento() {
       });
       setLoadingData(false);
     } catch (error) {
-      console.error("Erro ao carregar lancamento:", error);
+      console.error("Erro ao carregar lançamento:", error);
     } finally {
       setLoadingData(false);
     }
@@ -158,10 +157,10 @@ export default function EditarLancamento() {
       console.log("values:", values);
       await updateLancamento(lancamentoId as string, values);
       router.push(
-        "/painel/lancamentos?type=success&message=Atualizado com sucesso"
+        "/painel/lancamentos?type=success&message=Lançamento atualizado com sucesso!"
       );
     } catch (error) {
-      toast.error("Erro ao salvar lancamento");
+      toast.error("Erro ao salvar lançamento!");
     } finally {
       setLoading(false);
     }
@@ -172,7 +171,7 @@ export default function EditarLancamento() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lançamentos", href: "/painel/lancamentos" },
+          { label: "Lista de Lançamentos", href: "/painel/lancamentos" },
           { label: "Editar Lançamento" }, // Último item sem link
         ]}
       />
@@ -183,7 +182,7 @@ export default function EditarLancamento() {
         </div>
       ) : (
         <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Novo Lançamento</h1>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Lançamento</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
