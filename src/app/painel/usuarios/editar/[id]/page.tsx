@@ -159,7 +159,6 @@ export default function EditarUsuario() {
           { label: "Editar Usuário" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Editar Usuário</h1>
 
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
@@ -168,6 +167,7 @@ export default function EditarUsuario() {
         </div>
       ) : (
         <Form {...form}>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Usuário</h1>
           <form
             onSubmit={form.handleSubmit((data) => {
               onSubmit(data);
