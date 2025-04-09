@@ -24,6 +24,7 @@ import {
   Plus,
   Trash2,
   PlusCircle,
+  Calendar,
 } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
@@ -215,7 +216,7 @@ export default function Lancamentos() {
               name="plano_contas_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plano Conta *</FormLabel>
+                  <FormLabel>Plano de Conta *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value.toString() || ""}
@@ -248,26 +249,29 @@ export default function Lancamentos() {
               name="data_lancamento"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Incio *</FormLabel>
+                  <FormLabel>Data Início *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      className={`borderfocus:ring-2 focus:ring-primary`}
-                    />
+                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
+                      <Calendar className="w-4 h-4" />
+                      <Input
+                        type="date"
+                        {...field}
+                        className={`input-modified focus-visible:ring-0`}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button variant="default" type="submit">
+            <Button className="w-[120px]" variant="default" type="submit">
               <Search className="w-4 h-4" />
-              Pesquisar
+              Buscar
             </Button>
           </div>
         </form>
       </Form>
-      <div className="flex justify-start  gap-3 items-center my-4">
+      <div className="flex justify-start  gap-3 items-center mt-7 mb-3">
         <Badge className="bg-green-500 px-3 py-2">
           <Link
             href="/painel/lancamentos/novo?tipo=ENTRADA"
@@ -356,8 +360,8 @@ export default function Lancamentos() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline">
-                        <TableCell>{lancamento.plano_conta.nome}</TableCell>
+                      <Badge variant="default">
+                        <div>{lancamento.plano_conta.nome}</div>
                       </Badge>
                     </TableCell>
                     <TableCell>

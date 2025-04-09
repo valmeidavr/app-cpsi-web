@@ -104,3 +104,20 @@ body {
   text-align: center;
   vertical-align: middle;
 }
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8) brightness(50%) sepia(70%) saturate(1000%)
+    hue-rotate(190deg);
+}
+
+.field-wrapper:focus-within {
+  outline: 2px solid blue;
+}
+
+.input-modified {
+  all: unset;
+  width: 100%;
+  border: none;
+  display: block;
+}
