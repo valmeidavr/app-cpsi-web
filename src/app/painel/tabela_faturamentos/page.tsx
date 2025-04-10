@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { Save } from "lucide-react";
@@ -41,7 +42,6 @@ import { createTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/sch
 import { http } from "@/util/http";
 //Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-
 
 export default function TabelaFaturamentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
@@ -91,7 +91,9 @@ export default function TabelaFaturamentos() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof createTabelaFaturamentoSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof createTabelaFaturamentoSchema>
+  ) => {
     setLoading(true);
     try {
       await createTabelaFaturamento(values);
@@ -251,7 +253,11 @@ export default function TabelaFaturamentos() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{tabelaFaturamento.id}</TableCell>
-                  <TableCell>{tabelaFaturamento.nome}</TableCell>
+                  <TableCell>
+                    <Badge className="text-[13px]" variant="outline">
+                      {tabelaFaturamento.nome}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
 

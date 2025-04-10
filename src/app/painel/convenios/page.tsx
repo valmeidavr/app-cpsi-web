@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { http } from "@/util/http";
@@ -93,7 +94,7 @@ export default function Convenios() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de convenios" },
+          { label: "Lista de Convênios" },
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
@@ -103,7 +104,7 @@ export default function Convenios() {
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar convenio"
+            placeholder="Pesquisar convênio"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -136,9 +137,7 @@ export default function Convenios() {
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1 flex items-center justify-start">
-                  Convênio
-                </TableHead>
+                <TableHead className="h-12-1">Convênio</TableHead>
                 <TableHead className="h-12-1">Regra</TableHead>
                 <TableHead className="h-12-1">Tabela</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
@@ -151,18 +150,21 @@ export default function Convenios() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{convenio.id}</TableCell>
-                  <TableCell className="flex items-center justify-start">
-                    {convenio.nome}
+                  <TableCell>{convenio.nome}</TableCell>
+                  <TableCell>
+                    <Badge>{convenio.regras}</Badge>
                   </TableCell>
-                  <TableCell>{convenio.regras}</TableCell>
-                  {tabelaFaturamentos
-                    .filter(
-                      (tabela) => tabela.id == convenio.tabelaFaturamentosId
-                    )
-                    .map((tabela) => (
-                      <TableCell key={tabela.id}>{tabela.nome}</TableCell>
-                    ))}
-
+                  <TableCell>
+                    <Badge className="text-[13px]" variant="outline">
+                      {tabelaFaturamentos
+                        .filter(
+                          (tabela) => tabela.id == convenio.tabelaFaturamentosId
+                        )
+                        .map((tabela) => (
+                          <div key={tabela.id}>{tabela.nome}</div>
+                        ))}
+                    </Badge>
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
@@ -194,7 +196,7 @@ export default function Convenios() {
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
-              {totalconvenios} convenios
+              {totalconvenios} convênios
             </div>
           </div>
 

@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Dialog,
@@ -34,7 +35,6 @@ import { toast } from "sonner";
 import { Especialidade } from "@/app/types/Especialidade";
 
 // ✅ Definir o tipo Especialidade
-
 
 export default function Especialidades() {
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
@@ -181,7 +181,11 @@ export default function Especialidades() {
                 >
                   <TableCell>{especialidade.id}</TableCell>
                   <TableCell>{especialidade.nome}</TableCell>
-                  <TableCell>{especialidade.codigo}</TableCell>
+                  <TableCell>
+                    <Badge className="text-[13px]" variant="outline">
+                      {especialidade.codigo}
+                    </Badge>
+                  </TableCell>
                   <TableCell
                     className={`${
                       especialidade.status === "Ativo"

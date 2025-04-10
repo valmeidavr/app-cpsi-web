@@ -45,7 +45,7 @@ export default function EditarUsuario() {
   const userId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [carregando, setCarregando] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -88,11 +88,14 @@ export default function EditarUsuario() {
     }
 
     async function fetchSistemas() {
+      setCarregando(true);
       try {
         const { data } = await http.get("/sistemas");
         setSistemas(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Erro ao carregar sistemas:", error);
+      } finally {
+        setCarregando(false);
       }
     }
     if (userId && sistemas.length === 0) {
@@ -156,178 +159,191 @@ export default function EditarUsuario() {
           { label: "Editar Usuário" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Editar Usuário</h1>
 
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit((data) => {
-            onSubmit(data);
-          })}
-          className="space-y-4"
-        >
-          <FormField
-            control={form.control}
-            name="nome"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome *</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email *</FormLabel>
-                <FormControl>
-                  <Input type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="senha"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Senha *</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        autoComplete="new-password"
-                        type={showPassword ? "text" : "password"}
-                        {...field}
-                        className={`border ${
-                          form.formState.errors.senha
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary pr-10`}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
-                        onClick={togglePasswordVisibility}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.senha?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmedsenha"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Confirmar Senha *</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showConfirmPassword ? "text" : "password"}
-                        {...field}
-                        className={`border ${
-                          form.formState.errors.confirmedsenha
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary pr-10`}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
-                        onClick={toggleConfirmPasswordVisibility}
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.confirmedsenha?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="space-y-4">
-            {sistemas.map((sistema) => (
-              <div key={sistema.id} className="border p-4 rounded-md">
-                <h3 className="font-bold mb-2">{sistema.nome}</h3>
-                <RadioGroup
-                  value={selectedGroups[sistema.id]?.toString() || ""}
-                  onValueChange={(value) =>
-                    handleGroupChange(sistema.id, Number(value))
-                  }
-                  className="space-y-2"
-                >
-                  {sistema.grupos.map((grupo) => (
-                    <FormField
-                      key={grupo.id}
-                      control={form.control}
-                      name={`grupoIds.${sistema.id}`}
-                      render={() => (
-                        <FormItem className="flex items-center space-x-2">
-                          <FormControl>
-                            <RadioGroupItem
-                              id={`grupo-${sistema.id}-${grupo.id}`}
-                              value={grupo.id.toString()}
-                              checked={selectedGroups[sistema.id] === grupo.id}
-                            />
-                          </FormControl>
-                          <Label
-                            htmlFor={`grupo-${sistema.id}-${grupo.id}`}
-                            className="cursor-pointer"
-                          >
-                            {grupo.nome}
-                          </Label>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </RadioGroup>
-              </div>
-            ))}
-          </div>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2"
+      {carregando ? (
+        <div className="flex justify-center items-center w-full h-40">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+          <span className="ml-2 text-gray-500">Carregando ...</span>
+        </div>
+      ) : (
+        <Form {...form}>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Usuário</h1>
+          <form
+            onSubmit={form.handleSubmit((data) => {
+              onSubmit(data);
+            })}
+            className="space-y-4"
           >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" /> Atualizar
-              </>
-            )}
-          </Button>
-        </form>
-      </Form>
+            <FormField
+              control={form.control}
+              name="nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome *</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email *</FormLabel>
+                  <FormControl>
+                    <Input type="email" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="senha"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          autoComplete="new-password"
+                          type={showPassword ? "text" : "password"}
+                          {...field}
+                          className={`border ${
+                            form.formState.errors.senha
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary pr-10`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
+                          onClick={togglePasswordVisibility}
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm mt-1">
+                      {form.formState.errors.senha?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="confirmedsenha"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar Senha *</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          type={showConfirmPassword ? "text" : "password"}
+                          {...field}
+                          className={`border ${
+                            form.formState.errors.confirmedsenha
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary pr-10`}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2"
+                          onClick={toggleConfirmPasswordVisibility}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage className="text-red-500 text-sm mt-1">
+                      {form.formState.errors.confirmedsenha?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <h1 className="text-lg font-bold mb-4 mt-5">Definir Credenciais</h1>
+
+            <div className="space-y-4">
+              {sistemas.map((sistema) => (
+                <div key={sistema.id} className="border p-4 rounded-md">
+                  <h3 className="font-bold mb-2">{sistema.nome}</h3>
+                  <RadioGroup
+                    value={selectedGroups[sistema.id]?.toString() || ""}
+                    onValueChange={(value) =>
+                      handleGroupChange(sistema.id, Number(value))
+                    }
+                    className="space-y-2"
+                  >
+                    {sistema.grupos.map((grupo) => (
+                      <FormField
+                        key={grupo.id}
+                        control={form.control}
+                        name={`grupoIds.${sistema.id}`}
+                        render={() => (
+                          <FormItem className="flex items-center space-x-2">
+                            <FormControl>
+                              <RadioGroupItem
+                                id={`grupo-${sistema.id}-${grupo.id}`}
+                                value={grupo.id.toString()}
+                                checked={
+                                  selectedGroups[sistema.id] === grupo.id
+                                }
+                              />
+                            </FormControl>
+                            <Label
+                              htmlFor={`grupo-${sistema.id}-${grupo.id}`}
+                              className="cursor-pointer"
+                            >
+                              {grupo.nome}
+                            </Label>
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Atualizar
+                </>
+              )}
+            </Button>
+          </form>
+        </Form>
+      )}
     </div>
   );
 }
