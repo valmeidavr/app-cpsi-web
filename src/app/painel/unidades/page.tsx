@@ -251,7 +251,7 @@ export default function Unidades() {
                 >
                   <TableCell>{unidade.id}</TableCell>
                   <TableCell>
-                    <Badge className=" text-md" variant="outline">
+                    <Badge className=" text-[13px]" variant="outline">
                       {unidade.nome}
                     </Badge>
                   </TableCell>
