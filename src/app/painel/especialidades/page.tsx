@@ -36,7 +36,6 @@ import { Especialidade } from "@/app/types/Especialidade";
 
 // ✅ Definir o tipo Especialidade
 
-
 export default function Especialidades() {
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -183,7 +182,9 @@ export default function Especialidades() {
                   <TableCell>{especialidade.id}</TableCell>
                   <TableCell>{especialidade.nome}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{especialidade.codigo}</Badge>
+                    <Badge className="text-[13px]" variant="outline">
+                      {especialidade.codigo}
+                    </Badge>
                   </TableCell>
                   <TableCell
                     className={`${
