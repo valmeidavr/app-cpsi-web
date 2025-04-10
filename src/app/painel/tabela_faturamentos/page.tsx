@@ -43,7 +43,6 @@ import { http } from "@/util/http";
 //Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 
-
 export default function TabelaFaturamentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
     TabelaFaturamento[]
@@ -92,7 +91,9 @@ export default function TabelaFaturamentos() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof createTabelaFaturamentoSchema>) => {
+  const onSubmit = async (
+    values: z.infer<typeof createTabelaFaturamentoSchema>
+  ) => {
     setLoading(true);
     try {
       await createTabelaFaturamento(values);
@@ -253,7 +254,9 @@ export default function TabelaFaturamentos() {
                 >
                   <TableCell>{tabelaFaturamento.id}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{tabelaFaturamento.nome}</Badge>
+                    <Badge className="text-[13px]" variant="outline">
+                      {tabelaFaturamento.nome}
+                    </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
