@@ -38,7 +38,6 @@ import { formatarCPF, formatarTelefone } from "@/util/clearData";
 import { toast } from "sonner";
 import { Cliente } from "@/app/types/Cliente";
 
-
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -198,7 +197,7 @@ export default function ClientesPage() {
                               className="hover:text-blue-500"
                               href={`mailto:${cliente.email}`}
                             >
-                              {cliente.email}\
+                              {cliente.email}
                             </a>
                           </Tooltip.Trigger>
                         </div>
@@ -222,12 +221,13 @@ export default function ClientesPage() {
                             <a
                               target="_blank"
                               className="hover:text-blue-500 text-[13px]"
-                              href={`https://wa.me/55${cliente.telefone1.replace(
-                                /\D/g,
-                                ""
-                              )}`}
+                              href={`https://wa.me/55${cliente.telefone1
+                                ?.toString()
+                                .replace(/\D/g, "")}`}
                             >
-                              {cliente.telefone1 ?? formatarTelefone(cliente.telefone1)}
+                              {cliente.telefone1
+                                ? formatarTelefone(cliente.telefone1)
+                                : cliente.telefone1}
                             </a>
                           </Tooltip.Trigger>
                         </div>

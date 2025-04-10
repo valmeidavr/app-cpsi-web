@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 
 //Helpers
 import { http } from "@/util/http";
@@ -93,7 +94,7 @@ export default function Convenios() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de convenios" },
+          { label: "Lista de Convênios" },
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
@@ -154,7 +155,7 @@ export default function Convenios() {
                     <Badge>{convenio.regras}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
+                    <Badge className="text-[13px]" variant="outline">
                       {tabelaFaturamentos
                         .filter(
                           (tabela) => tabela.id == convenio.tabelaFaturamentosId
@@ -195,7 +196,7 @@ export default function Convenios() {
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
-              {totalconvenios} convenios
+              {totalconvenios} convênios
             </div>
           </div>
 

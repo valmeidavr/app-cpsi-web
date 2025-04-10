@@ -251,7 +251,9 @@ export default function Unidades() {
                 >
                   <TableCell>{unidade.id}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{unidade.nome}</Badge>
+                    <Badge className=" text-[13px]" variant="outline">
+                      {unidade.nome}
+                    </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}

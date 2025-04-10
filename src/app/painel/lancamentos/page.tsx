@@ -24,6 +24,7 @@ import {
   Plus,
   Trash2,
   PlusCircle,
+  Calendar,
 } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
@@ -104,7 +105,7 @@ export default function Lancamentos() {
       setTotalPaginas(data.totalPages);
       setTotalLancamentos(data.total);
     } catch (error) {
-      console.error("Erro ao buscar lancamentos:", error);
+      console.error("Erro ao buscar lançamentos:", error);
     } finally {
       setCarregando(false);
     }
@@ -137,7 +138,7 @@ export default function Lancamentos() {
     try {
       await deleteLancamento(lancamentoSelecionado.id);
       await carregarLancamentos();
-      toast.error("Lançamento finalizada com sucesso!");
+      toast.error("Lançamento salvo com sucesso!");
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao alterar status do lançamento:", error);
@@ -174,10 +175,10 @@ export default function Lancamentos() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Lancamentos" },
+          { label: "Lista de Lançamentos" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lancamentos</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
 
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(handleSearch)}>
@@ -215,7 +216,7 @@ export default function Lancamentos() {
               name="plano_contas_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Plano Conta *</FormLabel>
+                  <FormLabel>Plano de Conta *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value.toString() || ""}
@@ -248,26 +249,29 @@ export default function Lancamentos() {
               name="data_lancamento"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Incio *</FormLabel>
+                  <FormLabel>Data Início *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      {...field}
-                      className={`borderfocus:ring-2 focus:ring-primary`}
-                    />
+                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
+                      <Calendar className="w-4 h-4" />
+                      <Input
+                        type="date"
+                        {...field}
+                        className={`input-modified focus-visible:ring-0`}
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button variant="default" type="submit">
+            <Button className="w-[120px]" variant="default" type="submit">
               <Search className="w-4 h-4" />
-              Pesquisar
+              Buscar
             </Button>
           </div>
         </form>
       </Form>
-      <div className="flex justify-start  gap-3 items-center my-4">
+      <div className="flex justify-start  gap-3 items-center mt-7 mb-3">
         <Badge className="bg-green-500 px-3 py-2">
           <Link
             href="/painel/lancamentos/novo?tipo=ENTRADA"
@@ -318,7 +322,7 @@ export default function Lancamentos() {
                   <TableHead className="h-12-1">Data</TableHead>
                   <TableHead className="h-12-1">Caixa</TableHead>
                   <TableHead className="h-12-1">Entrada</TableHead>
-                  <TableHead className="h-12-1">Saida</TableHead>
+                  <TableHead className="h-12-1">Saída</TableHead>
                   <TableHead className="h-12-1">Plano de Conta</TableHead>
                   <TableHead className="h-12-1">Pagante</TableHead>
                   <TableHead className="h-12-1">Ações</TableHead>
@@ -356,8 +360,8 @@ export default function Lancamentos() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline">
-                        <TableCell>{lancamento.plano_conta.nome}</TableCell>
+                      <Badge variant="default">
+                        <div>{lancamento.plano_conta.nome}</div>
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -423,7 +427,7 @@ export default function Lancamentos() {
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalLancamentos)} de{" "}
-              {totalLancamentos} lancamentos
+              {totalLancamentos} lançamentos
             </div>
           </div>
 

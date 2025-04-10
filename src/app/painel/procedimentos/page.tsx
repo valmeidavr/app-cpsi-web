@@ -188,21 +188,22 @@ export default function Procedimentos() {
                 >
                   <TableCell>{procedimento.id}</TableCell>
                   <TableCell>{procedimento.nome}</TableCell>
-                  <TableCell>{procedimento.codigo}</TableCell>
+                  <TableCell>
+                    <Badge className="text-[13px]" variant="outline">
+                      {procedimento.codigo}
+                    </Badge>
+                  </TableCell>
                   <TableCell>
                     <Badge>{procedimento.tipo}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
+                    <Badge className="text-[13px]" variant="outline">
                       {especialidades
                         .filter(
                           (especialidade) =>
                             especialidade.id == procedimento.especialidadeId
                         )
                         .map((especialidade) => (
-                          <TableCell key={especialidade.id}>
-                            {especialidade.nome}
-                          </TableCell>
                           <div key={especialidade.id}>{especialidade.nome}</div>
                         ))}
                     </Badge>
