@@ -23,6 +23,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
@@ -36,7 +37,6 @@ import {
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 import { toast } from "sonner";
 import { Cliente } from "@/app/types/Cliente";
-
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -167,12 +167,12 @@ export default function ClientesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Nome</TableHead>
-                <TableHead>CPF</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead className="h-12-1">ID</TableHead>
+                <TableHead className="h-12-1">Nome</TableHead>
+                <TableHead className="h-12-1">CPF</TableHead>
+                <TableHead className="h-12-1">Email</TableHead>
+                <TableHead className="h-12-1">Telefone</TableHead>
+                <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -184,7 +184,7 @@ export default function ClientesPage() {
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>
                   <TableCell className="text-[13px]">
-                    {formatarCPF(cliente.cpf)}
+                    <Badge variant="outline">{formatarCPF(cliente.cpf)}</Badge>
                   </TableCell>
                   <TableCell>
                     <Tooltip.Provider>
@@ -197,7 +197,7 @@ export default function ClientesPage() {
                               className="hover:text-blue-500"
                               href={`mailto:${cliente.email}`}
                             >
-                              {cliente.email}\
+                              {cliente.email}
                             </a>
                           </Tooltip.Trigger>
                         </div>
@@ -221,12 +221,13 @@ export default function ClientesPage() {
                             <a
                               target="_blank"
                               className="hover:text-blue-500 text-[13px]"
-                              href={`https://wa.me/55${cliente.telefone1.replace(
-                                /\D/g,
-                                ""
-                              )}`}
+                              href={`https://wa.me/55${cliente.telefone1
+                                ?.toString()
+                                .replace(/\D/g, "")}`}
                             >
-                              {cliente.telefone1 ?? formatarTelefone(cliente.telefone1)}
+                              {cliente.telefone1
+                                ? formatarTelefone(cliente.telefone1)
+                                : cliente.telefone1}
                             </a>
                           </Tooltip.Trigger>
                         </div>

@@ -3,7 +3,7 @@
 //React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import {  useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,7 +11,7 @@ import { z } from "zod";
 
 //Components
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Calendar } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -43,7 +43,6 @@ import { PlanoConta } from "@/app/types/PlanoConta";
 import { Usuario } from "@/app/types/Usuario";
 import { Caixa } from "@/app/types/Caixa";
 
-
 export default function NovoLancamento() {
   const [loading, setLoading] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
@@ -53,11 +52,21 @@ export default function NovoLancamento() {
   const searchParams = useSearchParams();
   const tipo = (
     ["ENTRADA", "SAIDA", "ESTORNO", "TRANSFERENCIA"].includes(
-      searchParams.get("tipo") || ""
+      searchParams.get("tipo")?.toUpperCase() || ""
     )
-      ? searchParams.get("tipo")
+      ? searchParams.get("tipo")?.toUpperCase()
       : undefined
-  ) as "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA" | undefined;
+  ) as keyof typeof TEXTO_POR_TIPO | undefined;
+
+  const TEXTO_POR_TIPO = {
+    ENTRADA: "Lançar Entrada",
+    SAIDA: "Lançar Saída",
+    ESTORNO: "Lançar Estorno",
+    TRANSFERENCIA: "Lançar Transferência",
+  } as const;
+
+  const toggleText = tipo ? TEXTO_POR_TIPO[tipo] : "";
+
   const form = useForm({
     resolver: zodResolver(createLancamentoSchema),
     mode: "onChange",
@@ -121,12 +130,12 @@ export default function NovoLancamento() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lançamentos", href: "/painel/lancamentos" },
-          { label: "Novo Lançamento" }, // Último item sem link
+          { label: "Lista de Lançamentos", href: "/painel/lancamentos" },
+          { label: `${toggleText}` }, // Último item sem link
         ]}
       />
       <Form {...form}>
-        <h1 className="text-2xl font-bold mb-4 mt-5">Novo Lançamento</h1>
+        <h1 className="text-2xl font-bold mb-4 mt-5">{toggleText}</h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -214,6 +223,40 @@ export default function NovoLancamento() {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ENTRADA">ENTRADA</SelectItem>
+                      <SelectItem value="SAIDA">SAÍDA</SelectItem>
+                      <SelectItem value="TRANSFERENCIA">
+                        TRANSFERÊNCIA
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1" />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="status_pagamento"
@@ -254,16 +297,19 @@ export default function NovoLancamento() {
                 <FormItem>
                   <FormLabel>Data Lançamento *</FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      value={field.value || ""}
-                      onChange={field.onChange}
-                      className={
-                        form.formState.errors.data_lancamento
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    />
+                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
+                      <Calendar className="w-4 h-4" />
+                      <Input
+                        type="date"
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                        className={
+                          form.formState.errors.data_lancamento
+                            ? "border-red-500 input-modified focus-visible:ring-0"
+                            : "border-gray-300 input-modified focus-visible:ring-0"
+                        }
+                      />
+                    </div>
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1" />
                 </FormItem>
