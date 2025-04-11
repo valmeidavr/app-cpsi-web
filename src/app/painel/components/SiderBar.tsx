@@ -26,6 +26,7 @@ import {
   Wrench,
   DollarSign,
   ClipboardList,
+  LayoutList,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -56,6 +57,7 @@ const iconMap: { [key: string]: React.ElementType } = {
   Wrench,
   DollarSign,
   ClipboardList,
+  LayoutList,
 };
 
 interface MenuItem {
