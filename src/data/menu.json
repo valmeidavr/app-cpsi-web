@@ -29,6 +29,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "LayoutList",
+        "label": "Alocações",
+        "href": "/painel/alocacoes",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "CalendarCheck",
         "label": "Expedientes",
         "href": "/painel/expedientes",
