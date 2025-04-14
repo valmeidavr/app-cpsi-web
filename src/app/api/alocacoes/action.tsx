@@ -27,7 +27,7 @@ export async function getAlocacaos(
   limit: number = 10,
   search?: string
 ) {
-  const { data } = await http.get("http://localhost:3000/alocacaos", {
+  const { data } = await http.get("http://localhost:3000/alocacoes", {
     params: { page, limit, search },
   });
 
