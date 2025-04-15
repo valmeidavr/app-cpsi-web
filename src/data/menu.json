@@ -81,14 +81,14 @@
     ]
   },
   {
-    "icon": "DollarSign",
+    "icon": "Calendar",
     "label": "Agenda",
     "href": "#",
     "subItems": [
       {
-        "icon": "ClipboardList",
-        "label": "Movimento de Caixa",
-        "href": "/painel/lancamentos",
+        "icon": "CalendarDays",
+        "label": "Agendamento",
+        "href": "/painel/agendas",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]

@@ -27,6 +27,8 @@ import {
   DollarSign,
   ClipboardList,
   LayoutList,
+  Calendar,
+  CalendarDays,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -58,6 +60,8 @@ const iconMap: { [key: string]: React.ElementType } = {
   DollarSign,
   ClipboardList,
   LayoutList,
+  Calendar,
+  CalendarDays,
 };
 
 interface MenuItem {
