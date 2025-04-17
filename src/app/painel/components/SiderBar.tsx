@@ -25,8 +25,10 @@ import {
   HousePlus,
   Wrench,
   DollarSign,
-  ClipboardList,
+  Receipt,
   LayoutList,
+  Calculator,
+  FileBadge,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -37,7 +39,7 @@ import {
 
 interface SidebarProps {
   collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
+  setCollapsedAction: (collapsed: boolean) => void;
 }
 
 // Mapeia os ícones para serem usados dinamicamente
@@ -56,8 +58,10 @@ const iconMap: { [key: string]: React.ElementType } = {
   HousePlus,
   Wrench,
   DollarSign,
-  ClipboardList,
+  Receipt,
   LayoutList,
+  Calculator,
+  FileBadge,
 };
 
 interface MenuItem {
@@ -73,7 +77,10 @@ interface MenuItem {
   }[];
 }
 
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar({
+  collapsed,
+  setCollapsedAction,
+}: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
   const [userGroups, setUserGroups] = useState<string[]>([]);
@@ -245,7 +252,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => setCollapsedAction(!collapsed)}
           className="hover:bg-gray-800 hover:text-white text-white"
         >
           <Menu className="h-5 w-5" />

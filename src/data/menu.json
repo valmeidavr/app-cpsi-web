@@ -72,9 +72,21 @@
     "href": "#",
     "subItems": [
       {
-        "icon": "ClipboardList",
+        "icon": "Receipt",
         "label": "Movimento de Caixa",
         "href": "/painel/lancamentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "FileBadge",
+        "label": "Plano de Contas",
+        "href": "/painel/plano_contas",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Calculator",
+        "label": "Caixa",
+        "href": "/painel/caixa",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]
