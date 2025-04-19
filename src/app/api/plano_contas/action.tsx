@@ -4,67 +4,76 @@ import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
 import { z } from "zod";
-import { createConvenioSchema, updateConvenioSchema } from "./schema/formSchemaConvenios";
+import {
+  createPlanosSchema,
+  updatePlanosSchema,
+} from "./schema/formSchemaPlanos";
 
-export async function getConvenios(
+export async function getPlanos(
   page: number = 1,
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/convenios", {
+  const { data } = await http.get("http://localhost:3000/plano-contas", {
     params: { page, limit, search },
   });
   return data;
 }
 
-export type CreateConvenioDTO = z.infer<typeof createConvenioSchema>;
-export type UpdateConvenioDTO = z.infer<typeof updateConvenioSchema>;
-export async function createConvenio({
+export type CreatePlanoDTO = z.infer<typeof createPlanosSchema>;
+export type UpdatePlanoDTO = z.infer<typeof updatePlanosSchema>;
+
+export async function createPlano({
   nome,
-  regras,
-  tabelaFaturamentosId,
-}: CreateConvenioDTO) {
+  tipo,
+  categoria,
+  descricao,
+}: CreatePlanoDTO) {
   try {
-    await http.post("/convenios", {
+    await http.post("http://localhost:3000/plano-contas", {
       nome,
-      regras,
-      tabelaFaturamentosId,
+      tipo,
+      categoria,
+      descricao,
     });
-    revalidatePath("/painel/convenios");
+    revalidatePath("/painel/plano_contas");
   } catch (error: any) {
-    console.error("Erro ao criar convenio:", error);
-    toast.error(error.response?.data?.message || "Erro ao criar convenio.");
+    console.error("Erro ao criar plano:", error);
+    toast.error(error.response?.data?.message || "Erro ao criar plano.");
   }
 }
 
-export async function getConvenioById(id: string) {
-  const { data } = await http.get(`/convenios/${id}`);
+export async function getPlanoById(id: string) {
+  const { data } = await http.get(`http://localhost:3000/plano-contas/${id}`);
   return data;
 }
 
-export async function updateConvenio(id: string, body: UpdateConvenioDTO) {
+export async function updatePlano(id: string, body: UpdatePlanoDTO) {
   try {
-    const { data } = await http.patch(`http://localhost:3000/convenios/${id}`, body);
-    revalidatePath("painel/convenios?status=success");
+    const { data } = await http.patch(
+      `http://localhost:3000/plano-contas/${id}`,
+      body
+    );
+    revalidatePath("painel/plano_contas?status=success");
     return data;
   } catch (error) {
     console.error("Erro no update:", error);
     return {
-      message: "Não foi possível fazer o update da Convenio",
+      message: "Não foi possível fazer o update do Plano",
       error: true,
     };
   }
 }
 
-export async function deleteConvenio(id: number) {
+export async function deletePlano(id: number) {
   try {
     const response = await http.delete(
-      `/convenios/${id}`
+      `http://localhost:3000/plano-contas/${id}`
     );
-    revalidatePath("painel/convenios");
+    revalidatePath("painel/plano_contas");
   } catch {
     return {
-      message: "Não foi possível deletar a Convenio",
+      message: "Não foi possível deletar o Plano",
       error: true,
     };
   }
