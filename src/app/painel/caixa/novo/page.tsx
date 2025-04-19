@@ -24,8 +24,8 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
-import { useRouter } from "next/navigation";
-import { createConvenio } from "@/app/api/convenios/action";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createCaixa } from "@/app/api/caixa/action";
 
 import {
   Select,
@@ -34,42 +34,40 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { http } from "@/util/http";
-import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
+import { createCaixaSchema } from "@/app/api/caixa/schema/formSchemaCaixa";
 
-export default function NovoConvenio() {
+export default function NovoCaixa() {
   const [loading, setLoading] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamento[]
-  >([]);
-
   const router = useRouter();
+  const tipoOptions = [
+    { value: "CAIXA", label: "CAIXA" },
+    { value: "BANCO", label: "BANCO" },
+  ];
+
   const form = useForm({
-    resolver: zodResolver(createConvenioSchema),
-    mode: "onChange",
+    resolver: zodResolver(createCaixaSchema),
     defaultValues: {
       nome: "",
-      regras: "",
-      tabelaFaturamentosId: 0,
+      saldo: 0,
+      tipo: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createCaixaSchema>) => {
     setLoading(true);
     try {
-      await createConvenio(values);
+      await createCaixa(values);
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
 
       queryParams.set("type", "success");
-      queryParams.set("message", "Convênio salvo com sucesso!");
+      queryParams.set("message", "Caixa salvo com sucesso!");
 
-      router.push(`/painel/convenios?${queryParams.toString()}`);
+      router.push(`/painel/caixa?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar convênio";
+        error.response?.data?.message || "Erro ao salvar caixa!";
 
       // Exibindo toast de erro
       toast.error(errorMessage);
@@ -79,44 +77,28 @@ export default function NovoConvenio() {
     setLoading(false);
   };
 
-  const fetchTabelaFaturamento = async () => {
-    try {
-      const { data } = await http.get("/tabela-faturamentos", {});
-
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
-  };
-
-  useEffect(() => {
-    fetchTabelaFaturamento();
-  }, []);
-
-  const regrasOption = [
-    { value: "CONVENIO", label: "CONVÊNIO" },
-    { value: "AAPVR", label: "AAPVR" },
-    { value: "PARTICULAR", label: "PARTICULAR" },
-  ];
   return (
     <div className="container mx-auto">
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Convênios", href: "/painel/convenios" },
-          { label: "Nova convênio" },
+          { label: "Lista de Caixas", href: "/painel/caixa" },
+          { label: "Novo Caixa" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-6 mt-5">Nova Convênio</h1>
+      <h1 className="text-2xl font-bold mb-6 mt-5">Novo Caixa</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Campos de Nome e Código */}
+          {" "}
+          {/* Campos do fomulário*/}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome *</FormLabel>
+                  <FormLabel>Caixa *</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -133,17 +115,37 @@ export default function NovoConvenio() {
             />
             <FormField
               control={form.control}
-              name="regras"
+              name="saldo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Regras *</FormLabel>
+                  <FormLabel>Saldo *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className={`border ${
+                        form.formState.errors.saldo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
                   >
                     <FormControl
                       className={
-                        form.formState.errors.regras
+                        form.formState.errors.tipo
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -153,57 +155,18 @@ export default function NovoConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {regrasOption.map((option) => (
+                      {tipoOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="tabelaFaturamentosId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tabela de Faturamento *</FormLabel>
-                  <Select
-                    value={field.value ? field.value.toString() : ""}
-                    onValueChange={(value) => {
-                      field.onChange(Number(value));
-                    }}
-                  >
-                    <FormControl
-                      className={
-                        form.formState.errors.tabelaFaturamentosId
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {tabelaFaturamentos.map((option) => (
-                        <SelectItem
-                          key={option.id}
-                          value={option.id.toString()}
-                        >
-                          {option.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
+                  <FormMessage className="text-red-500 text-sm mt-1" />
                 </FormItem>
               )}
             />
           </div>
-
           {/* Botão de Envio */}
           <Button
             type="submit"
