@@ -39,7 +39,7 @@ import {
 
 interface SidebarProps {
   collapsed: boolean;
-  setCollapsedAction: (collapsed: boolean) => void;
+  setCollapsed: (collapsed: boolean) => void;
 }
 
 // Mapeia os ícones para serem usados dinamicamente
@@ -77,10 +77,7 @@ interface MenuItem {
   }[];
 }
 
-export default function Sidebar({
-  collapsed,
-  setCollapsedAction,
-}: SidebarProps) {
+export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
   const [userGroups, setUserGroups] = useState<string[]>([]);
@@ -252,7 +249,7 @@ export default function Sidebar({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsedAction(!collapsed)}
+          onClick={() => setCollapsed(!collapsed)}
           className="hover:bg-gray-800 hover:text-white text-white"
         >
           <Menu className="h-5 w-5" />
