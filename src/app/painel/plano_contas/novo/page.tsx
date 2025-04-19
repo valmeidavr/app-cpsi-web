@@ -24,8 +24,8 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
-import { useRouter } from "next/navigation";
-import { createConvenio } from "@/app/api/convenios/action";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createPlano } from "@/app/api/plano_contas/action";
 
 import {
   Select,
@@ -34,42 +34,41 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { http } from "@/util/http";
-import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
+import { createPlanosSchema } from "@/app/api/plano_contas/schema/formSchemaPlanos";
 
-export default function NovoConvenio() {
+export default function NovoPlano() {
   const [loading, setLoading] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamento[]
-  >([]);
-
   const router = useRouter();
+  const tipoOptions = [
+    { value: "ENTRADA", label: "ENTRADA" },
+    { value: "SAIDA", label: "SAIDA" },
+  ];
+
   const form = useForm({
-    resolver: zodResolver(createConvenioSchema),
-    mode: "onChange",
+    resolver: zodResolver(createPlanosSchema),
     defaultValues: {
       nome: "",
-      regras: "",
-      tabelaFaturamentosId: 0,
+      tipo: "",
+      categoria: "",
+      descricao: "",
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
+  const onSubmit = async (values: z.infer<typeof createPlanosSchema>) => {
     setLoading(true);
     try {
-      await createConvenio(values);
+      await createPlano(values);
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
 
       queryParams.set("type", "success");
-      queryParams.set("message", "Convênio salvo com sucesso!");
+      queryParams.set("message", "Plano salvo com sucesso!");
 
-      router.push(`/painel/convenios?${queryParams.toString()}`);
+      router.push(`/painel/plano_contas?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar convênio";
+        error.response?.data?.message || "Erro ao salvar plano!";
 
       // Exibindo toast de erro
       toast.error(errorMessage);
@@ -79,44 +78,27 @@ export default function NovoConvenio() {
     setLoading(false);
   };
 
-  const fetchTabelaFaturamento = async () => {
-    try {
-      const { data } = await http.get("/tabela-faturamentos", {});
-
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
-  };
-
-  useEffect(() => {
-    fetchTabelaFaturamento();
-  }, []);
-
-  const regrasOption = [
-    { value: "CONVENIO", label: "CONVÊNIO" },
-    { value: "AAPVR", label: "AAPVR" },
-    { value: "PARTICULAR", label: "PARTICULAR" },
-  ];
   return (
     <div className="container mx-auto">
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Convênios", href: "/painel/convenios" },
-          { label: "Nova convênio" },
+          { label: "Planos de conta", href: "/painel/plano_contas" },
+          { label: "Novo Plano" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-6 mt-5">Nova Convênio</h1>
-
+      <h1 className="text-2xl font-bold mb-6 mt-5">Novo Plano</h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Campos de Nome e Código */}
+          {" "}
+          {/* Campos do fomulário*/}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome *</FormLabel>
+                  <FormLabel>Plano *</FormLabel>
                   <FormControl>
                     <Input
                       {...field}
@@ -133,17 +115,17 @@ export default function NovoConvenio() {
             />
             <FormField
               control={form.control}
-              name="regras"
+              name="tipo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Regras *</FormLabel>
+                  <FormLabel>Tipo *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
                   >
                     <FormControl
                       className={
-                        form.formState.errors.regras
+                        form.formState.errors.tipo
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -153,57 +135,58 @@ export default function NovoConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {regrasOption.map((option) => (
+                      {tipoOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
+                  <FormMessage className="text-red-500 text-sm mt-1" />
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="tabelaFaturamentosId"
+              name="categoria"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tabela de Faturamento *</FormLabel>
-                  <Select
-                    value={field.value ? field.value.toString() : ""}
-                    onValueChange={(value) => {
-                      field.onChange(Number(value));
-                    }}
-                  >
-                    <FormControl
-                      className={
-                        form.formState.errors.tabelaFaturamentosId
+                  <FormLabel>Categoria *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className={`border ${
+                        form.formState.errors.categoria
                           ? "border-red-500"
                           : "border-gray-300"
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {tabelaFaturamentos.map((option) => (
-                        <SelectItem
-                          key={option.id}
-                          value={option.id.toString()}
-                        >
-                          {option.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      className={`border ${
+                        form.formState.errors.descricao
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
           </div>
-
           {/* Botão de Envio */}
           <Button
             type="submit"

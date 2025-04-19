@@ -29,7 +29,7 @@ import { http } from "@/util/http";
 import { PlanoConta } from "@/app/types/PlanoConta";
 
 // ✅ Definir o tipo Plano de conta
-export default function Convenios() {
+export default function PlanoContas() {
   const [planoContas, setPlanoContas] = useState<PlanoConta[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -40,7 +40,7 @@ export default function Convenios() {
   const carregarPlanoContas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/plano_contas", {
+      const { data } = await http.get("http://localhost:3000/plano-contas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
@@ -128,7 +128,6 @@ export default function Convenios() {
                 <TableHead className="h-12-1">Plano</TableHead>
                 <TableHead className="h-12-1">Tipo</TableHead>
                 <TableHead className="h-12-1">Categoria</TableHead>
-                <TableHead className="h-12-1">Descrição</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -141,14 +140,21 @@ export default function Convenios() {
                   <TableCell>{plano_conta.id}</TableCell>
                   <TableCell>{plano_conta.nome}</TableCell>
                   <TableCell>
-                    <Badge>{plano_conta.tipo}</Badge>
+                    <Badge
+                      className={`${
+                        plano_conta.tipo === "ENTRADA"
+                          ? "bg-green-500"
+                          : "bg-destructive"
+                      }`}
+                    >
+                      {plano_conta.tipo}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
+                    <Badge className="text-[13px]" variant="default">
                       {plano_conta.categoria}
                     </Badge>
                   </TableCell>
-                  <TableCell>{plano_conta.descricao}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
