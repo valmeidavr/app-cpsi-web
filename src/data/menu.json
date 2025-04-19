@@ -79,7 +79,7 @@
       },
       {
         "icon": "FileBadge",
-        "label": "Plano de Contas",
+        "label": "Planos de Conta",
         "href": "/painel/plano_contas",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
