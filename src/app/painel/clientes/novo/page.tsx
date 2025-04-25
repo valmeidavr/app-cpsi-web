@@ -39,6 +39,15 @@ import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
 import { http } from "@/util/http";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Convenio } from "@/app/types/Convenios";
+import { getConvenios } from "@/app/api/convenios/action";
 
 // Mockup de opções de sexo
 const sexOptions = [
@@ -57,7 +66,23 @@ export default function CustomerRegistrationForm() {
   const [isCheckingCpf, setIsCheckingCpf] = useState<Boolean>(false);
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
+  const [loadingInativar, setLoadingInativar] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [convenios, setConvenios] = useState<Convenio[]>([]);
 
+
+
+
+
+  useEffect(() => {
+    const fetchConvenios = async () => {
+      try {
+          const {data} = await getConvenios()
+      } catch (error) {
+        console.error("Error ao buscar convênios:", error)
+        }
+      }
+  }, [])
   const form = useForm<z.infer<typeof createClienteSchema>>({
     resolver: zodResolver(createClienteSchema),
     mode: "onChange",
@@ -597,7 +622,37 @@ export default function CustomerRegistrationForm() {
               )}
             />
           </div>
-
+          {/* ✅ Diálogo de Confirmação */}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Convênios</DialogTitle>
+              </DialogHeader>
+              <p></p>
+              <DialogFooter>
+                <Button
+                  variant="secondary"
+                  onClick={() => setIsDialogOpen(false)}
+                  disabled={loadingInativar}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="default"
+                  onClick={alterarStatusCliente}
+                  disabled={loadingInativar}
+                >
+                  {loadingInativar ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : clienteSelecionado?.status === "Ativo" ? (
+                    "Inativar"
+                  ) : (
+                    "Ativar"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button
             type="submit"
             disabled={loading}
