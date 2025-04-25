@@ -11,6 +11,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "Calendar",
+        "label": "Agendamentos",
+        "href": "/painel/agendas",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "Users",
         "label": "Clientes",
         "href": "/painel/clientes",
@@ -44,6 +50,12 @@
         "icon": "CalendarCheck",
         "label": "Expedientes",
         "href": "/painel/expedientes",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Table",
+        "label": "Tabelas Faturamentos",
+        "href": "/painel/tabela_faturamentos",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {

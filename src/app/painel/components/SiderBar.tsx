@@ -29,6 +29,8 @@ import {
   LayoutList,
   Calculator,
   FileBadge,
+  Table,
+  Calendar,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -62,6 +64,8 @@ const iconMap: { [key: string]: React.ElementType } = {
   LayoutList,
   Calculator,
   FileBadge,
+  Table,
+  Calendar,
 };
 
 interface MenuItem {
