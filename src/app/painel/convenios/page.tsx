@@ -44,13 +44,14 @@ export default function Convenios() {
   const carregarConvenios = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/convenios", {
+      const { data } = await http.get("http://localhost:3000/convenios", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
           search: termoBusca,
         },
       });
+      console.log(data.data)
       setConvenios(data.data);
       setTotalPaginas(data.totalPages);
       setTotalconvenios(data.total);
@@ -140,6 +141,7 @@ export default function Convenios() {
                 <TableHead className="h-12-1">Convênio</TableHead>
                 <TableHead className="h-12-1">Regra</TableHead>
                 <TableHead className="h-12-1">Tabela</TableHead>
+                <TableHead className="h-12-1">Desconto(%)</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -165,6 +167,7 @@ export default function Convenios() {
                         ))}
                     </Badge>
                   </TableCell>
+                  <TableCell>{convenio.desconto}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>

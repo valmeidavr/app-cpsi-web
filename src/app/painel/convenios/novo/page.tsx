@@ -51,6 +51,7 @@ export default function NovoConvenio() {
     defaultValues: {
       nome: "",
       regras: "",
+      desconto: undefined,
       tabelaFaturamentosId: 0,
     },
   });
@@ -102,10 +103,10 @@ export default function NovoConvenio() {
         items={[
           { label: "Painel", href: "/painel" },
           { label: "Convênios", href: "/painel/convenios" },
-          { label: "Nova convênio" },
+          { label: "Novo Convênio" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-6 mt-5">Nova Convênio</h1>
+      <h1 className="text-2xl font-bold mb-6 mt-5">Novo Convênio</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -122,6 +123,42 @@ export default function NovoConvenio() {
                       {...field}
                       className={`border ${
                         form.formState.errors.nome
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="desconto"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Desconto *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0%"
+                      value={
+                        field.value !== undefined && field.value !== null
+                          ? `${field.value}%`
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value.replace(/[^\d]/g, "");
+                        let value = Number(raw);
+                        if (isNaN(value)) value = 0;
+                        if (value > 100) value = 100;
+                        if (value < 0) value = 0;
+                      
+                        field.onChange(value);
+                      }}
+                      className={`border ${
+                        form.formState.errors.desconto
                           ? "border-red-500"
                           : "border-gray-300"
                       } focus:ring-2 focus:ring-primary`}
