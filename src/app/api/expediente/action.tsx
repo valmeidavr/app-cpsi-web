@@ -16,7 +16,7 @@ export async function getExpedientes(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/expedientes", {
+  const { data } = await http.get("http://localhost:3000/expedientes", {
     params: { page, limit, search },
   });
   return data;
