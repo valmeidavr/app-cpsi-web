@@ -79,9 +79,9 @@ export default function NovoExpediente() {
     console.log(values);
     try {
       await createExpediente(values);
-      // router.push(
-      //   "/painel/expedientes?type=success&message=Salvo com sucesso!"
-      // );
+      router.push(
+        "/painel/expedientes?type=success&message=Salvo com sucesso!"
+      );
     } catch (error) {
       toast.error("Erro ao salvar expediente");
     } finally {
