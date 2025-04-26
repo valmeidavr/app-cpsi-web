@@ -92,27 +92,50 @@ export default function NovoPlano() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {" "}
           {/* Campos do fomulário*/}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Plano *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className={`border ${
-                        form.formState.errors.nome
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plano *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.nome
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+                  <FormField
+                control={form.control}
+                name="categoria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className={`border ${
+                          form.formState.errors.categoria
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
             />
+          </div>
+
             <FormField
               control={form.control}
               name="tipo"
@@ -146,26 +169,7 @@ export default function NovoPlano() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="categoria"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Categoria *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className={`border ${
-                        form.formState.errors.categoria
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        
             <FormField
               control={form.control}
               name="descricao"
@@ -173,20 +177,21 @@ export default function NovoPlano() {
                 <FormItem>
                   <FormLabel>Descrição *</FormLabel>
                   <FormControl>
-                    <Input
+                  <textarea
                       {...field}
-                      className={`border ${
+                      rows={4} // Você pode ajustar o número de linhas conforme necessário
+                      className={`w-full px-3 py-2 rounded-md border ${
                         form.formState.errors.descricao
                           ? "border-red-500"
                           : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
+                      } focus:ring-2 focus:ring-primary focus:outline-none`}
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
+          
           {/* Botão de Envio */}
           <Button
             type="submit"
