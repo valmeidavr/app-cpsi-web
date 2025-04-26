@@ -215,29 +215,7 @@ export default function EditarLancamento() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="descricao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        value={field.value || ""}
-                        className={
-                          form.formState.errors.descricao
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage className="text-red-500 text-sm mt-1" />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
+                  <FormField
                 control={form.control}
                 name="forma_pagamento"
                 render={({ field }) => (
@@ -270,39 +248,7 @@ export default function EditarLancamento() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="tipo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl
-                        className={
-                          form.formState.errors.tipo
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ENTRADA">ENTRADA</SelectItem>
-                        <SelectItem value="SAIDA">SAÍDA</SelectItem>
-                        <SelectItem value="TRANSFERENCIA">
-                          TRANSFERÊNCIA
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-red-500 text-sm mt-1" />
-                  </FormItem>
-                )}
-              />
+
               <FormField
                 control={form.control}
                 name="status_pagamento"
@@ -334,6 +280,40 @@ export default function EditarLancamento() {
                 )}
               />
             </div>
+
+            <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                    >
+                      <FormControl
+                        className={
+                          form.formState.errors.tipo
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="ENTRADA">ENTRADA</SelectItem>
+                        <SelectItem value="SAIDA">SAÍDA</SelectItem>
+                        <SelectItem value="TRANSFERENCIA">
+                          TRANSFERÊNCIA
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-500 text-sm mt-1" />
+                  </FormItem>
+                )}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -476,6 +456,28 @@ export default function EditarLancamento() {
                 )}
               />
             </div>
+
+            <FormField
+                control={form.control}
+                name="descricao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição *</FormLabel>
+                    <FormControl>
+                    <textarea
+                        {...field}
+                        rows={4} // Você pode ajustar o número de linhas conforme necessário
+                        className={`w-full px-3 py-2 rounded-md border ${
+                          form.formState.errors.descricao
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary focus:outline-none`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
             <Button
               type="submit"
