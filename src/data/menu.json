@@ -92,8 +92,8 @@
       },
       {
         "icon": "Calculator",
-        "label": "Caixa",
-        "href": "/painel/caixa",
+        "label": "Caixas",
+        "href": "/painel/caixas",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]

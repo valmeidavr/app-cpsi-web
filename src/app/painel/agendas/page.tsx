@@ -167,7 +167,7 @@ export default function Agendas() {
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar agenda"
+            placeholder="Pesquisar agendamento"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"

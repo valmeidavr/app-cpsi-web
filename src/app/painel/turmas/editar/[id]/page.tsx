@@ -43,6 +43,7 @@ export default function EditarTurma() {
   const [turma, setTurma] = useState<Turma | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+   const [carregando, setCarregando] = useState(false);
   const params = useParams();
   const turmaId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
@@ -105,6 +106,7 @@ export default function EditarTurma() {
   };
   useEffect(() => {
     async function fetchData() {
+      setCarregando(true);
       try {
         setLoadingData(true);
         if (!turmaId) redirect("painel/turmas");
@@ -127,6 +129,7 @@ export default function EditarTurma() {
       } catch (error) {
         console.error("Erro ao carregar usuário:", error);
       } finally {
+        setCarregando(false);
         setLoadingData(false);
       }
     }
@@ -142,14 +145,19 @@ export default function EditarTurma() {
           { label: "Editar Turma" },
         ]}
       />
-      {!loadingData ? (
+      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {carregando ? (
+        <div className="flex justify-center items-center w-full h-40">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+          <span className="ml-2 text-gray-500">Carregando ...</span>
+        </div>
+      ) : (
         <Form {...form}>
           <h1 className="text-2xl font-bold mb-4 mt-5">Nova Turma</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
           >
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="nome"
@@ -173,14 +181,14 @@ export default function EditarTurma() {
                   </FormItem>
                 )}
               />
-            </div>
+        
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="horarioInicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário *</FormLabel>
+                    <FormLabel>Horário de Início *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -195,7 +203,7 @@ export default function EditarTurma() {
                 name="horarioFim"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário *</FormLabel>
+                    <FormLabel>Horário de Fim *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -354,10 +362,6 @@ export default function EditarTurma() {
             </Button>
           </form>
         </Form>
-      ) : (
-        <div className="h-full w-full flex items-center justify-center mt-5">
-          <Loader2 className="w-8 h-8 animate-spin text-primary"></Loader2>
-        </div>
       )}
     </div>
   );

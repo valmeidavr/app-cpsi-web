@@ -82,7 +82,7 @@ export default function NovoCaixa() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Caixas", href: "/painel/caixa" },
+          { label: "Lista de Caixas", href: "/painel/caixas" },
           { label: "Novo Caixa" },
         ]}
       />
@@ -92,7 +92,7 @@ export default function NovoCaixa() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {" "}
           {/* Campos do fomulário*/}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <FormField
               control={form.control}
               name="nome"
@@ -133,7 +133,11 @@ export default function NovoCaixa() {
                 </FormItem>
               )}
             />
-            <FormField
+            
+          </div>
+
+
+          <FormField
               control={form.control}
               name="tipo"
               render={({ field }) => (
@@ -142,6 +146,7 @@ export default function NovoCaixa() {
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
+                    
                   >
                     <FormControl
                       className={
@@ -166,12 +171,11 @@ export default function NovoCaixa() {
                 </FormItem>
               )}
             />
-          </div>
           {/* Botão de Envio */}
           <Button
             type="submit"
             disabled={loading}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 !mt-8"
           >
             {loading ? (
               <>

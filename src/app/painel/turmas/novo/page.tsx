@@ -113,7 +113,6 @@ export default function NovoTurma() {
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto space-y-4 p-2"
         >
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="nome"
@@ -137,14 +136,14 @@ export default function NovoTurma() {
                 </FormItem>
               )}
             />
-          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="horarioInicio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horário *</FormLabel>
+                  <FormLabel>Horário de Início *</FormLabel>
                   <FormControl>
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>
@@ -159,7 +158,7 @@ export default function NovoTurma() {
               name="horarioFim"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horário *</FormLabel>
+                  <FormLabel>Horário de Fim *</FormLabel>
                   <FormControl>
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>

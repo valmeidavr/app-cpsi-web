@@ -63,7 +63,7 @@ export default function EditarCaixa() {
     setCarregando(true);
     async function fetchData() {
       try {
-        if (!caixaId) redirect("/painel/caixa");
+        if (!caixaId) redirect("/painel/caixas");
         await fetchCaixas();
         const data = await getCaixaById(caixaId);
         setCaixa(data);
@@ -84,14 +84,14 @@ export default function EditarCaixa() {
   const onSubmit = async (values: z.infer<typeof updateCaixaSchema>) => {
     setLoading(true);
     try {
-      if (!caixaId) redirect("/painel/caixa");
+      if (!caixaId) redirect("/painel/caixas");
 
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
       queryParams.set("message", "Caixa salvo com sucesso!");
 
-      router.push(`/painel/caixa?${queryParams.toString()}`);
+      router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar caixa!";
@@ -121,10 +121,11 @@ export default function EditarCaixa() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Caixas", href: "/painel/caixa" },
+          { label: "Lista de Caixas", href: "/painel/caixas" },
           { label: "Editar Caixa" },
         ]}
       />
+      <h1 className="text-2xl font-bold mb-6 mt-5">Editar Caixa</h1>
 
       {/* Loader - Oculta a Tabela enquanto carrega */}
       {carregando ? (
@@ -137,7 +138,7 @@ export default function EditarCaixa() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {" "}
             {/* Campos do fomulário*/}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               <FormField
                 control={form.control}
                 name="nome"
@@ -178,56 +179,59 @@ export default function EditarCaixa() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="tipo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl
-                        className={
-                          form.formState.errors.tipo
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {tipoOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-red-500 text-sm mt-1" />
-                  </FormItem>
-                )}
-              />
             </div>
-            {/* Botão de Envio */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> Salvar
-                </>
+
+
+          <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                    
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {tipoOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1" />
+                </FormItem>
               )}
-            </Button>
+            />
+          {/* Botão de Envio */}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2 !mt-8"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Salvar
+              </>
+            )}
+          </Button>
           </form>
         </Form>
       )}

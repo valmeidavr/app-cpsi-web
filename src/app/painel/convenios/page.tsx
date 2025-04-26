@@ -141,7 +141,7 @@ export default function Convenios() {
                 <TableHead className="h-12-1">Convênio</TableHead>
                 <TableHead className="h-12-1">Regra</TableHead>
                 <TableHead className="h-12-1">Tabela</TableHead>
-                <TableHead className="h-12-1">Desconto(%)</TableHead>
+                <TableHead className="h-12-1">Desconto</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -167,7 +167,12 @@ export default function Convenios() {
                         ))}
                     </Badge>
                   </TableCell>
-                  <TableCell>{convenio.desconto}</TableCell>
+                  <TableCell>
+                    <Badge className="bg-green-600 text-white">
+                      {convenio.desconto}%
+                    </Badge>
+                    
+                  </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>

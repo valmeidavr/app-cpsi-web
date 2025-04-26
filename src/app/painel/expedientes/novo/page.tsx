@@ -99,7 +99,7 @@ export default function NovoExpediente() {
         ]}
       />
       <Form {...form}>
-        <h1 className="text-2xl font-bold mb-4 mt-5">Nova Expediente</h1>
+        <h1 className="text-2xl font-bold mb-4 mt-5">Novo Expediente</h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -110,7 +110,7 @@ export default function NovoExpediente() {
               name="hinicio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horário *</FormLabel>
+                  <FormLabel>Horário Início *</FormLabel>
                   <FormControl>
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>
@@ -125,7 +125,7 @@ export default function NovoExpediente() {
               name="hfinal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Horário *</FormLabel>
+                  <FormLabel>Horário Fim </FormLabel>
                   <FormControl>
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>
@@ -158,7 +158,7 @@ export default function NovoExpediente() {
               name="dtfinal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data de Fim</FormLabel>
+                  <FormLabel>Data de Fim *</FormLabel>
                   <FormControl>
                     <Input {...field} type="date" />
                   </FormControl>
@@ -241,8 +241,10 @@ export default function NovoExpediente() {
                 </FormItem>
               )}
             />
+            
+          </div>
 
-            <FormField
+          <FormField
               control={form.control}
               name="semana"
               render={({ field }) => (
@@ -278,7 +280,7 @@ export default function NovoExpediente() {
                 </FormItem>
               )}
             />
-          </div>
+
           <Button
             type="submit"
             disabled={loading}

@@ -32,11 +32,11 @@ export default function Caixas() {
   const [caixa, setCaixa] = useState<Caixa[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalCaixa, setTotalCaixa] = useState(0);
+  const [totalCaixas, setTotalCaixas] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
 
-  const carregarCaixa = async () => {
+  const carregarCaixas = async () => {
     setCarregando(true);
     try {
       const { data } = await http.get("http://localhost:3000/caixas", {
@@ -48,7 +48,7 @@ export default function Caixas() {
       });
       setCaixa(data.data);
       setTotalPaginas(data.totalPages);
-      setTotalCaixa(data.total);
+      setTotalCaixas(data.total);
     } catch (error) {
       console.error("Erro ao buscar Caixa:", error);
     } finally {
@@ -57,7 +57,7 @@ export default function Caixas() {
   };
 
   useEffect(() => {
-    carregarCaixa();
+    carregarCaixas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -73,7 +73,7 @@ export default function Caixas() {
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    carregarCaixa();
+    carregarCaixas();
   };
 
   return (
@@ -104,7 +104,7 @@ export default function Caixas() {
 
         {/* ✅ Botão Novo Caixa */}
         <Button asChild>
-          <Link href="/painel/caixa/novo">
+          <Link href="/painel/caixas/novo">
             <Plus className="h-5 w-5 mr-2" />
             Novo Caixa
           </Link>
@@ -155,7 +155,7 @@ export default function Caixas() {
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
-                          <Link href={`/painel/caixa/editar/${caixas.id}`}>
+                          <Link href={`/painel/caixas/editar/${caixas.id}`}>
                             <Button size="icon" variant="outline">
                               <Edit className="h-5 w-5" />
                             </Button>
@@ -179,8 +179,8 @@ export default function Caixas() {
           {/* Totalizador de Caixas */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalCaixa)} de{" "}
-              {totalCaixa} caixas
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalCaixas)} de{" "}
+              {totalCaixas} caixas
             </div>
           </div>
 
