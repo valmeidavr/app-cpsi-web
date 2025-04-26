@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Dialog,
@@ -182,7 +183,7 @@ export default function Turmas() {
                 <TableHead className="h-12-1">Turma</TableHead>
                 <TableHead className="h-12-1">Procedimento</TableHead>
                 <TableHead className="h-12-1">Profissional</TableHead>
-                <TableHead className="h-12-1">Data Inicio</TableHead>
+                <TableHead className="h-12-1">Data Início</TableHead>
                 <TableHead className="h-12-1">Data Fim</TableHead>
                 <TableHead className="h-12-1">Vagas</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
@@ -196,8 +197,13 @@ export default function Turmas() {
                 >
                   <TableCell>{turma.id}</TableCell>
                   <TableCell>{turma.nome}</TableCell>
-                  <TableCell>{turma.procedimento.nome}</TableCell>
                   <TableCell>
+                    <Badge className="text-[13px]"  variant="outline">
+                      {turma.procedimento.nome}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                  <Badge className="text-[13px]" variant="outline">
                     {turma.prestador ? (
                       (() => {
                         const nomeArray = turma.prestador.nome.split(" ");
@@ -211,21 +217,27 @@ export default function Turmas() {
                         Prestador não definido
                       </span>
                     )}
+                  </Badge>
                   </TableCell>
                   <TableCell>
+                    <Badge>
                     {formatDate(turma.dataInicio, "dd/MM/yyyy")}
+                    </Badge>
+                    
                   </TableCell>
                   <TableCell
-                    className={`${turma.dataFim ? "text-red-500" : ""}`}
+                    className={`${turma.dataFim ? "text-white" : ""}`}
                   >
-                    {turma.dataFim
-                      ? formatDate(turma.dataFim, "dd/MM/yyyy")
-                      : "--------"}
+                    <Badge className="bg-red-500">
+                      {turma.dataFim
+                        ? formatDate(turma.dataFim, "dd/MM/yyyy")
+                        : "--------"}
+                    </Badge>
+                    
                   </TableCell>
                   <TableCell>{turma.limiteVagas}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
-                    {!turma.dataFim && (
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -245,7 +257,7 @@ export default function Turmas() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-                    )}
+                    
                     {/* ✅ Botão Ativar/Inativar com Tooltip */}
                     <Tooltip.Provider>
                       <Tooltip.Root>
@@ -280,6 +292,7 @@ export default function Turmas() {
               ))}
             </TableBody>
           </Table>
+
           {/* Totalizador de Turmas */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
