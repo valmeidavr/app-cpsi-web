@@ -251,8 +251,8 @@ export default function NovoAgenda() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Agendamentos", href: "/painel/agendas" },
-          { label: "Agendar" },
+          { label: "Lista de Agendamentos", href: "/painel/agendas" },
+          { label: "Novo Agendamento" },
         ]}
       />
       {carregando ? (
