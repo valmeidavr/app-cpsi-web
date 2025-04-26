@@ -23,6 +23,7 @@ import {
 import ReactPaginate from "react-paginate";
 import { http } from "@/util/http";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
@@ -93,7 +94,7 @@ export default function AlocacaosPage() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Alocacaos" },
+          { label: "Lista de Alocações" },
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Alocações</h1>
@@ -103,7 +104,7 @@ export default function AlocacaosPage() {
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar alocacao"
+            placeholder="Pesquisar alocação"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -135,14 +136,14 @@ export default function AlocacaosPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
-                <TableHead>Prestador</TableHead>
-                <TableHead>Especialidade</TableHead>
-                <TableHead>Unidade</TableHead>
-                <TableHead>Ações</TableHead>
+                <TableHead className="h-12-1">ID</TableHead>
+                <TableHead className="h-12-1">Prestador</TableHead>
+                <TableHead className="h-12-1">Especialidade</TableHead>
+                <TableHead className="h-12-1">Unidade</TableHead>
+                <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className="text-center">
               {alocacaos.map((alocacao) => (
                 <TableRow
                   key={alocacao.id}
@@ -150,8 +151,16 @@ export default function AlocacaosPage() {
                 >
                   <TableCell>{alocacao.id}</TableCell>
                   <TableCell>{alocacao.prestador.nome}</TableCell>
-                  <TableCell>{alocacao.especialidade.nome}</TableCell>
-                  <TableCell>{alocacao.unidade.nome}</TableCell>
+                  <TableCell>
+                    <Badge className="text-[13px]" variant="outline">
+                    {alocacao.especialidade.nome}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge>
+                    {alocacao.unidade.nome}
+                    </Badge>
+                  </TableCell>
 
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
@@ -185,7 +194,7 @@ export default function AlocacaosPage() {
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalAlocacaos)} de{" "}
-              {totalAlocacaos} alocacaos
+              {totalAlocacaos} alocações
             </div>
           </div>
 

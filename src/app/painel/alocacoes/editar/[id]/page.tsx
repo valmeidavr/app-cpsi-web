@@ -52,6 +52,7 @@ import { Alocacao } from "@/app/types/Alocacao";
 
 export default function novaAlocacao() {
   const [loading, setLoading] = useState(false);
+  const [carregando, setCarregando] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
@@ -103,6 +104,7 @@ export default function novaAlocacao() {
 
   useEffect(() => {
     async function fetchData() {
+      setCarregando(true);
       try {
         if (!alocacaoId) redirect("painel/turmas");
         setLoadingData(true);
@@ -121,6 +123,7 @@ export default function novaAlocacao() {
       } catch (error) {
         console.error("Erro ao carregar alocação:", error);
       } finally {
+        setCarregando(false);
         setLoadingData(false);
       }
     }
@@ -159,7 +162,13 @@ export default function novaAlocacao() {
           { label: "Editar Alocação" }, // Último item sem link
         ]}
       />
-      {!loadingData ? (
+        {/* Loader - Oculta a Tabela enquanto carrega */}
+        {carregando ? (
+        <div className="flex justify-center items-center w-full h-40">
+          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+          <span className="ml-2 text-gray-500">Carregando ...</span>
+        </div>
+      ) : (
         <Form {...form}>
           <h1 className="text-2xl font-bold mb-4 mt-5">Editar Alocação</h1>
           <form
@@ -241,7 +250,10 @@ export default function novaAlocacao() {
                   </FormItem>
                 )}
               />
-              <FormField
+              
+            </div>
+
+            <FormField
                 control={form.control}
                 name="prestadoresId"
                 render={({ field }) => (
@@ -278,12 +290,11 @@ export default function novaAlocacao() {
                   </FormItem>
                 )}
               />
-            </div>
 
             <Button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 !mt-8"
             >
               {loading ? (
                 <>
@@ -299,11 +310,8 @@ export default function novaAlocacao() {
             </Button>
           </form>
         </Form>
-      ) : (
-        <div className="h-full w-full flex items-center justify-center mt-5">
-          <Loader2 className="w-8 h-8 animate-spin text-primary"></Loader2>
-        </div>
-      )}
+        )}
     </div>
+  
   );
 }
