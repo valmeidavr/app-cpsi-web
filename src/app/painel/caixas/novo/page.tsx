@@ -82,7 +82,7 @@ export default function NovoCaixa() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Caixas", href: "/painel/caixa" },
+          { label: "Lista de Caixas", href: "/painel/caixas" },
           { label: "Novo Caixa" },
         ]}
       />

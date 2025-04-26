@@ -63,7 +63,7 @@ export default function EditarCaixa() {
     setCarregando(true);
     async function fetchData() {
       try {
-        if (!caixaId) redirect("/painel/caixa");
+        if (!caixaId) redirect("/painel/caixas");
         await fetchCaixas();
         const data = await getCaixaById(caixaId);
         setCaixa(data);
@@ -84,14 +84,14 @@ export default function EditarCaixa() {
   const onSubmit = async (values: z.infer<typeof updateCaixaSchema>) => {
     setLoading(true);
     try {
-      if (!caixaId) redirect("/painel/caixa");
+      if (!caixaId) redirect("/painel/caixas");
 
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
       queryParams.set("message", "Caixa salvo com sucesso!");
 
-      router.push(`/painel/caixa?${queryParams.toString()}`);
+      router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar caixa!";
@@ -121,7 +121,7 @@ export default function EditarCaixa() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Caixas", href: "/painel/caixa" },
+          { label: "Lista de Caixas", href: "/painel/caixas" },
           { label: "Editar Caixa" },
         ]}
       />
