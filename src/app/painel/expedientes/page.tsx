@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Dialog,
@@ -174,14 +175,29 @@ export default function Expedientes() {
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
                   <TableCell>{expediente.id}</TableCell>
-                  <TableCell>{expediente.hinicio}</TableCell>
-                  <TableCell>{expediente.hfinal}</TableCell>
-                  <TableCell>{expediente.semana}</TableCell>
                   <TableCell>
-                    {format(parseISO(expediente.dtinicio), "dd/MM/yyyy")}
+                    <Badge>
+                      {expediente.hinicio}
+                    </Badge>
+                    
+                  </TableCell>
+                  <TableCell><Badge>
+                      {expediente.hfinal}
+                    </Badge></TableCell>
+                  <TableCell>
+                  <Badge className="text-[13px]" variant="outline">
+                    {expediente.semana}
+                  </Badge>
                   </TableCell>
                   <TableCell>
+                    <Badge>
+                      {format(parseISO(expediente.dtinicio), "dd/MM/yyyy")}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge>
                     {format(parseISO(expediente.dtfinal), "dd/MM/yyyy")}
+                    </Badge>
                   </TableCell>
                   <TableCell>{expediente.alocacaoId}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
