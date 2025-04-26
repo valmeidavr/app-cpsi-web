@@ -161,7 +161,7 @@ export default function Turmas() {
         <Button asChild>
           <Link href="/painel/turmas/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Novo Turma
+            Nova Turma
           </Link>
         </Button>
       </div>
@@ -338,13 +338,15 @@ export default function Turmas() {
             <DialogHeader>
               <DialogTitle>Confirmar Ação</DialogTitle>
             </DialogHeader>
+          <p>
+            Tem certeza que deseja finalizar esta turma?
+          </p>
             <form>
               <FormField
                 control={form.control}
                 name="dataFim"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Fim</FormLabel>
                     <FormControl>
                       <Input {...field} type="date" />
                     </FormControl>
