@@ -31,18 +31,13 @@ export async function createCliente(body: CreateClienteDTO) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
     const { convenios, desconto, ...payload } = body;
-    const {data} = await http.post(
-      "http://localhost:3000/clientes",
-      payload
-    );
-    console.log("cliente", data);
+    const { data } = await http.post("http://localhost:3000/clientes", payload);
     for (const convenio of convenios) {
       const convenioBody = {
         conveniosId: convenio,
         clientesId: data.id,
         desconto: desconto[convenio],
       };
-      console.log("convenioBody", convenioBody);
       await http.post("http://localhost:3000/convenios-clientes", convenioBody);
     }
     revalidatePath("/painel/clientes");
@@ -75,17 +70,70 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
       const parsedDate = new Date(body.dtnascimento);
       body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
     }
-    body.cpf = limparCPF(String(body.cpf));
-    if (body.cep) body.cep = limparCEP(String(body.cep));
-    body.telefone1 = limparTelefone(String(body.telefone1));
-    body.telefone2 = limparTelefone(String(body.telefone2));
+    if (body.cpf) {
+      body.cpf = limparCPF(String(body.cpf));
+    }
+    if (body.cep) {
+      body.cep = limparCEP(String(body.cep));
+    }
+    if (body.telefone1) {
+      body.telefone1 = limparTelefone(String(body.telefone1));
+    }
+    if (body.telefone2) {
+      body.telefone2 = limparTelefone(String(body.telefone2));
+    }
+    const { convenios, desconto, ...payload } = body;
+    console.log("Payload", payload);
+    const { data } = await http.patch(
+      `http://localhost:3000/clientes/${id}`,
+      payload
+    );
+    if (convenios && convenios.length > 0) {
+      for (const convenio of convenios) {
+        const convenioBody = {
+          conveniosId: convenio,
+          clientesId: data.id,
+          desconto: desconto?.[convenio] ?? null,
+        };
 
-    await http.patch(`/clientes/${id}`, body);
+        console.log("ConvenioBody", convenioBody);
+
+        try {
+          const res = await http.get(
+            "http://localhost:3000/convenios-clientes",
+            {
+              params: {
+                conveniosId: convenio,
+                clientesId: data.id,
+              },
+            }
+          );
+
+          const existing = res.data?.data;
+
+          if (existing?.id) {
+            console.log("Atualizando relacionamento existente:", existing.id);
+            await http.patch(
+              `http://localhost:3000/convenios-clientes/${existing.id}`,
+              convenioBody
+            );
+          } else {
+            console.log("Criando novo relacionamento...");
+            await http.post(
+              "http://localhost:3000/convenios-clientes",
+              convenioBody
+            );
+          }
+        } catch (err) {
+          console.error("Erro ao processar convênio-cliente:", err);
+        }
+      }
+    }
     revalidatePath("painel/clientes");
   } catch (error) {
     return {
       message: "Não foi possível fazer o update do Cliente",
-      error: true,
+      error: error,
     };
   }
 }
