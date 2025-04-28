@@ -50,7 +50,8 @@ import { formatDate } from "date-fns";
 
 //Types
 import { Turma } from "@/app/types/Turma";
-
+import adicionarAlunosModal from "./adicionar_alunos_modal/page";
+import AdicionarAlunosModal from "./adicionar_alunos_modal/page";
 
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -59,12 +60,17 @@ export default function Turmas() {
   const [totalTurmas, setTotalTurmas] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [turmaSelecionado, setTurmaSelecionado] = useState<Turma | null>(
-    null
-  );
+  const [turmaSelecionado, setTurmaSelecionado] = useState<Turma | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [turmaSelecionadaId, setTurmaSelecionadaId] = useState<number>(0);
+
+  const abrirAdicionarAlunosModal = (turmaId: number, open: boolean) => {
+    setTurmaSelecionadaId(turmaId);
+    setIsModalOpen(open);
+  };
   const carregarTurmas = async () => {
     setCarregando(true);
     try {
@@ -198,67 +204,41 @@ export default function Turmas() {
                   <TableCell>{turma.id}</TableCell>
                   <TableCell>{turma.nome}</TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]"  variant="outline">
+                    <Badge className="text-[13px]" variant="outline">
                       {turma.procedimento.nome}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                  <Badge className="text-[13px]" variant="outline">
-                    {turma.prestador ? (
-                      (() => {
-                        const nomeArray = turma.prestador.nome.split(" ");
-                        const primeiroUltimoNome = `${nomeArray[0]} ${
-                          nomeArray[nomeArray.length - 1]
-                        }`;
-                        return primeiroUltimoNome;
-                      })()
-                    ) : (
-                      <span className="text-gray-400 italic">
-                        Prestador não definido
-                      </span>
-                    )}
-                  </Badge>
+                    <Badge className="text-[13px]" variant="outline">
+                      {turma.prestador ? (
+                        (() => {
+                          const nomeArray = turma.prestador.nome.split(" ");
+                          const primeiroUltimoNome = `${nomeArray[0]} ${
+                            nomeArray[nomeArray.length - 1]
+                          }`;
+                          return primeiroUltimoNome;
+                        })()
+                      ) : (
+                        <span className="text-gray-400 italic">
+                          Prestador não definido
+                        </span>
+                      )}
+                    </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge>
-                    {formatDate(turma.dataInicio, "dd/MM/yyyy")}
-                    </Badge>
-                    
+                    <Badge>{formatDate(turma.dataInicio, "dd/MM/yyyy")}</Badge>
                   </TableCell>
-                  <TableCell
-                    className={`${turma.dataFim ? "text-white" : ""}`}
-                  >
-                    <Badge className="bg-red-500">
+                  <TableCell className={`${turma.dataFim ? "text-white" : ""}`}>
+                    <Badge className={`${turma.dataFim ? "bg-red-500" : ""}`}>
                       {turma.dataFim
                         ? formatDate(turma.dataFim, "dd/MM/yyyy")
                         : "--------"}
                     </Badge>
-                    
                   </TableCell>
                   <TableCell>{turma.limiteVagas}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {/* ✅ Botão Editar com Tooltip */}
-                      <Tooltip.Provider>
-                        <Tooltip.Root>
-                          <Tooltip.Trigger asChild>
-                            <Link href={`/painel/turmas/editar/${turma.id}`}>
-                              <Button size="icon" variant="outline">
-                                <Edit className="h-5 w-5" />
-                              </Button>
-                            </Link>
-                          </Tooltip.Trigger>
-                          <Tooltip.Portal>
-                            <Tooltip.Content
-                              side="top"
-                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                            >
-                              Editar Turma
-                            </Tooltip.Content>
-                          </Tooltip.Portal>
-                        </Tooltip.Root>
-                      </Tooltip.Provider>
-                    
-                    {/* ✅ Botão Ativar/Inativar com Tooltip */}
+
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -266,15 +246,10 @@ export default function Turmas() {
                             size="icon"
                             variant="outline"
                             onClick={() => {
-                              setTurmaSelecionado(turma);
-                              setIsDialogOpen(true);
+                              abrirAdicionarAlunosModal(turma.id, true);
                             }}
                           >
-                            <Power
-                              className={`h-5 w-5 ${
-                                turma.dataFim ?? "text-red-500"
-                              }`}
-                            />
+                            <Plus className="h-5 w-5" />
                           </Button>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
@@ -282,11 +257,61 @@ export default function Turmas() {
                             side="top"
                             className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                           >
-                            Finalizar Turma
+                            Adicionar Alunos
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
                     </Tooltip.Provider>
+                    <Tooltip.Provider>
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <Link href={`/painel/turmas/editar/${turma.id}`}>
+                            <Button size="icon" variant="outline">
+                              <Edit className="h-5 w-5" />
+                            </Button>
+                          </Link>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content
+                            side="top"
+                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                          >
+                            Editar Turma
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </Tooltip.Provider>
+                    {!turma.dataFim && (
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <Button
+                              size="icon"
+                              variant="outline"
+                              onClick={() => {
+                                setTurmaSelecionado(turma);
+                                setIsDialogOpen(true);
+                              }}
+                            >
+                              <Power
+                                className={`h-5 w-5 ${
+                                  turma.dataFim ?? "text-red-500"
+                                }`}
+                              />
+                            </Button>
+                          </Tooltip.Trigger>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Finalizar Turma
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
+                    )}
+                    {/* ✅ Botão Ativar/Inativar com Tooltip */}
                   </TableCell>
                 </TableRow>
               ))}
@@ -351,9 +376,7 @@ export default function Turmas() {
             <DialogHeader>
               <DialogTitle>Confirmar Ação</DialogTitle>
             </DialogHeader>
-          <p>
-            Tem certeza que deseja finalizar esta turma?
-          </p>
+            <p>Tem certeza que deseja finalizar esta turma?</p>
             <form>
               <FormField
                 control={form.control}
@@ -396,6 +419,12 @@ export default function Turmas() {
           </DialogContent>
         </FormProvider>
       </Dialog>
+
+      <AdicionarAlunosModal
+        isOpen={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        turmaId={turmaSelecionadaId}
+      />
     </div>
   );
 }
