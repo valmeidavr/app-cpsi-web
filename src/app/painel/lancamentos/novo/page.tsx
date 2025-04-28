@@ -134,7 +134,7 @@ export default function NovoLancamento() {
           { label: `${toggleText}` }, // Último item sem link
         ]}
       />
-      <Form {...form}>
+     <Form {...form}>
         <h1 className="text-2xl font-bold mb-4 mt-5">{toggleText}</h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -168,29 +168,7 @@ export default function NovoLancamento() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="descricao"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Descrição</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value || ""}
-                      className={
-                        form.formState.errors.descricao
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    />
-                  </FormControl>
-                  <FormMessage className="text-red-500 text-sm mt-1" />
-                </FormItem>
-              )}
-            />
-
-            <FormField
+                <FormField
               control={form.control}
               name="forma_pagamento"
               render={({ field }) => (
@@ -226,39 +204,6 @@ export default function NovoLancamento() {
 
             <FormField
               control={form.control}
-              name="tipo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value || ""}
-                  >
-                    <FormControl
-                      className={
-                        form.formState.errors.tipo
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ENTRADA">ENTRADA</SelectItem>
-                      <SelectItem value="SAIDA">SAÍDA</SelectItem>
-                      <SelectItem value="TRANSFERENCIA">
-                        TRANSFERÊNCIA
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 text-sm mt-1" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="status_pagamento"
               render={({ field }) => (
                 <FormItem>
@@ -289,6 +234,40 @@ export default function NovoLancamento() {
             />
           </div>
 
+          <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="ENTRADA">ENTRADA</SelectItem>
+                      <SelectItem value="SAIDA">SAÍDA</SelectItem>
+                      <SelectItem value="TRANSFERENCIA">
+                        TRANSFERÊNCIA
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1" />
+                </FormItem>
+              )}
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -297,19 +276,16 @@ export default function NovoLancamento() {
                 <FormItem>
                   <FormLabel>Data Lançamento *</FormLabel>
                   <FormControl>
-                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
-                      <Calendar className="w-4 h-4" />
-                      <Input
-                        type="date"
-                        value={field.value || ""}
-                        onChange={field.onChange}
-                        className={
-                          form.formState.errors.data_lancamento
-                            ? "border-red-500 input-modified focus-visible:ring-0"
-                            : "border-gray-300 input-modified focus-visible:ring-0"
-                        }
-                      />
-                    </div>
+                    <Input
+                      type="date"
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      className={
+                        form.formState.errors.data_lancamento
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    />
                   </FormControl>
                   <FormMessage className="text-red-500 text-sm mt-1" />
                 </FormItem>
@@ -323,7 +299,7 @@ export default function NovoLancamento() {
                   <FormLabel>Plano de Conta *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value.toString() || ""}
+                    value={field.value ? String(field.value) : ""}
                   >
                     <FormControl
                       className={
@@ -341,7 +317,10 @@ export default function NovoLancamento() {
                         Selecione
                       </SelectItem>
                       {planoConta.map((plano) => (
-                        <SelectItem key={plano.id} value={plano.id.toString()}>
+                        <SelectItem
+                          key={plano.id}
+                          value={plano.id.toString()}
+                        >
                           {plano.nome}
                         </SelectItem>
                       ))}
@@ -359,7 +338,7 @@ export default function NovoLancamento() {
                   <FormLabel>Usuário *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value.toString() || ""}
+                    value={field.value ? String(field.value) : ""}
                   >
                     <FormControl
                       className={
@@ -376,12 +355,12 @@ export default function NovoLancamento() {
                       <SelectItem value="0" disabled>
                         Selecione
                       </SelectItem>
-                      {usuarios.map((cliente) => (
+                      {usuarios.map((usuario) => (
                         <SelectItem
-                          key={cliente.id}
-                          value={cliente.id.toString()}
+                          key={usuario.id}
+                          value={usuario.id.toString()}
                         >
-                          {cliente.nome}
+                          {usuario.nome}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -398,7 +377,7 @@ export default function NovoLancamento() {
                   <FormLabel>Caixa *</FormLabel>
                   <Select
                     onValueChange={field.onChange}
-                    value={field.value.toString() || ""}
+                    value={field.value ? String(field.value) : ""}
                   >
                     <FormControl
                       className={
@@ -416,7 +395,10 @@ export default function NovoLancamento() {
                         Selecione
                       </SelectItem>
                       {caixas.map((caixa) => (
-                        <SelectItem key={caixa.id} value={caixa.id.toString()}>
+                        <SelectItem
+                          key={caixa.id}
+                          value={caixa.id.toString()}
+                        >
                           {caixa.nome}
                         </SelectItem>
                       ))}
@@ -427,6 +409,28 @@ export default function NovoLancamento() {
               )}
             />
           </div>
+
+          <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição *</FormLabel>
+                  <FormControl>
+                  <textarea
+                      {...field}
+                      rows={4} // Você pode ajustar o número de linhas conforme necessário
+                      className={`w-full px-3 py-2 rounded-md border ${
+                        form.formState.errors.descricao
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary focus:outline-none`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
           <Button
             type="submit"

@@ -26,52 +26,38 @@ import { Badge } from "@/components/ui/badge";
 import { http } from "@/util/http";
 
 //Types
-import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-import { Convenio } from "@/app/types/Convenios";
+import { Caixa } from "@/app/types/Caixa";
 
-// ✅ Definir o tipo convenio
-export default function Convenios() {
-  const [convenios, setConvenios] = useState<Convenio[]>([]);
+export default function Caixas() {
+  const [caixa, setCaixa] = useState<Caixa[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalconvenios, setTotalconvenios] = useState(0);
+  const [totalCaixas, setTotalCaixas] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamento[]
-  >([]);
 
-  const carregarConvenios = async () => {
+  const carregarCaixas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/convenios", {
+      const { data } = await http.get("http://localhost:3000/caixas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
           search: termoBusca,
         },
       });
-      console.log(data.data)
-      setConvenios(data.data);
+      setCaixa(data.data);
       setTotalPaginas(data.totalPages);
-      setTotalconvenios(data.total);
+      setTotalCaixas(data.total);
     } catch (error) {
-      console.error("Erro ao buscar convenios:", error);
+      console.error("Erro ao buscar Caixa:", error);
     } finally {
       setCarregando(false);
     }
   };
 
-  const fetchTabelaFaturamento = async () => {
-    try {
-      const { data } = await http.get("/tabela-faturamentos");
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
-  };
-
   useEffect(() => {
-    fetchTabelaFaturamento();
-    carregarConvenios();
+    carregarCaixas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -87,7 +73,7 @@ export default function Convenios() {
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    carregarConvenios();
+    carregarCaixas();
   };
 
   return (
@@ -95,17 +81,17 @@ export default function Convenios() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Convênios" },
+          { label: " Lista de Caixas" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Caixas</h1>
 
-      {/* Barra de Pesquisa e Botão Nova convenio */}
+      {/* Barra de Pesquisa e Botão Novo Caixa */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar convênio"
+            placeholder="Pesquisar Caixa"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -116,11 +102,11 @@ export default function Convenios() {
           </Button>
         </div>
 
-        {/* ✅ Botão Novo Cliente */}
+        {/* ✅ Botão Novo Caixa */}
         <Button asChild>
-          <Link href="/painel/convenios/novo">
+          <Link href="/painel/caixas/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Novo Convênio
+            Novo Caixa
           </Link>
         </Button>
       </div>
@@ -133,53 +119,43 @@ export default function Convenios() {
         </div>
       ) : (
         <>
-          {/* Tabela de convenios */}
+          {/* Tabela de Caixa */}
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1">Convênio</TableHead>
-                <TableHead className="h-12-1">Regra</TableHead>
-                <TableHead className="h-12-1">Tabela</TableHead>
-                <TableHead className="h-12-1">Desconto</TableHead>
+                <TableHead className="h-12-1">Caixa</TableHead>
+                <TableHead className="h-12-1">Saldo</TableHead>
+                <TableHead className="h-12-1">Tipo</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="text-center">
-              {convenios.map((convenio) => (
+              {caixa.map((caixas) => (
                 <TableRow
-                  key={convenio.id}
+                  key={caixas.id}
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
-                  <TableCell>{convenio.id}</TableCell>
-                  <TableCell>{convenio.nome}</TableCell>
+                  <TableCell>{caixas.id}</TableCell>
+                  <TableCell>{caixas.nome}</TableCell>
                   <TableCell>
-                    <Badge>{convenio.regras}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
-                      {tabelaFaturamentos
-                        .filter(
-                          (tabela) => tabela.id == convenio.tabelaFaturamentosId
-                        )
-                        .map((tabela) => (
-                          <div key={tabela.id}>{tabela.nome}</div>
-                        ))}
+                    <Badge
+                      className={`${
+                        caixas.saldo <= 0 ? "bg-destructive" : "bg-green-500"
+                      }`}
+                    >
+                      {caixas.saldo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-green-600 text-white">
-                      {convenio.desconto}%
-                    </Badge>
-                    
+                    <Badge>{caixas.tipo}</Badge>
                   </TableCell>
+
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
-                          <Link
-                            href={`/painel/convenios/editar/${convenio.id}`}
-                          >
+                          <Link href={`/painel/caixas/editar/${caixas.id}`}>
                             <Button size="icon" variant="outline">
                               <Edit className="h-5 w-5" />
                             </Button>
@@ -190,7 +166,7 @@ export default function Convenios() {
                             side="top"
                             className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                           >
-                            Editar Convênio
+                            Editar Caixa
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
@@ -200,11 +176,11 @@ export default function Convenios() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de convenios */}
+          {/* Totalizador de Caixas */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
-              {totalconvenios} convênios
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalCaixas)} de{" "}
+              {totalCaixas} caixas
             </div>
           </div>
 

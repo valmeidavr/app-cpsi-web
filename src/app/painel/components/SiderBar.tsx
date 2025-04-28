@@ -25,10 +25,12 @@ import {
   HousePlus,
   Wrench,
   DollarSign,
-  ClipboardList,
+  Receipt,
   LayoutList,
+  Calculator,
+  FileBadge,
+  Table,
   Calendar,
-  CalendarDays,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -58,10 +60,12 @@ const iconMap: { [key: string]: React.ElementType } = {
   HousePlus,
   Wrench,
   DollarSign,
-  ClipboardList,
+  Receipt,
   LayoutList,
+  Calculator,
+  FileBadge,
+  Table,
   Calendar,
-  CalendarDays,
 };
 
 interface MenuItem {

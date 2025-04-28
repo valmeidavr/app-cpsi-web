@@ -137,7 +137,7 @@ export default function EditarExpediente() {
       />
       {!loadingData ? (
         <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Nova Expediente</h1>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Expediente</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -148,7 +148,7 @@ export default function EditarExpediente() {
                 name="hinicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário inicio *</FormLabel>
+                    <FormLabel>Horário Início *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -163,7 +163,7 @@ export default function EditarExpediente() {
                 name="hfinal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário termino *</FormLabel>
+                    <FormLabel>Horário Fim </FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -196,7 +196,7 @@ export default function EditarExpediente() {
                 name="dtfinal"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Fim</FormLabel>
+                    <FormLabel>Data de Fim *</FormLabel>
                     <FormControl>
                       <Input {...field} type="date" />
                     </FormControl>
@@ -207,13 +207,13 @@ export default function EditarExpediente() {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="horarioInicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário incial do intervalo *</FormLabel>
+                    <FormLabel>Começo do intervalo *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -229,7 +229,7 @@ export default function EditarExpediente() {
                 name="horarioFim"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Horário final do intervalo</FormLabel>
+                    <FormLabel>Fim do intervalo *</FormLabel>
                     <FormControl>
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
@@ -240,7 +240,11 @@ export default function EditarExpediente() {
                 )}
               />
 
-              <FormField
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <FormField
                 control={form.control}
                 name="semana"
                 render={({ field }) => (
@@ -276,8 +280,7 @@ export default function EditarExpediente() {
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
               <FormField
                 control={form.control}
                 name="alocacaoId"

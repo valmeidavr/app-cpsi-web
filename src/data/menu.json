@@ -11,6 +11,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "Calendar",
+        "label": "Agendamentos",
+        "href": "/painel/agendas",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "Users",
         "label": "Clientes",
         "href": "/painel/clientes",
@@ -47,6 +53,12 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
+        "icon": "Table",
+        "label": "Tabelas Faturamentos",
+        "href": "/painel/tabela_faturamentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
         "icon": "Wrench",
         "label": "Prestadores",
         "href": "/painel/prestadores",
@@ -67,28 +79,21 @@
     "href": "#",
     "subItems": [
       {
-        "icon": "ClipboardList",
+        "icon": "Receipt",
         "label": "Movimento de Caixa",
         "href": "/painel/lancamentos",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "TableIcon",
-        "label": "Tabela Faturamentos",
-        "href": "/painel/tabela_faturamentos",
+        "icon": "FileBadge",
+        "label": "Planos de Conta",
+        "href": "/painel/plano_contas",
         "requiredGroups": ["ADMIN", "GESTOR"]
-      }
-    ]
-  },
-  {
-    "icon": "Calendar",
-    "label": "Agenda",
-    "href": "#",
-    "subItems": [
+      },
       {
-        "icon": "CalendarDays",
-        "label": "Agendamento",
-        "href": "/painel/agendas",
+        "icon": "Calculator",
+        "label": "Caixas",
+        "href": "/painel/caixas",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]

@@ -26,52 +26,39 @@ import { Badge } from "@/components/ui/badge";
 import { http } from "@/util/http";
 
 //Types
-import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-import { Convenio } from "@/app/types/Convenios";
+import { PlanoConta } from "@/app/types/PlanoConta";
 
-// ✅ Definir o tipo convenio
-export default function Convenios() {
-  const [convenios, setConvenios] = useState<Convenio[]>([]);
+// ✅ Definir o tipo Plano de conta
+export default function PlanoContas() {
+  const [planoContas, setPlanoContas] = useState<PlanoConta[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalconvenios, setTotalconvenios] = useState(0);
+  const [totalplano, setTotalplano] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
-    TabelaFaturamento[]
-  >([]);
 
-  const carregarConvenios = async () => {
+  const carregarPlanoContas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/convenios", {
+      const { data } = await http.get("http://localhost:3000/plano-contas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
           search: termoBusca,
         },
       });
-      console.log(data.data)
-      setConvenios(data.data);
+      setPlanoContas(data.data);
       setTotalPaginas(data.totalPages);
-      setTotalconvenios(data.total);
+      setTotalplano(data.total);
     } catch (error) {
-      console.error("Erro ao buscar convenios:", error);
+      console.error("Erro ao buscar Plano de conta:", error);
     } finally {
       setCarregando(false);
     }
   };
 
-  const fetchTabelaFaturamento = async () => {
-    try {
-      const { data } = await http.get("/tabela-faturamentos");
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
-  };
-
   useEffect(() => {
-    fetchTabelaFaturamento();
-    carregarConvenios();
+    carregarPlanoContas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -87,7 +74,7 @@ export default function Convenios() {
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    carregarConvenios();
+    carregarPlanoContas();
   };
 
   return (
@@ -95,17 +82,17 @@ export default function Convenios() {
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Lista de Convênios" },
+          { label: "Planos de Conta" },
         ]}
       />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
+      <h1 className="text-2xl font-bold mb-4 mt-5">Planos de Conta</h1>
 
-      {/* Barra de Pesquisa e Botão Nova convenio */}
+      {/* Barra de Pesquisa e Botão Novo Plano de conta */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
             type="text"
-            placeholder="Pesquisar convênio"
+            placeholder="Pesquisar Plano"
             value={termoBusca}
             onChange={(e) => setTermoBusca(e.target.value)}
             className="w-96 max-w-lg"
@@ -116,11 +103,11 @@ export default function Convenios() {
           </Button>
         </div>
 
-        {/* ✅ Botão Novo Cliente */}
+        {/* ✅ Botão Novo Plano */}
         <Button asChild>
-          <Link href="/painel/convenios/novo">
+          <Link href="/painel/plano_contas/novo">
             <Plus className="h-5 w-5 mr-2" />
-            Novo Convênio
+            Novo Plano
           </Link>
         </Button>
       </div>
@@ -133,52 +120,47 @@ export default function Convenios() {
         </div>
       ) : (
         <>
-          {/* Tabela de convenios */}
+          {/* Tabela de plano_contas */}
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1">Convênio</TableHead>
-                <TableHead className="h-12-1">Regra</TableHead>
-                <TableHead className="h-12-1">Tabela</TableHead>
-                <TableHead className="h-12-1">Desconto</TableHead>
+                <TableHead className="h-12-1">Plano</TableHead>
+                <TableHead className="h-12-1">Tipo</TableHead>
+                <TableHead className="h-12-1">Categoria</TableHead>
                 <TableHead className="h-12-1">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody className="text-center">
-              {convenios.map((convenio) => (
+              {planoContas.map((plano_conta) => (
                 <TableRow
-                  key={convenio.id}
+                  key={plano_conta.id}
                   className={"odd:bg-gray-100 even:bg-white"}
                 >
-                  <TableCell>{convenio.id}</TableCell>
-                  <TableCell>{convenio.nome}</TableCell>
+                  <TableCell>{plano_conta.id}</TableCell>
+                  <TableCell>{plano_conta.nome}</TableCell>
                   <TableCell>
-                    <Badge>{convenio.regras}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
-                      {tabelaFaturamentos
-                        .filter(
-                          (tabela) => tabela.id == convenio.tabelaFaturamentosId
-                        )
-                        .map((tabela) => (
-                          <div key={tabela.id}>{tabela.nome}</div>
-                        ))}
+                    <Badge
+                      className={`${
+                        plano_conta.tipo === "ENTRADA"
+                          ? "bg-green-500"
+                          : "bg-destructive"
+                      }`}
+                    >
+                      {plano_conta.tipo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-green-600 text-white">
-                      {convenio.desconto}%
+                    <Badge className="text-[13px]" variant="default">
+                      {plano_conta.categoria}
                     </Badge>
-                    
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Link
-                            href={`/painel/convenios/editar/${convenio.id}`}
+                            href={`/painel/plano_contas/editar/${plano_conta.id}`}
                           >
                             <Button size="icon" variant="outline">
                               <Edit className="h-5 w-5" />
@@ -190,7 +172,7 @@ export default function Convenios() {
                             side="top"
                             className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                           >
-                            Editar Convênio
+                            Editar Plano
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
@@ -200,11 +182,11 @@ export default function Convenios() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de convenios */}
+          {/* Totalizador de Planos de conta */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
-              {totalconvenios} convênios
+              Mostrando {Math.min((paginaAtual + 1) * 5, totalplano)} de{" "}
+              {totalplano} planos
             </div>
           </div>
 
