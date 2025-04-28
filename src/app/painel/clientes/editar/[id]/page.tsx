@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
 //Components
 import { Button } from "@/components/ui/button";
-import { Save, Loader2 } from "lucide-react";
+import { Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import {
@@ -37,6 +37,25 @@ import { getClienteById } from "@/app/api/clientes/action";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 //Types
 import { Cliente } from "@/app/types/Cliente";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Convenio } from "@/app/types/Convenios";
+import { getConvenios } from "@/app/api/convenios/action";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
@@ -50,8 +69,10 @@ export default function EditarCliente() {
   const [carregando, setCarregando] = useState(false);
   const params = useParams();
   const clienteId = Array.isArray(params.id) ? params.id[0] : params.id;
-
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [convenios, setConvenios] = useState<Convenio[]>([]);
   const router = useRouter();
+  const [loadingInativar, setLoadingInativar] = useState(false);
 
   //Definindo valores default com os dado do cliente
   const form = useForm<z.infer<typeof createClienteSchema>>({
@@ -71,9 +92,19 @@ export default function EditarCliente() {
       uf: "",
       telefone1: "",
       telefone2: "",
+      convenios: [],
+      desconto: {},
     },
   });
+  useEffect(() => {
+    const body = document.body;
 
+    if (isDialogOpen) {
+      body.style.pointerEvents = "auto"; // Corrige o bug
+    } else {
+      body.style.pointerEvents = ""; // Reseta quando fecha
+    }
+  }, [isDialogOpen]);
   //Formatação dos Campos
   useEffect(() => {
     if (cliente) {
@@ -97,7 +128,22 @@ export default function EditarCliente() {
   const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     try {
-      if (clienteId) await updateCliente(clienteId, values);
+      const descontosPreenchidos = { ...values.desconto };
+
+      convenios.forEach((item) => {
+        if (
+          descontosPreenchidos[item.id] === undefined ||
+          descontosPreenchidos[item.id] === null
+        ) {
+          descontosPreenchidos[item.id] = item.desconto;
+        }
+      });
+
+      const payload = {
+        ...values,
+        desconto: descontosPreenchidos,
+      };
+      if (clienteId) await updateCliente(clienteId, payload);
 
       const queryParams = new URLSearchParams();
 
@@ -117,30 +163,50 @@ export default function EditarCliente() {
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, form);
   };
+  const fetchConvenios = async () => {
+    try {
+      const { data } = await getConvenios();
+      setConvenios(data);
+      console.log("Convenios:", data);
+    } catch (error) {
+      console.error("Error ao buscar convênios:", error);
+    }
+  };
 
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
       try {
+        await fetchConvenios();
         if (!clienteId) redirect("painel/clientes");
         const data = await getClienteById(+clienteId);
+        console.log("Cliente:", data);
         setCliente(data);
+        if (data.Convenio) {
+          const conveniosIds = data.Convenio.map((item) => item.conveniosId);
+          const descontos = data.Convenio.reduce((acc, item) => {
+            acc[item.conveniosId] = item.desconto;
+            return acc;
+          }, {} as Record<number, number>);
 
-        form.reset({
-          nome: data.nome,
-          email: data.email,
-          dtnascimento: data.dtnascimento,
-          sexo: data.sexo,
-          cpf: data.cpf,
-          cep: data.cep,
-          logradouro: data.logradouro,
-          numero: data.numero,
-          bairro: data.bairro,
-          cidade: data.cidade,
-          uf: data.uf,
-          telefone1: data.telefone1,
-          telefone2: data.telefone2,
-        });
+          form.reset({
+            nome: data.nome,
+            email: data.email,
+            dtnascimento: data.dtnascimento,
+            sexo: data.sexo,
+            cpf: data.cpf,
+            cep: data.cep,
+            logradouro: data.logradouro,
+            numero: data.numero,
+            bairro: data.bairro,
+            cidade: data.cidade,
+            uf: data.uf,
+            telefone1: data.telefone1,
+            telefone2: data.telefone2,
+            convenios: conveniosIds,
+            desconto: descontos,
+          });
+        }
       } catch (error) {
         console.error("Erro ao carregar usuário:", error);
       } finally {
@@ -628,7 +694,142 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex items-center gap-2 px-4 py-2 text-sm"
+                onClick={() => setIsDialogOpen(true)}
+              >
+                <Plus className="w-4 h-4" />
+                Adicionar Convênios
+              </Button>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="max-w-3xl sm:rounded-lg">
+                  <DialogHeader>
+                    <DialogTitle className="text-lg">
+                      Gerenciar Convênios
+                    </DialogTitle>
+                    <DialogDescription>
+                      Selecione os convênios vinculados a este cliente e informe
+                      os respectivos descontos.
+                    </DialogDescription>
+                  </DialogHeader>
 
+                  <div className="max-h-[60vh] overflow-y-auto mt-4">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-20">Selecionar</TableHead>
+                          <TableHead>Convênio</TableHead>
+                          <TableHead className="w-32">Desconto</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {convenios.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <FormField
+                                control={form.control}
+                                name="convenios"
+                                render={({ field }) => {
+                                  const currentValue = Array.isArray(
+                                    field.value
+                                  )
+                                    ? field.value
+                                    : [];
+
+                                  return (
+                                    <FormControl>
+                                      <Checkbox
+                                        className="w-5 h-5"
+                                        checked={currentValue.includes(item.id)}
+                                        onCheckedChange={(checked) => {
+                                          if (checked) {
+                                            field.onChange([
+                                              ...currentValue,
+                                              item.id,
+                                            ]);
+                                          } else {
+                                            field.onChange(
+                                              currentValue.filter(
+                                                (v) => v !== item.id
+                                              )
+                                            );
+                                          }
+                                        }}
+                                      />
+                                    </FormControl>
+                                  );
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>{item.nome}</TableCell>
+                            <TableCell>
+                              <FormField
+                                control={form.control}
+                                name={`desconto.${item.id}`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Input
+                                        type="text"
+                                        inputMode="numeric"
+                                        placeholder="0%"
+                                        value={
+                                          field.value !== undefined &&
+                                          field.value !== null
+                                            ? `${field.value}%`
+                                            : `${item.desconto}%`
+                                        }
+                                        onChange={(e) => {
+                                          const raw = e.target.value.replace(
+                                            /[^\d]/g,
+                                            ""
+                                          );
+                                          let value = Number(raw);
+                                          if (isNaN(value)) value = 0;
+                                          if (value > 100) value = 100;
+                                          if (value < 0) value = 0;
+                                          field.onChange(value);
+                                        }}
+                                        className={`text-right ${
+                                          form.formState.errors.desconto?.[
+                                            item.id
+                                          ]
+                                            ? "border-red-500"
+                                            : ""
+                                        }`}
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  <DialogFooter className="mt-6">
+                    <Button
+                      variant="ghost"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={loadingInativar}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={loadingInativar}
+                    >
+                      Confirmar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
               <Button
                 type="submit"
                 disabled={loading}
