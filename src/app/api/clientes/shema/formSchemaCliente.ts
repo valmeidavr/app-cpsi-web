@@ -51,7 +51,8 @@ export const createClienteSchema = z.object({
   bairro: z.string().optional(),
   cidade: z.string().optional(),
   uf: z.string().optional(),
-
+  convenios: z.array(z.number()),
+  desconto: z.record(z.number().optional()),
   telefone1: z
     .string()
     .regex(/^\(?\d{2}\)?\s?9?\d{4}-\d{4}$/, { message: "Telefone inválido" }),

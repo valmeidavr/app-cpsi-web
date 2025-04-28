@@ -14,7 +14,7 @@ export async function getConvenios(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("/convenios", {
+  const { data } = await http.get("http://localhost:3000/convenios", {
     params: { page, limit, search },
   });
   return data;
@@ -48,7 +48,7 @@ export async function updateConvenio(id: string, body: UpdateConvenioDTO) {
   } catch (error) {
     console.error("Erro no update:", error);
     return {
-      message: "Não foi possível fazer o update da Convenio",
+      message: "Não foi possível fazer o update do Convênio",
       error: true,
     };
   }
@@ -60,7 +60,7 @@ export async function deleteConvenio(id: number) {
     revalidatePath("painel/convenios");
   } catch {
     return {
-      message: "Não foi possível deletar a Convenio",
+      message: "Não foi possível deletar o Convênio",
       error: true,
     };
   }

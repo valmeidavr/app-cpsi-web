@@ -1,14 +1,15 @@
 "use server";
-import {
-  Cliente,
-} from "@/app/types/Cliente";
+import { Cliente } from "@/app/types/Cliente";
 import { format } from "date-fns";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
 import { toast } from "sonner";
-import { createClienteSchema, updateClienteSchema } from "./shema/formSchemaCliente";
+import {
+  createClienteSchema,
+  updateClienteSchema,
+} from "./shema/formSchemaCliente";
 import { z } from "zod";
 
 export type CreateClienteDTO = z.infer<typeof createClienteSchema>;
@@ -29,12 +30,24 @@ export async function createCliente(body: CreateClienteDTO) {
     if (body.telefone2) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
-
-    await http.post("/clientes", body);
+    const { convenios, desconto, ...payload } = body;
+    const {data} = await http.post(
+      "http://localhost:3000/clientes",
+      payload
+    );
+    console.log("cliente", data);
+    for (const convenio of convenios) {
+      const convenioBody = {
+        conveniosId: convenio,
+        clientesId: data.id,
+        desconto: desconto[convenio],
+      };
+      console.log("convenioBody", convenioBody);
+      await http.post("http://localhost:3000/convenios-clientes", convenioBody);
+    }
     revalidatePath("/painel/clientes");
   } catch (error: any) {
     console.error("Erro ao criar cliente:", error);
-    toast.error(error.response?.data?.message || "Erro ao criar cliente.");
   }
 }
 
@@ -51,7 +64,7 @@ export async function getClientes(
 }
 
 export async function getClienteById(id: number): Promise<Cliente> {
-  const { data } = await http.get(`/clientes/${id}`);
+  const { data } = await http.get(`http://localhost:3000/clientes/${id}`);
 
   return data;
 }

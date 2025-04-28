@@ -2,15 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+*{
+  margin: 0;
+  padding: 0;
+}
 /* 🔹 Garante que a página ocupe toda a tela e permita rolagem global */
 html,
 body {
+  padding-right: 0 !important;
   height: 100%;
   min-height: 100vh;
   overflow-y: hidden; /* Scroll apenas quando necessário */
   font-family: Arial, Helvetica, sans-serif;
 }
-
+body[data-scroll-locked="1"] {
+  pointer-events: auto !important;
+}
 /* 🔹 Garante que o conteúdo principal cresça corretamente */
 #__next,
 main {

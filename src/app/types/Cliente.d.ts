@@ -1,8 +1,16 @@
+
+
 export enum Status {
   "Ativo",
   "Inativo",
 }
 
+type Convenio = {
+  id: number;
+  conveniosId: number;
+  desconto: number;
+  clientesId: number;
+};
 export type Cliente = {
   id: string;
   nome: string;
@@ -18,6 +26,7 @@ export type Cliente = {
   uf?: string;
   telefone1: string;
   telefone2?: string | undefined;
+  Convenio?: Convenio[];
   status?: Status | string;
   created_at: string;
   updated_at: string;
