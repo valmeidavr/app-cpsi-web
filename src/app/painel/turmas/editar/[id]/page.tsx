@@ -59,7 +59,6 @@ export default function EditarTurma() {
       horarioInicio: "",
       horarioFim: "",
       dataInicio: "",
-      dataFim: "",
       limiteVagas: 0,
       prestadoresId: 0,
       procedimentosId: 0,
@@ -112,7 +111,7 @@ export default function EditarTurma() {
         if (!turmaId) redirect("painel/turmas");
         await fetchTurmas();
         await fetchProcedimentos();
-        const data = await getTurmaById(turmaId);
+        const data = await getTurmaById(+turmaId);
         setTurma(data);
 
         form.reset({
@@ -120,7 +119,6 @@ export default function EditarTurma() {
           horarioInicio: data.horario.split(" - ")[0],
           horarioFim: data.horario.split(" - ")[1],
           dataInicio: data.dataInicio,
-          dataFim: data.dataFim,
           limiteVagas: data.limiteVagas,
           prestadoresId: data.prestadoresId,
           procedimentosId: data.procedimentosId,
@@ -231,21 +229,6 @@ export default function EditarTurma() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="dataFim"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Data de Fim</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="date" />
-                    </FormControl>
-                    <FormMessage>
-                      {form.formState.errors.dataFim?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField

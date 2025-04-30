@@ -1,9 +1,7 @@
 import { z } from "zod";
 
 export const createAgendaSchema = z.object({
-  dtagenda: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-    message: "Este campo é obrigatório",
-  }),
+  dtagenda: z.string(),
 
   situacao: z.enum(
     [
@@ -33,20 +31,15 @@ export const createAgendaSchema = z.object({
     .int({ message: "Procedimento deve ser um número inteiro" })
     .nullable(),
   expedientesId: z
-    .number()
-    .int({ message: "Expediente deve ser um número inteiro" })
-    .min(1, "Campo obrigatório"),
+    .number().optional(),
   prestadoresId: z
     .number()
-    .int({ message: "Prestador deve ser um número inteiro" })
-    .min(1, "Campo obrigatório"),
+    .int({ message: "Prestador deve ser um número inteiro" }),
   unidadesId: z
     .number()
-    .int({ message: "Unidade deve ser um número inteiro" })
-    .min(1, "Campo obrigatório"),
+    .int({ message: "Unidade deve ser um número inteiro" }),
   especialidadesId: z
     .number()
-    .int({ message: "Especialidade deve ser um número inteiro" })
-    .min(1, "Campo obrigatório"),
+    .int({ message: "Especialidade deve ser um número inteiro" }),
 });
 export const updateAgendaSchema = createAgendaSchema.partial();

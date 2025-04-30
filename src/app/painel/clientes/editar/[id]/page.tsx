@@ -143,9 +143,14 @@ export default function EditarCliente() {
         ...values,
         desconto: descontosPreenchidos,
       };
-      if (clienteId) await updateCliente(clienteId, payload);
+      if (!clienteId) throw new Error("ID do cliente não encontrado.");
 
-      const queryParams = new URLSearchParams();
+      const response = await updateCliente(clienteId, payload);
+      console.log("response", response);
+      if (response && response.error) {
+        throw new Error("Erro ao atualizar cliente.");
+      }
+        const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente atualizado com sucesso!");
@@ -167,7 +172,6 @@ export default function EditarCliente() {
     try {
       const { data } = await getConvenios();
       setConvenios(data);
-      console.log("Convenios:", data);
     } catch (error) {
       console.error("Error ao buscar convênios:", error);
     }
@@ -180,7 +184,6 @@ export default function EditarCliente() {
         await fetchConvenios();
         if (!clienteId) redirect("painel/clientes");
         const data = await getClienteById(+clienteId);
-        console.log("Cliente:", data);
         setCliente(data);
         if (data.Convenio) {
           const conveniosIds = data.Convenio.map((item) => item.conveniosId);

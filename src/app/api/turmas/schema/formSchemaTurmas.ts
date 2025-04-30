@@ -7,7 +7,6 @@ export const createTurmaSchema = z.object({
   dataInicio: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início inválida"),
-  dataFim: z.string().optional(),
   limiteVagas: z.number().int().positive(),
   procedimentosId: z
     .union([z.string(), z.number()])
