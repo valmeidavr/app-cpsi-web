@@ -104,11 +104,8 @@ export default function Turmas() {
     if (!turmaSelecionado) return;
     setLoadingInativar(true);
     try {
-      await finalizarTurma(turmaSelecionado.id, {
-        ...turmaSelecionado,
-        dataFim: values.dataFim,
-      });
-      await carregarTurmas(); // Isso garante que as turmas sejam atualizadas
+      await finalizarTurma(turmaSelecionado.id, values.dataFim);
+      await carregarTurmas();
       toast.error("Turma finalizada com sucesso!");
       setIsDialogOpen(false);
     } catch (error) {
@@ -244,7 +241,7 @@ export default function Turmas() {
                         <Tooltip.Trigger asChild>
                           <Button
                             size="icon"
-                            variant="outline"
+                            variant="default"
                             onClick={() => {
                               abrirAdicionarAlunosModal(turma.id, true);
                             }}

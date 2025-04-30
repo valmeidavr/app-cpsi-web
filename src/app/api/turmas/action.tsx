@@ -27,13 +27,6 @@ export async function createTurma(body: CreateTurmaDTO) {
       body.dataInicio = format(dataInicio, "yyyy-MM-dd");
     }
   }
-
-  if (body.dataFim) {
-    const dataFim = parse(body.dataFim, "dd/MM/yyyy", new Date());
-    if (isValid(dataFim)) {
-      body.dataFim = format(dataFim, "yyyy-MM-dd");
-    }
-  }
   const { horarioInicio, horarioFim, ...restoDoBody } = body;
 
   const bodyFormatado = {
@@ -51,7 +44,7 @@ export async function createTurma(body: CreateTurmaDTO) {
   }
 }
 
-export async function getTurmaById(id: string) {
+export async function getTurmaById(id: number) {
   const { data } = await http.get(`http://localhost:3000/turmas/${id}`);
 
   return data;
@@ -62,13 +55,6 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
     const dataInicio = parse(body.dataInicio, "dd/MM/yyyy", new Date());
     if (isValid(dataInicio)) {
       body.dataInicio = format(dataInicio, "yyyy-MM-dd");
-    }
-  }
-
-  if (body.dataFim) {
-    const dataFim = parse(body.dataFim, "dd/MM/yyyy", new Date());
-    if (isValid(dataFim)) {
-      body.dataFim = format(dataFim, "yyyy-MM-dd");
     }
   }
   const { horarioInicio, horarioFim, ...restoDoBody } = body;
@@ -91,10 +77,10 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
   }
 }
 
-export async function finalizarTurma(id: number, body: UpdateTurmaDTO) {
+export async function finalizarTurma(id: number, dataFim: string) {
   try {
     await http.patch(`http://localhost:3000/turmas/${id}`, {
-      dataFim: body.dataFim,
+      dataFim
     });
     revalidatePath("/painel/turmas");
   } catch (error) {
