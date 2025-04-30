@@ -10,6 +10,7 @@ import {
   createAgendaSchema,
   updateAgendaSchema,
 } from "./schema/formSchemaAgendas";
+import { Agenda } from "@/app/types/Agenda";
 
 export async function getAgendas(
   page: number = 1,
@@ -27,7 +28,7 @@ export async function getAgendas(
 }
 export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
 export type UpdateAgendaDTO = z.infer<typeof updateAgendaSchema>;
-export async function createAgenda(body: CreateAgendaDTO) {
+export async function createAgenda(body: CreateAgendaDTO): Promise<Agenda | any> {
   try {
     if (body.dtagenda) {
       const dtagenda = parse(body.dtagenda, "dd/MM/yyyy", new Date());
