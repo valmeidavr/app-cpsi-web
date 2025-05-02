@@ -36,9 +36,8 @@ export async function createAgenda(body: CreateAgendaDTO): Promise<Agenda | any>
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    console.log("body:", body);
     await http.post("http://localhost:3000/agendas", body);
-    revalidatePath("/painel/agendas");
+    revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error: any) {
     console.error("Erro ao criar agenda:", error.message);
   }
@@ -58,9 +57,9 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    console.log(body, id);
+    console.log("Body:",body, "Id:", id);
     await http.patch(`http://localhost:3000/agendas/${id}`, body);
-    revalidatePath("painel/agendas");
+    revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro no update:", error);
     return {

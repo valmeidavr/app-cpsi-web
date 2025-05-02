@@ -24,20 +24,14 @@ export const createAgendaSchema = z.object({
     .nullable(),
   conveniosId: z
     .number()
-    .int({ message: "Convênio deve ser um número inteiro" })
-    .nullable(),
+    .int({ message: "Convênio deve ser um número inteiro" }),
   procedimentosId: z
     .number()
     .int({ message: "Procedimento deve ser um número inteiro" })
     .nullable(),
-  expedientesId: z
-    .number().optional(),
-  prestadoresId: z
-    .number()
-    .int({ message: "Prestador deve ser um número inteiro" }),
-  unidadesId: z
-    .number()
-    .int({ message: "Unidade deve ser um número inteiro" }),
+  expedientesId: z.number().optional(),
+  prestadoresId: z.preprocess((val) => Number(val), z.number()),
+  unidadesId: z.preprocess((val) => Number(val), z.number()),
   especialidadesId: z
     .number()
     .int({ message: "Especialidade deve ser um número inteiro" }),

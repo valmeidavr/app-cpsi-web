@@ -267,7 +267,7 @@ export default function Agendas() {
                     <FormLabel>Unidade *</FormLabel>
                     <Select
                       onValueChange={(value) => {
-                        field.onChange(Number(value));
+                        field.onChange(value);
                         setUnidade(
                           unidades.find((unidade) => unidade.id == +value) ??
                             null
@@ -368,7 +368,7 @@ export default function Agendas() {
                     <Select
                       disabled={!especialidade}
                       onValueChange={(value) => {
-                        field.onChange(Number(value));
+                        field.onChange(value);
                         setPrestador(
                           prestadores.find(
                             (prestador) => prestador.id == +value
