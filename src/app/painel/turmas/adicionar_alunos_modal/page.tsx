@@ -66,7 +66,10 @@ export default function AdicionarAlunosModal({
   const [alunos, setAlunos] = useState<Aluno[]>([]);
   const [termoBusca, setTermoBusca] = useState("");
   const [termoBuscaAluno, setTermoBuscaAluno] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalDeleteAllOpen, setisModalDeleteAllOpen] = useState(false);
+  const [isModalDeleteOpen, setisModalDeleteOpen] = useState(false);
+  const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
+
   const [turmaSelected, setTurmaSelected] = useState<number>(0);
   const [loadingDeleteAll, setLoadingDeleteAll] = useState(false);
   const carregarClientes = async () => {
@@ -307,7 +310,7 @@ export default function AdicionarAlunosModal({
                 <TooltipTrigger asChild>
                   <Button
                     onClick={() => {
-                      setIsModalOpen(true);
+                      setisModalDeleteAllOpen(true);
                       setTurmaSelected(turmaId);
                     }}
                     variant={"destructive"}
@@ -395,7 +398,10 @@ export default function AdicionarAlunosModal({
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onSelect={() => excluirAluno(+aluno.id)}
+                              onSelect={() => {
+                                setisModalDeleteOpen(true),
+                                  setAlunoSelecionado(aluno);
+                              }}
                             >
                               Excluir Aluno
                             </DropdownMenuItem>
@@ -420,7 +426,10 @@ export default function AdicionarAlunosModal({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+      <Dialog
+        open={isModalDeleteAllOpen}
+        onOpenChange={setisModalDeleteAllOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar Ação</DialogTitle>
@@ -429,7 +438,7 @@ export default function AdicionarAlunosModal({
           <DialogFooter>
             <Button
               variant="secondary"
-              onClick={() => setIsModalOpen(false)}
+              onClick={() => setisModalDeleteAllOpen(false)}
               disabled={loadingDeleteAll}
             >
               Cancelar
@@ -438,11 +447,42 @@ export default function AdicionarAlunosModal({
               variant="default"
               onClick={() => {
                 deleteAllAlunos();
-                setIsModalOpen(false);
+                setisModalDeleteAllOpen(false);
               }}
               disabled={loadingDeleteAll}
             >
               Confirma
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={isModalDeleteOpen}
+        onOpenChange={setisModalDeleteOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Ação</DialogTitle>
+          </DialogHeader>
+          <p>Tem certeza que deseja excluir o {alunoSelecionado?.cliente.nome} da turma?</p>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setisModalDeleteOpen(false)}
+              disabled={loadingDeleteAll}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                excluirAluno(alunoSelecionado!.id);
+                setisModalDeleteOpen(false);
+              }}
+              disabled={loadingDeleteAll}
+            >
+              Excluir
             </Button>
           </DialogFooter>
         </DialogContent>
