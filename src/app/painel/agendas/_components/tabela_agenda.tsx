@@ -1,6 +1,14 @@
 "use client";
-import { createAgenda } from "@/app/api/agendas/action";
-import { createAgendaSchema } from "@/app/api/agendas/schema/formSchemaAgendas";
+import {
+  createAgenda,
+  finalizarAgenda,
+  getAgendaById,
+  updateAgenda,
+} from "@/app/api/agendas/action";
+import {
+  createAgendaSchema,
+  updateAgendaSchema,
+} from "@/app/api/agendas/schema/formSchemaAgendas";
 import { getClientes } from "@/app/api/clientes/action";
 import { getConvenios } from "@/app/api/convenios/action";
 import { getProcedimentos } from "@/app/api/procedimentos/action";
@@ -12,6 +20,14 @@ import { Prestador } from "@/app/types/Prestador";
 import { Procedimento } from "@/app/types/Procedimento";
 import { Unidade } from "@/app/types/Unidades";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -29,11 +45,17 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -49,10 +71,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { http } from "@/util/http";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { Loader2, MenuIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, MenuIcon } from "lucide-react";
 import { ReactEventHandler, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -77,33 +100,44 @@ const TabelaAgenda = ({
   especialidade,
   carregarAgendamentos,
 }: TabelaAgendaProps) => {
-  const [modalNovoAgendamento, setModalNovoAgendamento] =
-    useState<boolean>(false);
+  const [ModalAgendamento, setModalAgendamento] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
-  const form = useForm({
-    resolver: zodResolver(createAgendaSchema),
+  const [agendamenetoSelecionado, setAgendamentoSelecionado] = useState<
+    any | null
+  >(null);
+  const [method, setMethod] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
+
+  const schema = method === "POST" ? createAgendaSchema : updateAgendaSchema;
+
+  const form = useForm<
+    z.infer<typeof createAgendaSchema | typeof updateAgendaSchema>
+  >({
+    resolver: zodResolver(schema),
     mode: "onChange",
     defaultValues: {
-      dtagenda: "",
       situacao: "AGENDADO",
       clientesId: 0,
       conveniosId: 0,
       procedimentosId: 0,
-      prestadoresId: prestador ? prestador.id : 0,
-      unidadesId: unidade ? unidade.id : 0,
-      especialidadesId: especialidade ? especialidade.id : 0,
+      prestadoresId: prestador?.id ?? 0,
+      unidadesId: unidade?.id ?? 0,
+      especialidadesId: especialidade?.id ?? 0,
+      dtagenda: "",
     },
   });
+
   useEffect(() => {
     fetchClientes();
     fetchConvenios();
     fetchProcedimentos();
   }, []);
+
   const fetchClientes = async () => {
     try {
       const { data } = await await http.get("http://localhost:3000/clientes");
@@ -131,13 +165,32 @@ const TabelaAgenda = ({
       toast.error("Erro ao carregar dados dos Procedimentos");
     }
   };
-  const abrirModalNovoAgendamento = async (hora: string, data: Date) => {
+
+  const abrirModalAgendamento = async (hora: string, data: Date) => {
     setHoraSelecionada(hora);
     setDataSelecionada(data);
-    setModalNovoAgendamento(true);
+    if (method == "PATCH")
+      try {
+        if (!agendamenetoSelecionado)
+          throw new Error("agendamento não selecionado");
+        const data = await getAgendaById(
+          agendamenetoSelecionado.dadosAgendamento.id.toString()
+        );
+
+        form.reset({
+          conveniosId: data.conveniosId,
+          clientesId: data.clientesId,
+          procedimentosId: data.procedimentosId,
+        });
+      } catch (error) {
+        console.error("Erro ao carregar dados do agendamento:", error);
+      } finally {
+      }
+    setModalAgendamento(true);
   };
+
   useEffect(() => {
-    if (modalNovoAgendamento && horaSelecionada && dataSelecionada) {
+    if (ModalAgendamento && horaSelecionada && dataSelecionada) {
       const [hour, minute] = horaSelecionada.split(":").map(Number);
 
       const dataLocal = new Date(
@@ -155,7 +208,8 @@ const TabelaAgenda = ({
       // Define no formulário no formato ISO (com Z no final)
       form.setValue("dtagenda", dataUTC.toISOString());
     }
-  }, [modalNovoAgendamento, horaSelecionada, dataSelecionada]);
+  }, [ModalAgendamento, horaSelecionada, dataSelecionada]);
+
   useEffect(() => {
     if (prestador) {
       form.setValue("prestadoresId", prestador.id);
@@ -168,22 +222,63 @@ const TabelaAgenda = ({
     }
   }, [prestador, unidade, especialidade]);
 
-  const onSubmit = async (values: z.infer<typeof createAgendaSchema>) => {
-    setLoading(true);
+  const excluirAgendamento = async (agendaId: number) => {
     try {
-      await createAgenda(values);
-      console.log("values:", values);
-      toast.success(
-        `Agendamento concluido para ${
+      await finalizarAgenda(agendaId.toString());
+      console.log("values:", agendaId);
+      toast.error(
+        `Agendamento do dia ${
           dataSelecionada && format(dataSelecionada, "dd/MM/yyyy")
-        } as ${horaSelecionada}`
+        } às ${horaSelecionada} foi deletado com sucesso!`
       );
       await carregarAgendamentos();
     } catch (error: any) {
-      toast.error("Não foi posssivel fazer o agendamento", error);
+      toast.error("Não foi posssivel deletar o agendamento", error);
     } finally {
       setLoading(false);
-      setModalNovoAgendamento(false);
+      setIsDeleteModalOpen(false);
+    }
+  };
+
+  const onSubmit = async (values: any) => {
+    setLoading(true);
+    if (method == "POST") {
+      try {
+        await createAgenda(values);
+        console.log("values:", values);
+        toast.success(
+          `Agendamento concluido para ${
+            dataSelecionada && format(dataSelecionada, "dd/MM/yyyy")
+          } às ${horaSelecionada}`
+        );
+        await carregarAgendamentos();
+      } catch (error: any) {
+        toast.error("Não foi posssivel fazer o agendamento", error);
+      } finally {
+        setLoading(false);
+        setModalAgendamento(false);
+      }
+    } else if (method == "PATCH") {
+      try {
+        if (!agendamenetoSelecionado) return;
+        await updateAgenda(
+          agendamenetoSelecionado.dadosAgendamento.id.toString(),
+          values
+        );
+        toast.success(
+          `Agendamento da data ${
+            dataSelecionada && format(dataSelecionada, "dd/MM/yyyy")
+          } às ${horaSelecionada} atualizado com sucesso!`
+        );
+        await carregarAgendamentos();
+      } catch (error: any) {
+        toast.error("Não foi posssivel alterar o agendamento", error);
+      } finally {
+        setLoading(false);
+        setModalAgendamento(false);
+      }
+    } else {
+      throw new Error("method inválido");
     }
   };
   return (
@@ -259,9 +354,11 @@ const TabelaAgenda = ({
                         <DropdownMenuSeparator />
                         {agenda.situacao === "LIVRE" ? (
                           <DropdownMenuItem
-                            onSelect={() =>
-                              abrirModalNovoAgendamento(agenda.hora, date)
-                            }
+                            onSelect={() => {
+                              setMethod("POST");
+                              setAgendamentoSelecionado(null);
+                              abrirModalAgendamento(agenda.hora, date);
+                            }}
                           >
                             Fazer Agendamento
                           </DropdownMenuItem>
@@ -269,20 +366,31 @@ const TabelaAgenda = ({
                           <>
                             <DropdownMenuItem
                               onSelect={() =>
-                                alert(`Ver perfil de ${agenda.paciente}`)
+                                alert(`Ver agendamento de ${agenda.paciente}`)
                               }
                             >
                               Ver Agenda
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onSelect={() =>
-                                alert(
-                                  `Excluir agendamento de ${agenda.paciente}`
-                                )
-                              }
+                              onSelect={() => {
+                                setHoraSelecionada(agenda.hora);
+                                setDataSelecionada(date);
+                                setIsDeleteModalOpen(true);
+                                setAgendamentoSelecionado(agenda);
+                              }}
                             >
                               Excluir Agendamento
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setMethod("PATCH");
+                                abrirModalAgendamento(agenda.hora, date);
+                                setAgendamentoSelecionado(agenda);
+                              }}
+                            >
+                              Editar Agendamento
                             </DropdownMenuItem>
                           </>
                         )}
@@ -306,10 +414,7 @@ const TabelaAgenda = ({
         )}
       </Table>
       {/* ✅ Diálogo de Confirmação */}
-      <Dialog
-        open={modalNovoAgendamento}
-        onOpenChange={setModalNovoAgendamento}
-      >
+      <Dialog open={ModalAgendamento} onOpenChange={setModalAgendamento}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Novo Agendamento </DialogTitle>
@@ -363,99 +468,155 @@ const TabelaAgenda = ({
                   )}
                 />
                 <input type="hidden" {...form.register("dtagenda")} />
-                <input type="hidden" {...form.register("procedimentosId")} />
-                <input type="hidden" {...form.register("unidadesId")} />
-                <input type="hidden" {...form.register("prestadoresId")} />
+                {method == "POST" ? (
+                  <div>
+                    <input
+                      type="hidden"
+                      {...form.register("procedimentosId")}
+                    />
+                    <input type="hidden" {...form.register("unidadesId")} />
+                    <input type="hidden" {...form.register("prestadoresId")} />
+                  </div>
+                ) : (
+                  ""
+                )}
+
                 <FormField
                   control={form.control}
                   name="clientesId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Clientes *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(Number(value));
-                        }}
-                        value={String(field.value)}
-                      >
-                        <FormControl
-                          className={
-                            form.formState.errors.situacao
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0" disabled>
-                            Selecione
-                          </SelectItem>
-                          {clientes.map((item) => {
-                            return (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.nome}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? clientes.find(
+                                    (item) => +item.id == field.value
+                                  )?.nome
+                                : "Selecione o cliente"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command className="w-[480px] p-0">
+                            <CommandInput placeholder="Busque cliente..." />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhum cliente encontrado.
+                              </CommandEmpty>
+                              <CommandGroup className="w-full p-0">
+                                {clientes.map((item) => (
+                                  <CommandItem
+                                    value={item.nome.toString()}
+                                    key={item.id}
+                                    onSelect={() => {
+                                      form.setValue("clientesId", +item.id);
+                                    }}
+                                  >
+                                    {item.nome}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        +item.id == field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage>
                         {form.formState.errors.clientesId?.message}
                       </FormMessage>
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="procedimentosId"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Procedimentos *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(Number(value));
-                        }}
-                        value={String(field.value)}
-                      >
-                        <FormControl
-                          className={
-                            form.formState.errors.situacao
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0" disabled>
-                            Selecione
-                          </SelectItem>
-                          {procedimentos.map((item) => {
-                            return (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.nome}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              className={cn(
+                                "w-full justify-between",
+                                !field.value && "text-muted-foreground"
+                              )}
+                            >
+                              {field.value
+                                ? procedimentos.find(
+                                    (procedimento) =>
+                                      procedimento.id == field.value
+                                  )?.nome
+                                : "Selecione procedimento"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command className="w-[480px] p-0">
+                            <CommandInput placeholder="Busque procedimento..." />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhum procedimento encontrado.
+                              </CommandEmpty>
+                              <CommandGroup className="w-full p-0">
+                                {procedimentos.map((procedimento) => (
+                                  <CommandItem
+                                    value={procedimento.id.toString()}
+                                    key={procedimento.id}
+                                    onSelect={() => {
+                                      form.setValue(
+                                        "procedimentosId",
+                                        procedimento.id
+                                      );
+                                    }}
+                                  >
+                                    {procedimento.nome}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        procedimento.id == field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage>
                         {form.formState.errors.procedimentosId?.message}
                       </FormMessage>
                     </FormItem>
                   )}
                 />
-
                 <DialogFooter>
                   <Button
                     variant="secondary"
-                    onClick={() => setModalNovoAgendamento(false)}
+                    onClick={() => setModalAgendamento(false)}
                     disabled={loading}
                   >
                     Cancelar
@@ -467,6 +628,29 @@ const TabelaAgenda = ({
               </form>
             </div>
           </FormProvider>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Excluir Agendamento </DialogTitle>
+          </DialogHeader>
+          Tem certeza que deseja excluir o agendamento do dia {dataSelecionada && format(dataSelecionada!, "dd/MM/yyyy")} no horário {horaSelecionada}
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() =>
+                excluirAgendamento(agendamenetoSelecionado.dadosAgendamento.id)
+              }
+              disabled={loading}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" type="submit" disabled={loading}>
+              Excluir
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

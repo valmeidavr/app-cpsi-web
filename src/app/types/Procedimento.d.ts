@@ -1,13 +1,16 @@
+import { Agenda } from "./Agenda";
+import { Turma } from "./Turma";
+
 export type Procedimento = {
   id: number;
   nome: string;
   codigo: string;
-  tipo: string; // ou um enum, se `TipoProcedimento` for um enum Prisma
+  tipo: string;
   especialidadeId: number;
-  especialidade: Especialidade; // precisa importar ou definir esse tipo também
+  especialidade: Especialidade; 
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  Turma: any[]; // Substituir por um tipo mais específico se tiver
-  Agenda: any[]; // Substituir por um tipo mais específico se tiver
+  Turma: Turma[]; 
+  Agenda: Agenda[]; 
 };

@@ -50,11 +50,7 @@ export async function updatealunosTurma(id: string, body: Aluno) {
 
 export async function deleteAlunoTurma(id: number): Promise<void> {
   try {
-    await http.delete(`http://localhost:3000/alunos-turmas/`, {
-      params: {
-        id,
-      },
-    });
+    await http.delete(`http://localhost:3000/alunos-turmas/${id}`);
     revalidatePath("painel/alunosTurma/adicionar_alunos_modal");
   } catch (error) {
     console.error("Erro ao deletar aluno:", error);
