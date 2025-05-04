@@ -15,6 +15,7 @@ export type UpdateAlocacaoDTO = z.infer<typeof updateAlocacaoSchema>;
 
 export async function createAlocacao(body: CreateAlocacaoDTO) {
   try {
+    console.log(body)
     await http.post("http://localhost:3000/alocacoes", body);
     revalidatePath("/painel/alocacoes");
   } catch (error: any) {
@@ -25,10 +26,20 @@ export async function createAlocacao(body: CreateAlocacaoDTO) {
 export async function getAlocacaos(
   page: number = 1,
   limit: number = 10,
-  search?: string
+  search?: string, 
+  prestadoresId?: number,
+  unidadesId?: number,
+  especialidadesId?: number
 ) {
   const { data } = await http.get("http://localhost:3000/alocacoes", {
-    params: { page, limit, search },
+    params: {
+      page,
+      limit,
+      search,
+      prestadoresId,
+      unidadesId,
+      especialidadesId,
+    },
   });
 
   return data;
@@ -51,3 +62,9 @@ export async function updateAlocacao(id: string, body: UpdateAlocacaoDTO) {
     };
   }
 }
+
+export async function deleteAlocacao(id: string): Promise<void> {
+  console.log(id)
+  await http.delete(`http://localhost:3000/alocacoes/${id}`);
+}
+

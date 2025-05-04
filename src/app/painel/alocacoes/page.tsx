@@ -1,281 +1,325 @@
 "use client";
 
-import { useEffect, useState } from "react";
+//React
+import { use, useEffect, useMemo, useState } from "react";
+import { FormProvider, useForm } from "react-hook-form";
+import { useRouter } from "next/navigation";
+//Zod
+
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+//Components
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Loader2,
-  Search,
-  Edit,
-  Power,
-  Plus,
-  Mail,
-  MessageCircle,
-} from "lucide-react";
-import ReactPaginate from "react-paginate";
-import { http } from "@/util/http";
-import Breadcrumb from "@/components/ui/Breadcrumb";
-import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
-import * as Tooltip from "@radix-ui/react-tooltip";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { toast } from "sonner";
+//API
+
+//Helpers
+import { http } from "@/util/http";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { getUnidades } from "@/app/api/unidades/action";
+import { getPrestadors } from "@/app/api/prestadores/action";
+import { getEspecialidades } from "@/app/api/especialidades/action";
+import { Prestador } from "@/app/types/Prestador";
+import { Unidade } from "@/app/types/Unidades";
+import { Especialidade } from "@/app/types/Especialidade";
+import {
+  createAlocacao,
+} from "@/app/api/alocacoes/action";
 import { Alocacao } from "@/app/types/Alocacao";
-
-export default function AlocacaosPage() {
-  const [alocacaos, setAlocacaos] = useState<Alocacao[]>([]);
-  const [paginaAtual, setPaginaAtual] = useState(0);
-  const [totalPaginas, setTotalPaginas] = useState(1);
-  const [totalAlocacaos, setTotalAlocacaos] = useState(0);
-  const [termoBusca, setTermoBusca] = useState("");
+import { Button } from "@/components/ui/button";
+import { SaveIcon } from "lucide-react";
+import TabelaAlocacoes from "./_components/tabela_alocacoes";
+import { createAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
+export default function Agendas() {
   const [carregando, setCarregando] = useState(false);
-  const [alocacaoSelecionado, setAlocacaoSelecionado] =
-    useState<Alocacao | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loadingInativar, setLoadingInativar] = useState(false);
+  const [carregandoDadosAlocacao, setCarregandoDadosAlocacao] =
+    useState<boolean>(false);
+  const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
+  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
+  const [unidades, setUnidades] = useState<Unidade[]>([]);
 
-  const carregarAlocacaos = async () => {
-    setCarregando(true);
-    try {
-      const { data } = await http.get("http://localhost:3000/alocacoes", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
-      });
+  const [unidade, setUnidade] = useState<Unidade | null>(null);
+  const [prestador, setPrestador] = useState<Prestador | null>(null);
+  const [especialidade, setEspecialidade] = useState<Especialidade | null>(
+    null
+  );
+  const [alocacoes, setAlocacoes] = useState<Alocacao[]>([]);
 
-      setAlocacaos(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalAlocacaos(data.total);
-    } catch (error) {
-      console.error("Erro ao buscar alocacaos:", error);
-    } finally {
-      setCarregando(false);
-    }
-  };
+  //Buscando dados estrangerios
+  useEffect(() => {
+    const carregarDados = async () => {
+      try {
+        setCarregando(true);
+        await Promise.all([
+          fetchEspecialidades(),
+          fetchPrestadores(),
+          fetchUnidades(),
+        ]);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      } finally {
+        setCarregando(false);
+      }
+    };
+
+    carregarDados();
+  }, []);
+
+  //Validação dos campos do formulário
+  const form = useForm({
+    resolver: zodResolver(createAlocacaoSchema),
+    mode: "onChange",
+    defaultValues: {
+      prestadoresId: 0,
+      unidadesId: 0,
+      especialidadesId: 0,
+    },
+  });
 
   useEffect(() => {
-    carregarAlocacaos();
-    const params = new URLSearchParams(window.location.search);
-    const message = params.get("message");
-    const type = params.get("type");
-    if (message && type == "success") {
-      toast.success(message);
-    } else if (type == "error") {
-      toast.error(message);
+    fetchAlocacoes();
+  }, [prestador, unidade, especialidade]);
+  const fetchAlocacoes = async () => {
+    try {
+      setCarregandoDadosAlocacao;
+      true;
+      if (!prestador || !unidade) return;
+      const { data } = await http.get("http://localhost:3000/alocacoes", {
+        params: {
+          prestadorId: prestador ? prestador.id : null,
+          especialidadeId: especialidade ? especialidade.id : null,
+          unidadeId: unidade ? unidade.id : null,
+        },
+      });
+      setAlocacoes(data.data);
+    } catch (error) {
+      console.error("Erro ao buscar dados de alocações: ", error);
+    } finally {
+      setCarregandoDadosAlocacao(false);
     }
-    const newUrl = window.location.pathname;
-    window.history.replaceState({}, "", newUrl);
-  }, [paginaAtual]);
-
-  const handleSearch = () => {
-    setPaginaAtual(0);
-    carregarAlocacaos();
   };
 
+  const fetchPrestadores = async () => {
+    try {
+      const { data } = await getPrestadors();
+      setPrestadores(data);
+    } catch (error: any) {
+      toast.error("Erro ao carregar dados dos Prestadores");
+    }
+  };
+  const fetchUnidades = async () => {
+    try {
+      const { data } = await getUnidades();
+      setUnidades(data);
+    } catch (error: any) {
+      toast.error("Erro ao carregar dados dos Unidades");
+    }
+  };
+  const fetchEspecialidades = async () => {
+    try {
+      const { data } = await getEspecialidades();
+      setEspecialidades(data);
+    } catch (error: any) {
+      toast.error("Erro ao carregar dados dos Especialidades");
+    }
+  };
+  const onSubmit = async (values: z.infer<typeof createAlocacaoSchema>) => {
+    try {
+      setCarregandoDadosAlocacao(true);
+      await createAlocacao(values);
+      await fetchAlocacoes();
+      toast.success("Alocação criada com sucesso!");
+    } catch (error) {
+      toast.error("Não foi possivel criar a Alocação!");
+    } finally {
+      setCarregandoDadosAlocacao(false);
+    }
+  };
   return (
     <div className="container mx-auto">
-      <Breadcrumb
-        items={[
-          { label: "Painel", href: "/painel" },
-          { label: "Lista de Alocações" },
-        ]}
-      />
-      <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Alocações</h1>
+      <div>
+        <FormProvider {...form}>
+          <div className="grid grid-cols-3 space-x-3">
+            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              <FormField
+                control={form.control}
+                name="prestadoresId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prestadores *</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setPrestador(
+                          prestadores.find(
+                            (prestador) => prestador.id == +value
+                          ) ?? null
+                        );
+                      }}
+                      value={String(field.value)}
+                    >
+                      <FormControl
+                        className={
+                          form.formState.errors.prestadoresId
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="0" disabled>
+                          Selecione
+                        </SelectItem>
+                        {prestadores.map((prestador) => {
+                          return (
+                            <SelectItem
+                              key={prestador.id}
+                              value={String(prestador.id)}
+                            >
+                              {prestador.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage>
+                      {form.formState.errors.prestadoresId?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="unidadesId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Unidade *</FormLabel>
+                    <Select
+                      disabled={!prestador}
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setUnidade(
+                          unidades.find((unidade) => unidade.id == +value) ??
+                            null
+                        );
+                      }}
+                      value={String(field.value)}
+                    >
+                      <FormControl
+                        className={
+                          form.formState.errors.unidadesId
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="0" disabled>
+                          Selecione
+                        </SelectItem>
+                        {unidades.map((unidade) => {
+                          return (
+                            <SelectItem
+                              key={unidade.id}
+                              value={String(unidade.id)}
+                            >
+                              {unidade.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage>
+                      {form.formState.errors.unidadesId?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="especialidadesId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especialidade *</FormLabel>
+                    <Select
+                      disabled={!unidade}
+                      onValueChange={(value) => {
+                        field.onChange(Number(value));
+                        setEspecialidade(
+                          especialidades.find(
+                            (especialidade) => especialidade.id == +value
+                          ) ?? null
+                        );
+                      }}
+                      value={String(field.value)}
+                    >
+                      <FormControl
+                        className={
+                          form.formState.errors.especialidadesId
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="0">Selecione</SelectItem>
+                        {especialidades.map((especialidade) => {
+                          return (
+                            <SelectItem
+                              key={especialidade.id}
+                              value={String(especialidade.id)}
+                            >
+                              {especialidade.nome}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage>
+                      {form.formState.errors.especialidadesId?.message}
+                    </FormMessage>
+                  </FormItem>
+                )}
+              />
 
-      {/* Barra de Pesquisa e Botão Novo Alocacao */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="Pesquisar alocação"
-            value={termoBusca}
-            onChange={(e) => setTermoBusca(e.target.value)}
-            className="w-96 max-w-lg"
-          />
-          <Button variant="secondary" onClick={handleSearch}>
-            <Search className="w-4 h-4" />
-            Buscar
-          </Button>
-        </div>
-
-        {/* ✅ Botão Novo Alocacao */}
-        <Button asChild>
-          <Link href="/painel/alocacoes/novo">
-            <Plus className="h-5 w-5 mr-2" />
-            Nova Alocação
-          </Link>
-        </Button>
-      </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
-      {carregando ? (
-        <div className="flex justify-center items-center w-full h-40">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-          <span className="ml-2 text-gray-500">Carregando ...</span>
-        </div>
-      ) : (
-        <>
-          {/* Tabela de Alocacaos */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="h-12-1">ID</TableHead>
-                <TableHead className="h-12-1">Prestador</TableHead>
-                <TableHead className="h-12-1">Especialidade</TableHead>
-                <TableHead className="h-12-1">Unidade</TableHead>
-                <TableHead className="h-12-1">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="text-center">
-              {alocacaos.map((alocacao) => (
-                <TableRow
-                  key={alocacao.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
-                >
-                  <TableCell>{alocacao.id}</TableCell>
-                  <TableCell>{alocacao.prestador.nome}</TableCell>
-                  <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
-                    {alocacao.especialidade.nome}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge>
-                    {alocacao.unidade.nome}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="flex gap-3 justify-center">
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Link
-                            href={`/painel/alocacoes/editar/${alocacao.id}`}
-                          >
-                            <Button size="icon" variant="outline">
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                          </Link>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Editar Alocação
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Totalizador de Alocacaos */}
-          <div className="flex justify-between items-center ml-1 mt-4">
-            <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalAlocacaos)} de{" "}
-              {totalAlocacaos} alocações
+              <Button type="submit" variant="default">
+                <SaveIcon /> Adicionar
+              </Button>
+            </form>
+            <div className="col-span-2 ">
+              <TabelaAlocacoes
+                alocacoes={alocacoes}
+                CarregandoDadosAlocacao={carregandoDadosAlocacao}
+                fetchAlocacoes={fetchAlocacoes}
+                setCarregandoDadosAlocacao={setCarregandoDadosAlocacao}
+                prestador={prestador}
+                unidade={unidade}
+              />
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
-          <div className="flex justify-center mt-4">
-            <ReactPaginate
-              previousLabel={
-                <span className="w-full h-full flex items-center justify-center">
-                  ←
-                </span>
-              }
-              nextLabel={
-                <span className="w-full h-full flex items-center justify-center">
-                  →
-                </span>
-              }
-              pageCount={totalPaginas}
-              forcePage={paginaAtual}
-              onPageChange={(event) => setPaginaAtual(event.selected)}
-              containerClassName={"flex gap-2"}
-              pageClassName={
-                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-              }
-              activeClassName={"bg-blue-500 text-white"}
-              previousClassName={
-                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-              }
-              nextClassName={
-                "border rounded-md flex items-center justify-center cursor-pointer w-10 h-10"
-              }
-              disabledClassName={"opacity-50 cursor-not-allowed"}
-              pageLinkClassName={
-                "w-full h-full flex items-center justify-center"
-              }
-              previousLinkClassName={
-                "w-full h-full flex items-center justify-center"
-              }
-              nextLinkClassName={
-                "w-full h-full flex items-center justify-center"
-              }
-            />
-          </div>
-        </>
-      )}
-
-      {/* ✅ Diálogo de Confirmação
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirmar Ação</DialogTitle>
-          </DialogHeader>
-          <p>
-            Tem certeza que deseja{" "}
-            {alocacaoSelecionado?.status === "Ativo" ? "inativar" : "ativar"}{" "}
-            este alocacao?
-          </p>
-          <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={loadingInativar}
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="default"
-              onClick={alterarStatusAlocacao}
-              disabled={loadingInativar}
-            >
-              {loadingInativar ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : alocacaoSelecionado?.status === "Ativo" ? (
-                "Inativar"
-              ) : (
-                "Ativar"
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog> */}
+        </FormProvider>
+      </div>
     </div>
   );
 }
