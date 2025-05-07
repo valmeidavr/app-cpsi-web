@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 //Components
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -42,7 +43,7 @@ import { Button } from "@/components/ui/button";
 import { SaveIcon } from "lucide-react";
 import TabelaAlocacoes from "./_components/tabela_alocacoes";
 import { createAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
-export default function Agendas() {
+export default function AlocacaoPage() {
   const [carregando, setCarregando] = useState(false);
   const [carregandoDadosAlocacao, setCarregandoDadosAlocacao] =
     useState<boolean>(false);
@@ -150,7 +151,7 @@ export default function Agendas() {
   return (
     <div className="container mx-auto">
       <div>
-        <FormProvider {...form}>
+        <Form {...form}>
           <div className="grid grid-cols-3 space-x-3">
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
               <FormField
@@ -318,7 +319,7 @@ export default function Agendas() {
               />
             </div>
           </div>
-        </FormProvider>
+        </Form>
       </div>
     </div>
   );

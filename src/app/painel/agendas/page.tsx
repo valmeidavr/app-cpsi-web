@@ -40,10 +40,10 @@ import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Especialidade } from "@/app/types/Especialidade";
 import { createAgendaSchema } from "@/app/api/agendas/schema/formSchemaAgendas";
-import { generateDayTimeList } from "./_helpers/hours";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
 import TabelaAgenda from "./_components/tabela_agenda";
+import { Loader2 } from "lucide-react";
 
 export default function Agendas() {
   const [agendamentosAPI, setAgendamentosAPI] = useState<Agenda[]>([]);
@@ -98,6 +98,7 @@ export default function Agendas() {
 
     carregarDados();
   }, []);
+
   //=====================================//
   //Pegando todos os agendamentos quando os campos unidade, Prestador e Especialidade estivem preenchidos
   useEffect(() => {
@@ -111,66 +112,59 @@ export default function Agendas() {
     setCarregandoDadosAgenda(true);
     try {
       if (!unidade || !prestador || !especialidade) return;
-      //Agendamentos Geral, para o component de caledario identificar os status do dia, buscando apenas referentes ao unidade, prestador e especialidade selecionado
-      const { data: response } = await http.get(
-        "http://localhost:3000/agendas",
-        {
-          params: {
-            unidadesId: unidade.id,
-            prestadoresId: prestador.id,
-            especialidadesId: especialidade.id,
-          },
-        }
-      );
-      setAgendamentosGeral(response.data);
 
-      if (!date) return;
-      //Agedanementos da data selecionada, para trazer os horarios
-      console.log("Data", format(date, "yyyy-MM-dd"));
+      // Buscar agendamentos do dia
+      const formattedDate = date ? format(date, "yyyy-MM-dd") : date;
+
       const { data } = await http.get("http://localhost:3000/agendas", {
         params: {
-          date: format(date, "yyyy-MM-dd"),
+          date: formattedDate,
           unidadesId: unidade.id,
           prestadoresId: prestador.id,
           especialidadesId: especialidade.id,
         },
       });
-
       const agendamentos = data.data;
       setAgendamentosAPI(agendamentos);
-      console.log("Agendamento", agendamentos);
-      const novaLista = timeList.map((time) => {
-        const agendaDoHorario = agendamentos.find((agenda: Agenda) => {
-          const iso =
-            typeof agenda.dtagenda === "string"
-              ? agenda.dtagenda
-              : new Date(agenda.dtagenda).toISOString();
 
-          const agendaTime = iso.slice(11, 16);
-          return agendaTime == time;
-        });
-
-        if (agendaDoHorario) {
-          return {
-            hora: time,
-            situacao: agendaDoHorario.situacao,
-            paciente: agendaDoHorario.clientes?.nome || null,
-            tipo: agendaDoHorario.procedimentosId || null,
-            dadosAgendamento: agendaDoHorario,
-          };
-        } else {
-          return {
-            hora: time,
-            situacao: "LIVRE",
-            paciente: null,
-            tipo: null,
-            dadosAgendamento: null,
-          };
-        }
+      const novaLista = agendamentos.map((agenda: Agenda) => {
+        const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
+        return {
+          hora,
+          situacao: agenda.situacao,
+          paciente: agenda.clientes?.nome || null,
+          tipo: agenda.procedimentosId || null,
+          dadosAgendamento: agenda,
+        };
       });
+
       setHorariosDia(novaLista);
     } catch (error) {
       console.error("Erro ao buscar agendas:", error);
+    } finally {
+      setCarregandoDadosAgenda(false);
+    }
+  };
+
+  useEffect(() => {
+    if (unidade && prestador && especialidade) {
+      carregarAgendamentosGeral(); // carrega todos para o calendário
+    }
+  }, [unidade, prestador, especialidade]);
+
+  const carregarAgendamentosGeral = async () => {
+    try {
+      setCarregandoDadosAgenda(true);
+      const { data } = await http.get("http://localhost:3000/agendas", {
+        params: {
+          unidadesId: unidade?.id,
+          prestadoresId: prestador?.id,
+          especialidadesId: especialidade?.id,
+        },
+      });
+      setAgendamentosGeral(data.data);
+    } catch (error) {
+      console.error("Erro ao buscar agendamentos gerais:", error);
     } finally {
       setCarregandoDadosAgenda(false);
     }
@@ -192,42 +186,6 @@ export default function Agendas() {
     setDate(date);
     setHour(undefined);
   };
-
-  //Gerar lista de horas
-  const timeList = useMemo(() => {
-    if (!date) {
-      return [];
-    }
-
-    return generateDayTimeList(date).filter(async (time) => {
-      const timeHour = Number(time.split(":")[0]);
-      const timeMinutes = Number(time.split(":")[1]);
-      //Arrumando o fuso horario
-      const currentDate = new Date(
-        Date.UTC(
-          date.getFullYear(),
-          date.getMonth(),
-          date.getDate(),
-          timeHour,
-          timeMinutes,
-          0,
-          0
-        )
-      );
-
-      const agenda = await agendamentosAPI.find((agenda) => {
-        const agendaDate = new Date(agenda.dtagenda);
-        // Compara se é o mesmo minuto
-        return isSameMinute(currentDate, agendaDate);
-      });
-
-      if (!agenda) {
-        return true;
-      }
-
-      return false;
-    });
-  }, [date, agendamentosAPI]);
 
   const fetchPrestadores = async () => {
     try {
@@ -410,61 +368,98 @@ export default function Agendas() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="dtagenda"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={handleDateClick}
-                      locale={ptBR}
-                      modifiers={agendamentosGeral.reduce((acc, agenda) => {
-                        const { dtagenda, situacao } = agenda;
-                        const date = new Date(dtagenda);
-                        if (!acc[situacao]) acc[situacao] = [];
-                        acc[situacao].push(date);
-                        return acc;
-                      }, {} as Record<string, Date[]>)}
-                      modifiersClassNames={{
-                        AGENDADO: "bg-white-1000 text-green-700 font-semibold",
-                        FINALIZADO: "bg-red-100 text-red-700",
-                        CONFIRMADO: "bg-yellow-100 text-yellow-700",
-                        BLOQUEADO: "bg-red-300 text-red-900",
-                      }}
-                      fromDate={addDays(new Date(), 1)}
-                      styles={{
-                        root: { width: "100%" }, // shadcn usa isso internamente
-                        month: { width: "100%" },
-                        table: { width: "100%" },
-                        head_cell: {
-                          width: "100%",
-                          textTransform: "capitalize",
-                        },
-                        cell: {
-                          width: "100%",
-                        },
-                        button: {
-                          width: "100%",
-                        },
-                        nav_button_previous: {
-                          width: "32px",
-                          height: "32px",
-                        },
-                        nav_button_next: {
-                          width: "32px",
-                          height: "32px",
-                        },
-                        caption: {
-                          textTransform: "capitalize",
-                        },
-                      }}
-                    />
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {carregandoDadosAgenda ? (
+                <div className="flex justify-center items-center h-20">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+                  <span className="ml-2 text-gray-500">Carregando ...</span>
+                </div>
+              ) : (
+                <FormField
+                  control={form.control}
+                  name="dtagenda"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handleDateClick}
+                        locale={ptBR}
+                        modifiers={(() => {
+                          const agendamentosPorDia = new Map<
+                            string,
+                            Agenda[]
+                          >();
+
+                          agendamentosGeral.forEach((agenda) => {
+                            const dataStr = new Date(
+                              agenda.dtagenda
+                            ).toDateString();
+                            if (!agendamentosPorDia.has(dataStr)) {
+                              agendamentosPorDia.set(dataStr, []);
+                            }
+                            agendamentosPorDia.get(dataStr)!.push(agenda);
+                          });
+
+                          const diasVerde: Date[] = [];
+                          const diasVermelho: Date[] = [];
+
+                          agendamentosPorDia.forEach((agendas, dataStr) => {
+                            const temLivre = agendas.some(
+                              (a) => a.situacao === "LIVRE"
+                            );
+
+                            if (temLivre) {
+                              diasVerde.push(new Date(dataStr));
+                            } else {
+                              diasVermelho.push(new Date(dataStr));
+                            }
+                          });
+
+                          return {
+                            verde: diasVerde,
+                            vermelho: diasVermelho,
+                          };
+                        })()}
+                        modifiersClassNames={{
+                          verde:
+                            "bg-green-200 text-green-800 font-semibold ring-2 ring-green-400",
+                          vermelho:
+                            "bg-red-200 text-red-800 font-semibold ring-2 ring-red-400",
+                          selected:
+                            "!ring-2 !ring-offset-2 !ring-blue-500 !bg-transparent",
+                        }}
+                        styles={{
+                          root: { width: "100%" }, // shadcn usa isso internamente
+                          month: { width: "100%" },
+                          table: { width: "100%" },
+                          head_cell: {
+                            width: "100%",
+                            textTransform: "capitalize",
+                          },
+                          cell: {
+                            width: "100%",
+                          },
+                          button: {
+                            width: "100%",
+                          },
+                          nav_button_previous: {
+                            width: "32px",
+                            height: "32px",
+                          },
+                          nav_button_next: {
+                            width: "32px",
+                            height: "32px",
+                          },
+                          caption: {
+                            textTransform: "capitalize",
+                          },
+                        }}
+                      />
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
             <div className="col-span-2 ">
               <TabelaAgenda

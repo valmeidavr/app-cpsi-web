@@ -1,5 +1,9 @@
 "use client";
-import { deleteAlocacao, updateAlocacao } from "@/app/api/alocacoes/action";
+import {
+  deleteAlocacao,
+  getAlocacaoById,
+  updateAlocacao,
+} from "@/app/api/alocacoes/action";
 import { updateAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
 import { getEspecialidades } from "@/app/api/especialidades/action";
 import { getPrestadors } from "@/app/api/prestadores/action";
@@ -49,7 +53,7 @@ import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
 import { SelectItem } from "@radix-ui/react-select";
 import { Loader2, MenuIcon, SaveIcon } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -82,9 +86,9 @@ const TabelaAlocacoes = ({
     resolver: zodResolver(updateAlocacaoSchema),
     mode: "onChange",
     defaultValues: {
-      prestadoresId: prestador ? prestador.id : 0,
-      unidadesId: unidade ? unidade.id : 0,
-      especialidadesId: 0,
+      prestadoresId: prestador?.id ?? 0,
+      unidadesId: unidade?.id ?? 0,
+      especialidadesId: undefined,
     },
   });
 
@@ -104,13 +108,18 @@ const TabelaAlocacoes = ({
   };
 
   useEffect(() => {
-    if (alocacaoSelecionada) {
-      form.reset({
-        especialidadesId: +alocacaoSelecionada.especialidadesId,
-      });
-    }
-  }, [alocacaoSelecionada]);
-
+    const buscarDadasAlocacao = async () => {
+      if (alocacaoSelecionada && isUpdateModalOpen) {
+        const data = await getAlocacaoById(alocacaoSelecionada.id.toString());
+        form.reset({
+          prestadoresId: data.prestadoresId,
+          unidadesId: data.unidadesId,
+          especialidadesId: data.especialidadesId,
+        });
+      }
+    };
+    buscarDadasAlocacao();
+  }, [alocacaoSelecionada, isUpdateModalOpen, form]);
   const onSubmit = async (values: z.infer<typeof updateAlocacaoSchema>) => {
     try {
       setCarregandoDadosAlocacao(true);
@@ -177,15 +186,15 @@ const TabelaAlocacoes = ({
                           >
                             Excluir alocação
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
+                          {/* <DropdownMenuSeparator /> */}
+                          {/* <DropdownMenuItem
                             onSelect={() => {
                               setAlocacaoSelecionada(row),
                                 setIsUpdateModalOpen(true);
                             }}
                           >
                             Editar alocação
-                          </DropdownMenuItem>
+                          </DropdownMenuItem> */}
                         </>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -229,67 +238,81 @@ const TabelaAlocacoes = ({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
+      {/* <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Atualizar Alocação </DialogTitle>
           </DialogHeader>
-          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-            <FormField
-              control={form.control}
-              name="especialidadesId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Especialidade *</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(Number(value));
-                    }}
-                    value={String(field.value)}
-                  >
-                    <FormControl
-                      className={
-                        form.formState.errors.especialidadesId
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0" disabled>
-                        Selecione
-                      </SelectItem>
-                      {especialidades.map((especialidade) => {
-                        return (
-                          <SelectItem
-                            key={especialidade.id}
-                            value={String(especialidade.id)}
-                          >
-                            {especialidade.nome}
+          <FormProvider {...form}>
+            <div className="flex flex-col">
+              <form
+                className="space-y-4"
+                onSubmit={form.handleSubmit(onSubmit)}
+              >
+                <FormField
+                  control={form.control}
+                  name="especialidadesId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Especialidade *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(Number(value));
+                        }}
+                        value={
+                          field.value !== null && field.value !== undefined
+                            ? String(field.value)
+                            : ""
+                        }
+                      >
+                        <FormControl
+                          className={
+                            form.formState.errors.especialidadesId
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0" disabled>
+                            Selecione
                           </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage>
-                    {form.formState.errors.especialidadesId?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
+                          {especialidades.map((item) => {
+                            return (
+                              <SelectItem key={item.id} value={String(item.id)}>
+                                {item.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage>
+                        {form.formState.errors.especialidadesId?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
 
-            <DialogFooter>
-              <Button variant="secondary">Cancelar</Button>
-              <Button variant="default" type="submit">
-                Salvar
-              </Button>
-            </DialogFooter>
-          </form>
+                <DialogFooter>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIsUpdateModalOpen(false)}
+                    disabled={loading}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button variant="default" type="submit" disabled={loading}>
+                    Salvar Agendamento
+                  </Button>
+                </DialogFooter>
+              </form>
+            </div>
+          </FormProvider>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </>
   );
 };

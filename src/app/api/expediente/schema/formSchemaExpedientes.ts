@@ -9,8 +9,7 @@ export const createExpedienteSchema = z.object({
   }),
   hinicio: z.string().min(1, "Este campo é obrigatório"),
   hfinal: z.string(),
-  horarioInicio: z.string(),
-  horarioFim: z.string(),
+  intervalo: z.string(),
   semana: z.string().optional(),
   alocacaoId: z
     .number()
