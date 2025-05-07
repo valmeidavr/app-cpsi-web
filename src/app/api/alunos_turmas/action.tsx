@@ -10,7 +10,6 @@ type alunosTurma = Omit<
 
 export async function createAlunosTurma(body: alunosTurma) {
   try {
-    console.log("Aluno", body);
     await http.post("http://localhost:3000/alunos-turmas", body);
     revalidatePath("/painel/turmas/adicionar_alunos_modal");
   } catch (error: any) {

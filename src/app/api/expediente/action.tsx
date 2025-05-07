@@ -23,6 +23,7 @@ export async function getExpedientes(
 }
 export type CreateExpedienteDTO = z.infer<typeof createExpedienteSchema>;
 export type UpdateExpedienteDTO = z.infer<typeof updateExpedienteSchema>;
+
 export async function createExpediente(body: CreateExpedienteDTO) {
   try {
     if (body.dtinicio) {
@@ -38,17 +39,7 @@ export async function createExpediente(body: CreateExpedienteDTO) {
         body.dtfinal = format(dtfinal, "yyyy-MM-dd");
       }
     }
-
-    const intervalo = `${body.horarioInicio} - ${body.horarioFim}`;
-
-    // monta um novo objeto, omitindo horarioInicio e horarioFim
-    const { horarioInicio, horarioFim, ...rest } = body;
-
-    const payload = {
-      ...rest,
-      intervalo,
-    };
-    await http.post("http://localhost:3000/expedientes", payload);
+    await http.post("http://localhost:3000/expedientes", body);
     revalidatePath("/painel/expedientes");
   } catch (error: any) {
     console.error("Erro ao criar expediente:", error.message);
@@ -77,15 +68,7 @@ export async function updateExpediente(id: string, body: UpdateExpedienteDTO) {
       }
     }
 
-    const intervalo = `${body.horarioInicio} - ${body.horarioFim}`;
-    const { horarioInicio, horarioFim, ...rest } = body;
-
-    const payload = {
-      ...rest,
-      intervalo,
-    };
-    console.log(payload);
-    await http.patch(`http://localhost:3000/expedientes/${id}`, payload);
+    await http.patch(`http://localhost:3000/expedientes/${id}`, body);
     revalidatePath("painel/expedientes");
   } catch (error) {
     console.error("Erro no update:", error);
