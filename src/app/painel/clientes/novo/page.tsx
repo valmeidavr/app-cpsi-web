@@ -89,7 +89,6 @@ export default function CustomerRegistrationForm() {
       try {
         const { data } = await getConvenios();
         setConvenios(data);
-        console.log("Convenios:", data);
       } catch (error) {
         console.error("Error ao buscar convênios:", error);
       }

@@ -19,11 +19,9 @@ export async function getAgendas(
   date?: Date
 ) {
   const dateString = date ? date.toISOString().split("T")[0] : undefined;
-  console.log("Buscando agenda pela data:", dateString);
   const { data } = await http.get("http://localhost:3000/agendas", {
     params: { page, limit, search, date },
   });
-  console.log("Retorno da busca dos agendamentos:", data);
   return data;
 }
 export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
@@ -59,7 +57,6 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    console.log("Body:", body, "Id:", id);
     await http.patch(`http://localhost:3000/agendas/${id}`, body);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
@@ -73,7 +70,6 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
 
 export async function updateStatusAgenda(id: string, situacao: string) {
   try {
-    console.log("Status:", situacao, "Id:", id);
     await http.patch(`http://localhost:3000/agendas/${id}`, {
       situacao: situacao,
     });

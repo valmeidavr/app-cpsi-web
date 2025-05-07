@@ -83,7 +83,7 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
     const { convenios, desconto, ...payload } = body;
-    console.log("Payload", payload);
+
     const { data } = await http.patch(
       `http://localhost:3000/clientes/${id}`,
       payload
@@ -96,7 +96,7 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
           desconto: desconto?.[convenio] ?? null,
         };
 
-        console.log("ConvenioBody", convenioBody);
+
 
         try {
           const res = await http.get(
@@ -112,13 +112,11 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
           const existing = res.data?.data;
 
           if (existing?.id) {
-            console.log("Atualizando relacionamento existente:", existing.id);
             await http.patch(
               `http://localhost:3000/convenios-clientes/${existing.id}`,
               convenioBody
             );
           } else {
-            console.log("Criando novo relacionamento...");
             await http.post(
               "http://localhost:3000/convenios-clientes",
               convenioBody

@@ -39,7 +39,6 @@ export async function createExpediente(body: CreateExpedienteDTO) {
         body.dtfinal = format(dtfinal, "yyyy-MM-dd");
       }
     }
-    console.log("Body", body)
     await http.post("http://localhost:3000/expedientes", body);
     revalidatePath("/painel/expedientes");
   } catch (error: any) {

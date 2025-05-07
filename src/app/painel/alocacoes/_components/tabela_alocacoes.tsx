@@ -96,7 +96,7 @@ const TabelaAlocacoes = ({
     try {
       setloading(true);
       await deleteAlocacao(alocacaoId.toString());
-      console.log("values:", alocacaoId);
+
       toast.error("Alocação excluida com sucesso");
       await fetchAlocacoes();
     } catch (error: any) {

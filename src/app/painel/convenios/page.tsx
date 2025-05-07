@@ -51,7 +51,6 @@ export default function Convenios() {
           search: termoBusca,
         },
       });
-      console.log(data.data)
       setConvenios(data.data);
       setTotalPaginas(data.totalPages);
       setTotalconvenios(data.total);

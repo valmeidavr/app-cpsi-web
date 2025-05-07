@@ -146,7 +146,7 @@ export default function EditarCliente() {
       if (!clienteId) throw new Error("ID do cliente não encontrado.");
 
       const response = await updateCliente(clienteId, payload);
-      console.log("response", response);
+
       if (response && response.error) {
         throw new Error("Erro ao atualizar cliente.");
       }

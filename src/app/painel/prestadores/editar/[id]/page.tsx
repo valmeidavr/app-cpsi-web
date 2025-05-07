@@ -404,7 +404,7 @@ export default function EditarPrestador() {
                             /^(\d{5})(\d{0,3})/,
                             "$1-$2"
                           );
-                          console.log(formattedValue);
+                      
                           field.onChange(formattedValue);
                         }
                       }

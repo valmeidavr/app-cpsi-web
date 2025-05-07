@@ -100,7 +100,7 @@ const TabelaExpediente = ({
     try {
       setloading(true);
       await finalizarExpediente(ExpedienteId.toString());
-      console.log("values:", ExpedienteId);
+  
       toast.error("Alocação excluida com sucesso");
       await fetchExpedientes();
     } catch (error: any) {

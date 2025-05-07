@@ -84,7 +84,7 @@ export default function AdicionarAlunosModal({
       });
 
       setClientes(data.data);
-      console.log("Clientes:", data.data);
+
     } catch (error) {
       console.error("Erro ao carregar clientes:", error);
     } finally {

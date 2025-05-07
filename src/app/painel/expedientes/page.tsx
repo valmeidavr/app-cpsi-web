@@ -117,7 +117,6 @@ export default function ExpedientePage() {
         const listaEspecialidades: Especialidade[] = alocacoes
           .filter((item: Alocacao) => item.unidadesId == unidade.id)
           .map((item: Alocacao) => item.especialidade);
-        console.log("Especialidades:", listaEspecialidades);
         setEspecialidades(listaEspecialidades);
       } catch (error: any) {
         toast.error("Erro ao carregar dados dos Alocacoes");

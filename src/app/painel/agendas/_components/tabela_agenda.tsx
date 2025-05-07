@@ -254,7 +254,6 @@ const TabelaAgenda = ({
 
   const handleStatusAgenda = async (agendaId: number, situacao: string) => {
     try {
-      console.log(agendaId, situacao)
       await updateStatusAgenda(agendaId.toString(), situacao);
       toast.success(
         `Situação do agendamento foi alterado para ${situacao} com sucesso!`
@@ -305,10 +304,7 @@ const TabelaAgenda = ({
   const onSubmit = async (values: any) => {
     setLoading(true);
     try {
-      console.log("chego");
       if (!agendamenetoSelecionado) return;
-      console.log("agendamentoSelecionado", agendamenetoSelecionado);
-      console.log("Values:", values);
       await updateAgenda(
         agendamenetoSelecionado.dadosAgendamento.id.toString(),
         values
