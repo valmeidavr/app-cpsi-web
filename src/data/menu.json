@@ -52,12 +52,7 @@
         "href": "/painel/expedientes",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
-      {
-        "icon": "Table",
-        "label": "Tabelas Faturamentos",
-        "href": "/painel/tabela_faturamentos",
-        "requiredGroups": ["ADMIN", "GESTOR"]
-      },
+
       {
         "icon": "Wrench",
         "label": "Prestadores",
@@ -94,6 +89,12 @@
         "icon": "Calculator",
         "label": "Caixas",
         "href": "/painel/caixas",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Table",
+        "label": "Tabelas Faturamentos",
+        "href": "/painel/tabela_faturamentos",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]

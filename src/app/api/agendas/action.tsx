@@ -36,6 +36,7 @@ export async function createAgenda(
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
+    console.log("Body:", body);
     await http.post("http://localhost:3000/agendas", body);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error: any) {
@@ -57,7 +58,9 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    await http.patch(`http://localhost:3000/agendas/${id}`, body);
+
+    const { horario, ...payload } = body;
+    await http.patch(`http://localhost:3000/agendas/${id}`, payload);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro no update:", error);

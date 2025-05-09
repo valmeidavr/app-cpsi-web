@@ -1,10 +1,9 @@
 "use client";
 
 //React
-import { useEffect, useMemo, useState } from "react";
-import ReactPaginate from "react-paginate";
+import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+
 //Zod
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,12 +16,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { toast } from "sonner";
-//API
-
-//Helpers
-import { http } from "@/util/http";
-import { addDays, format, formatDate, isSameMinute, parseISO } from "date-fns";
 
 //Types
 import { Agenda } from "@/app/types/Agenda";
@@ -33,142 +26,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUnidades } from "@/app/api/unidades/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
-import { Prestador } from "@/app/types/Prestador";
-import { Unidade } from "@/app/types/Unidades";
-import { Especialidade } from "@/app/types/Especialidade";
 import { createAgendaSchema } from "@/app/api/agendas/schema/formSchemaAgendas";
 import { ptBR } from "date-fns/locale";
 import { Calendar } from "@/components/ui/calendar";
-import TabelaAgenda from "./_components/tabela_agenda";
+import TabelaAgenda from "./_components/tabelaAgenda";
 import { Loader2 } from "lucide-react";
+import { useAgenda } from "./AgendaContext";
 
 export default function Agendas() {
-  const [agendamentosAPI, setAgendamentosAPI] = useState<Agenda[]>([]);
-  const [agendamentosGeral, setAgendamentosGeral] = useState<Agenda[]>([]);
-  const [horariosDia, setHorariosDia] = useState<any[]>([]);
-  const [carregando, setCarregando] = useState(false);
-  const [carregandoDadosAgenda, setCarregandoDadosAgenda] = useState(false);
-  const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-  const [prestadores, setPrestadores] = useState<Prestador[]>([]);
-  const [unidades, setUnidades] = useState<Unidade[]>([]);
-  const [unidade, setUnidade] = useState<Unidade | null>(null);
-  const [prestador, setPrestador] = useState<Prestador | null>(null);
-  const [especialidade, setEspecialidade] = useState<Especialidade | null>(
-    null
-  );
-  const [date, setDate] = useState<Date | undefined>(undefined);
-  const [hour, setHour] = useState<string | undefined>();
-
-  //Buscando dados estrangerios
-  useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        setCarregando(true);
-
-        await Promise.all([
-          // fetchClientes(),
-          fetchEspecialidades(),
-          fetchPrestadores(),
-          fetchUnidades(),
-          // fetchExpedientes(),
-          // fetchProcedimentos(),
-          // fetchConvenios(),
-        ]);
-
-        const params = new URLSearchParams(window.location.search);
-        const message = params.get("message");
-        const type = params.get("type");
-
-        if (message && type == "success") {
-          toast.success(message);
-        } else if (type == "error") {
-          toast.error(message);
-        }
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, "", newUrl);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
-      } finally {
-        setCarregando(false);
-      }
-    };
-
-    carregarDados();
-  }, []);
-
-  //=====================================//
-  //Pegando todos os agendamentos quando os campos unidade, Prestador e Especialidade estivem preenchidos
-  useEffect(() => {
-    if (unidade && prestador && especialidade) {
-      carregarAgendamentos();
-    }
-  }, [date, unidade, prestador, especialidade]);
-  //=====================================//
-  //Pegando somentos os Agendamentos geral, se existir data,pegar os agendamentos da selecionada
-  const carregarAgendamentos = async () => {
-    setCarregandoDadosAgenda(true);
-    try {
-      if (!unidade || !prestador || !especialidade) return;
-
-      // Buscar agendamentos do dia
-      const formattedDate = date ? format(date, "yyyy-MM-dd") : date;
-
-      const { data } = await http.get("http://localhost:3000/agendas", {
-        params: {
-          date: formattedDate,
-          unidadesId: unidade.id,
-          prestadoresId: prestador.id,
-          especialidadesId: especialidade.id,
-        },
-      });
-      const agendamentos = data.data;
-      setAgendamentosAPI(agendamentos);
-
-      const novaLista = agendamentos.map((agenda: Agenda) => {
-        const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
-        return {
-          hora,
-          situacao: agenda.situacao,
-          paciente: agenda.clientes?.nome || null,
-          tipo: agenda.procedimentosId || null,
-          dadosAgendamento: agenda,
-        };
-      });
-
-      setHorariosDia(novaLista);
-    } catch (error) {
-      console.error("Erro ao buscar agendas:", error);
-    } finally {
-      setCarregandoDadosAgenda(false);
-    }
-  };
+  const {
+    prestador,
+    setPrestador,
+    unidade,
+    setUnidade,
+    especialidade,
+    setEspecialidade,
+    date,
+    setDate,
+    carregarAgendamentosGeral,
+    carregandoDadosAgenda,
+    loading,
+    setLoading,
+    agendamentosGeral,
+    prestadores,
+    especialidades,
+    unidades,
+  } = useAgenda();
 
   useEffect(() => {
     if (unidade && prestador && especialidade) {
       carregarAgendamentosGeral(); // carrega todos para o calendário
     }
   }, [unidade, prestador, especialidade]);
-
-  const carregarAgendamentosGeral = async () => {
-    try {
-      setCarregandoDadosAgenda(true);
-      const { data } = await http.get("http://localhost:3000/agendas", {
-        params: {
-          unidadesId: unidade?.id,
-          prestadoresId: prestador?.id,
-          especialidadesId: especialidade?.id,
-        },
-      });
-      setAgendamentosGeral(data.data);
-    } catch (error) {
-      console.error("Erro ao buscar agendamentos gerais:", error);
-    } finally {
-      setCarregandoDadosAgenda(false);
-    }
-  };
 
   //Validação dos campos do formulário
   const form = useForm({
@@ -184,33 +73,11 @@ export default function Agendas() {
   //Função de selecionar data quando clicar no caledário
   const handleDateClick = (date: Date | undefined) => {
     setDate(date);
-    setHour(undefined);
   };
 
-  const fetchPrestadores = async () => {
-    try {
-      const { data } = await getPrestadors();
-      setPrestadores(data);
-    } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Prestadores");
-    }
-  };
-  const fetchUnidades = async () => {
-    try {
-      const { data } = await getUnidades();
-      setUnidades(data);
-    } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Unidades");
-    }
-  };
-  const fetchEspecialidades = async () => {
-    try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
-    } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Especialidades");
-    }
-  };
+  const normalizarData = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
   return (
     <div className="container mx-auto">
       <div>
@@ -391,27 +258,31 @@ export default function Agendas() {
                           >();
 
                           agendamentosGeral.forEach((agenda) => {
-                            const dataStr = new Date(
-                              agenda.dtagenda
-                            ).toDateString();
-                            if (!agendamentosPorDia.has(dataStr)) {
-                              agendamentosPorDia.set(dataStr, []);
+                            const data = normalizarData(
+                              new Date(agenda.dtagenda)
+                            );
+                            const chave = data.getTime().toString(); // chave numérica (timestamp)
+
+                            if (!agendamentosPorDia.has(chave)) {
+                              agendamentosPorDia.set(chave, []);
                             }
-                            agendamentosPorDia.get(dataStr)!.push(agenda);
+
+                            agendamentosPorDia.get(chave)!.push(agenda);
                           });
 
                           const diasVerde: Date[] = [];
                           const diasVermelho: Date[] = [];
 
-                          agendamentosPorDia.forEach((agendas, dataStr) => {
+                          agendamentosPorDia.forEach((agendas, chave) => {
+                            const data = new Date(Number(chave));
                             const temLivre = agendas.some(
                               (a) => a.situacao === "LIVRE"
                             );
 
                             if (temLivre) {
-                              diasVerde.push(new Date(dataStr));
+                              diasVerde.push(data);
                             } else {
-                              diasVermelho.push(new Date(dataStr));
+                              diasVermelho.push(data);
                             }
                           });
 
@@ -462,15 +333,7 @@ export default function Agendas() {
               )}
             </div>
             <div className="col-span-2 ">
-              <TabelaAgenda
-                carregandoDadosAgenda={carregandoDadosAgenda}
-                date={date}
-                horariosDia={horariosDia}
-                prestador={prestador!}
-                unidade={unidade!}
-                especialidade={especialidade!}
-                carregarAgendamentos={carregarAgendamentos}
-              />
+              <TabelaAgenda />
             </div>
           </div>
         </FormProvider>
