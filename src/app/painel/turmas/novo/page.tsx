@@ -57,7 +57,6 @@ export default function NovoTurma() {
       horarioInicio: "",
       horarioFim: "",
       dataInicio: "",
-      dataFim: "",
       limiteVagas: 0,
       prestadoresId: 0,
       procedimentosId: 0,
@@ -181,22 +180,6 @@ export default function NovoTurma() {
                   </FormControl>
                   <FormMessage>
                     {form.formState.errors.dataInicio?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="dataFim"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data de Fim</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="date" />
-                  </FormControl>
-                  <FormMessage>
-                    {form.formState.errors.dataFim?.message}
                   </FormMessage>
                 </FormItem>
               )}

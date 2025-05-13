@@ -58,6 +58,8 @@ import {
 } from "@/app/api/expediente/action";
 import { formatDate } from "date-fns";
 import { Input } from "@/components/ui/input";
+import { http } from "@/util/http";
+import { Agenda } from "@/app/types/Agenda";
 
 interface TabelaExpedienteProps {
   expedientes: Expediente[];
@@ -99,12 +101,24 @@ const TabelaExpediente = ({
   const excluirExpediente = async (ExpedienteId: number) => {
     try {
       setloading(true);
+
+      const agendamentoExist: Agenda[] = await http.get(
+        `http://localhost:3000/agendas/expediente?expedienteId=${ExpedienteId}`
+      );
+      if (agendamentoExist) {
+        const agendamentoFeito = agendamentoExist.filter((agendamento) => {
+          agendamento.situacao == "AGENDADO" ||
+            agendamento.situacao == "CONFIRMADO";
+        });
+        if(agendamentoFeito) throw new Error("Existe agendamentos feitos neste expediente")
+      }
+
       await finalizarExpediente(ExpedienteId.toString());
-  
+
       toast.error("Alocação excluida com sucesso");
       await fetchExpedientes();
     } catch (error: any) {
-      toast.error("Não foi posssivel deletar a alocação", error);
+      toast.error("Não foi posssivel deletar o expediente: ", error);
     } finally {
       setIsDeleteModalOpen(false);
       setloading(false);
