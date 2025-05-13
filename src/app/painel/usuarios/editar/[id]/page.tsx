@@ -70,14 +70,14 @@ export default function EditarUsuario() {
           );
 
           setSelectedGroups(gruposSelecionados);
-
+          console.log("Data:", data);
           if (!isFormReset) {
             form.reset({
               nome: data.nome,
               email: data.email,
               senha: "",
               confirmedsenha: "",
-              grupoIds: selectedGroups,
+              grupoIds: gruposSelecionados,
             });
             setIsFormReset(true);
           }
@@ -135,8 +135,8 @@ export default function EditarUsuario() {
     setLoading(true);
     try {
       if (!userId) redirect("/painel/usuarios");
-
-      const data = await updateUsuario(userId, values);
+      console.log("Values:", values);
+      await updateUsuario(userId, values);
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
@@ -288,27 +288,28 @@ export default function EditarUsuario() {
               {sistemas.map((sistema) => (
                 <div key={sistema.id} className="border p-4 rounded-md">
                   <h3 className="font-bold mb-2">{sistema.nome}</h3>
-                  <RadioGroup
-                    value={selectedGroups[sistema.id]?.toString() || ""}
-                    onValueChange={(value) =>
-                      handleGroupChange(sistema.id, Number(value))
-                    }
-                    className="space-y-2"
-                  >
-                    {sistema.grupos.map((grupo) => (
-                      <FormField
-                        key={grupo.id}
-                        control={form.control}
-                        name={`grupoIds.${sistema.id}`}
-                        render={() => (
-                          <FormItem className="flex items-center space-x-2">
+
+                  <FormField
+                    control={form.control}
+                    name={`grupoIds.${sistema.id}`}
+                    render={({ field }) => (
+                      <RadioGroup
+                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => {
+                          field.onChange(Number(value)); // Atualiza o form
+                          handleGroupChange(sistema.id, Number(value)); // Atualiza estado local (se você ainda precisar disso)
+                        }}
+                        className="space-y-2"
+                      >
+                        {sistema.grupos.map((grupo) => (
+                          <FormItem
+                            key={grupo.id}
+                            className="flex items-center space-x-2"
+                          >
                             <FormControl>
                               <RadioGroupItem
                                 id={`grupo-${sistema.id}-${grupo.id}`}
                                 value={grupo.id.toString()}
-                                checked={
-                                  selectedGroups[sistema.id] === grupo.id
-                                }
                               />
                             </FormControl>
                             <Label
@@ -318,10 +319,10 @@ export default function EditarUsuario() {
                               {grupo.nome}
                             </Label>
                           </FormItem>
-                        )}
-                      />
-                    ))}
-                  </RadioGroup>
+                        ))}
+                      </RadioGroup>
+                    )}
+                  />
                 </div>
               ))}
             </div>
