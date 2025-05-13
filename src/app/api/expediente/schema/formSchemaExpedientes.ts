@@ -1,11 +1,14 @@
 import { z } from "zod";
 
-export const createExpedienteSchema = z.object({
-  dtinicio: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-    message: "Este campo é obrigatório",
+const dataLimite = new Date("2000-01-01");
+
+// Schema base (sem refinamento entre dtinicio e dtfinal)
+const expedienteBaseSchema = z.object({
+  dtinicio: z.string().refine((val) => new Date(val) >= dataLimite, {
+    message: "A data de início não pode ser muito antiga",
   }),
-  dtfinal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, {
-    message: "Este campo é obrigatório",
+  dtfinal: z.string().refine((val) => new Date(val) >= dataLimite, {
+    message: "A data de fim não pode ser muito antiga",
   }),
   hinicio: z.string().min(1, "Este campo é obrigatório"),
   hfinal: z.string(),
@@ -15,4 +18,15 @@ export const createExpedienteSchema = z.object({
     .number()
     .int({ message: "alocacaoId deve ser um número inteiro" }),
 });
-export const updateExpedienteSchema = createExpedienteSchema.partial();
+
+// Aplica regra extra só no schema de criação
+export const createExpedienteSchema = expedienteBaseSchema.refine(
+  (data) => new Date(data.dtfinal) >= new Date(data.dtinicio),
+  {
+    message: "A data de fim deve ser maior ou igual à data de início",
+    path: ["dtfinal"],
+  }
+);
+
+// `partial()` funciona porque ainda é um ZodObject
+export const updateExpedienteSchema = expedienteBaseSchema.partial();
