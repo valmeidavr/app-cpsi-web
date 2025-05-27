@@ -64,7 +64,7 @@ export default function NovoCaixa() {
       queryParams.set("type", "success");
       queryParams.set("message", "Caixa salvo com sucesso!");
 
-      router.push(`/painel/caixa?${queryParams.toString()}`);
+      router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar caixa!";

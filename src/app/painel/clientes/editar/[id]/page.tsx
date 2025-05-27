@@ -36,7 +36,7 @@ import { updateCliente } from "@/app/api/clientes/action";
 import { getClienteById } from "@/app/api/clientes/action";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 //Types
-import { Cliente } from "@/app/types/Cliente";
+import { Cliente, TipoCliente } from "@/app/types/Cliente";
 import {
   Dialog,
   DialogContent,
@@ -83,6 +83,7 @@ export default function EditarCliente() {
       email: "",
       dtnascimento: "",
       sexo: "",
+      tipo: TipoCliente.SOCIO,
       cpf: "",
       cep: "",
       logradouro: "",
@@ -150,7 +151,7 @@ export default function EditarCliente() {
       if (response && response.error) {
         throw new Error("Erro ao atualizar cliente.");
       }
-        const queryParams = new URLSearchParams();
+      const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente atualizado com sucesso!");
@@ -394,6 +395,50 @@ export default function EditarCliente() {
                         </SelectContent>
                       </Select>
                       <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="tipo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Cliente *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(Number(value));
+                        }}
+                        value={String(field.value)}
+                      >
+                        <FormControl
+                          className={
+                            form.formState.errors.tipo
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0" disabled>
+                            Selecione
+                          </SelectItem>
+
+                          {Object.values(TipoCliente).map((item) => {
+                            return (
+                              <SelectItem key={item} value={String(item)}>
+                                {item}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage>
+                        {form.formState.errors.tipo?.message}
+                      </FormMessage>
                     </FormItem>
                   )}
                 />

@@ -11,6 +11,8 @@ import {
   updateAgendaSchema,
 } from "./schema/formSchemaAgendas";
 import { Agenda } from "@/app/types/Agenda";
+import { createLancamento } from "../lancamentos/action";
+import { getPayload } from "@/util/auth";
 
 export async function getAgendas(
   page: number = 1,
@@ -30,14 +32,33 @@ export async function createAgenda(
   body: CreateAgendaDTO
 ): Promise<Agenda | any> {
   try {
-    if (body.dtagenda) {
-      const dtagenda = parse(body.dtagenda, "dd/MM/yyyy", new Date());
+    const { horario, ...payloadCreate } = body;
+    if (payloadCreate.dtagenda) {
+      const dtagenda = parse(payloadCreate.dtagenda, "dd/MM/yyyy", new Date());
       if (isValid(dtagenda)) {
-        body.dtagenda = format(dtagenda, "yyyy-MM-dd");
+        payloadCreate.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    console.log("Body:", body);
-    await http.post("http://localhost:3000/agendas", body);
+    const agendamento: Agenda = await http.post(
+      "http://localhost:3000/agendas",
+      payloadCreate
+    );
+    const { cookies } = require("next/headers");
+    const cookiesStore = await cookies();
+    const token = cookiesStore.get("accessToken")?.value;
+    const payload = getPayload(token);
+    await createLancamento({
+      valor: 0,
+      descricao: `Agendamento ${agendamento.dtagenda}`,
+      data_lancamento: new Date().toISOString(),
+      tipo: "ENTRADA",
+      clientes_Id: agendamento.clientesId,
+      forma_pagamento: "DINHEIRO",
+      status_pagamento: "PENDENTE",
+      agendas_id: agendamento.id,
+      usuario_id: payload?.usuario?.id,
+    });
+
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error: any) {
     console.error("Erro ao criar agenda:", error.message);
@@ -58,9 +79,27 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
         body.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
+    const agendamento = await getAgendaById(id);
+    const { cookies } = require("next/headers");
+    const cookiesStore = await cookies();
+    const token = cookiesStore.get("accessToken")?.value;
+    const payload = getPayload(token);
+    const { horario, ...payloadUpdate } = body;
+    if (body.situacao == "AGENDADO") {
+      await createLancamento({
+        valor: 0,
+        descricao: `Agendamento ${agendamento.dtagenda}`,
+        data_lancamento: new Date().toString(),
+        tipo: "ENTRADA",
+        clientes_Id: agendamento.clientesId,
+        forma_pagamento: "DINHEIRO",
+        status_pagamento: "PENDENTE",
+        agendas_id: agendamento.id,
+        usuario_id: payload?.usuario?.id,
+      });
+    }
 
-    const { horario, ...payload } = body;
-    await http.patch(`http://localhost:3000/agendas/${id}`, payload);
+    await http.patch(`http://localhost:3000/agendas/${id}`, payloadUpdate);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro no update:", error);
@@ -76,6 +115,28 @@ export async function updateStatusAgenda(id: string, situacao: string) {
     await http.patch(`http://localhost:3000/agendas/${id}`, {
       situacao: situacao,
     });
+    const agendamento = await getAgendaById(id);
+    const { cookies } = require("next/headers");
+    const cookiesStore = await cookies();
+    const token = cookiesStore.get("accessToken")?.value;
+    const payload = getPayload(token);
+
+    if (situacao == "AGENDADO") {
+      await createLancamento({
+        valor: 0,
+        descricao: `Agendamento ${agendamento.dtagenda}`,
+        data_lancamento: new Date().toString(),
+        tipo: "ENTRADA",
+        caixas_id: 0,
+        clientes_Id: agendamento.clientesId,
+        plano_contas_id: 0,
+        forma_pagamento: "DINHEIRO",
+        status_pagamento: "PENDENTE",
+        agendas_id: agendamento.id,
+        usuario_id: payload?.usuario?.id,
+      });
+    }
+
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro no update:", error);
@@ -88,10 +149,16 @@ export async function updateStatusAgenda(id: string, situacao: string) {
 
 export async function finalizarAgenda(id: string) {
   try {
-    await http.patch(`http://localhost:3000/agendas/${id}`, {
-      status: "LIVRE",
-    });
-    revalidatePath("/painel/agendas");
+    console.log("Finalizaragenda:", id);
+    const payload = {
+      situacao: "LIVRE",
+      clientesId: null,
+      conveniosId: null,
+      procedimentosId: null,
+    };
+    await http.patch(`http://localhost:3000/agendas/${id}`, payload);
+    console.log('foi')
+    revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro na requisição:", error);
     return {

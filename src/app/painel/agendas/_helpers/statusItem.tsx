@@ -12,13 +12,18 @@ export const statusItems = [
     icon: <XCircleIcon className="w-4 h-4 mr-2" />,
   },
   {
+    label: "AGENDADO",
+    color: "text-green-500",
+    icon: <CheckCircleIcon className="w-4 h-4 mr-2" />,
+  },
+  {
     label: "FALTA",
     color: "text-red-500",
     icon: <XCircleIcon className="w-4 h-4 mr-2" />,
   },
   {
     label: "FINALIZADO",
-    color: "text-green-500",
+    color: "text-red-500",
     icon: <CheckCircleIcon className="w-4 h-4 mr-2" />,
   },
   {

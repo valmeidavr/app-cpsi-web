@@ -1,5 +1,6 @@
 import * as z from "zod";
 import { parse, isValid, format } from "date-fns";
+import { TipoCliente } from "@/app/types/Cliente";
 
 export const createClienteSchema = z.object({
   nome: z
@@ -45,7 +46,10 @@ export const createClienteSchema = z.object({
   }),
 
   cep: z.string().optional(),
-
+  tipo: z.nativeEnum(TipoCliente, {
+    required_error: "Tipo de cliente é obrigatório",
+    invalid_type_error: "Tipo de cliente inválido",
+  }),
   logradouro: z.string().optional(),
   numero: z.string().optional(),
   bairro: z.string().optional(),

@@ -34,17 +34,13 @@ export const createLancamentoSchema = z.object({
 
   plano_contas_id: z
     .union([z.string(), z.number()])
-    .refine((val) => Number(val) > 0, {
-      message: "O plano de contas é obrigatório",
-    })
-    .transform((val) => Number(val)),
+    .refine((val) => Number(val))
+    .transform((val) => Number(val)).optional(),
 
   caixas_id: z
     .union([z.string(), z.number()])
-    .refine((val) => Number(val) > 0, {
-      message: "O campo caixa é obrigatório",
-    })
-    .transform((val) => Number(val)),
+    .refine((val) => Number(val) )
+    .transform((val) => Number(val)).optional(),
 
   lancamentos_original_id: z.number().nullable().optional(),
 

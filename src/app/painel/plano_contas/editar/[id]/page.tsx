@@ -91,7 +91,7 @@ export default function EditarPlano() {
     setLoading(true);
     try {
       if (!planoId) redirect("/painel/plano_contas");
-
+      await updatePlano(planoId, values)
       const queryParams = new URLSearchParams();
 
       queryParams.set("type", "success");
@@ -101,8 +101,6 @@ export default function EditarPlano() {
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar plano!";
-
-      // Exibindo toast de erro
       toast.error(errorMessage);
     } finally {
       setLoading(false);

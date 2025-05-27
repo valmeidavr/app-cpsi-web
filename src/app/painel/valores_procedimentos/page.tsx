@@ -149,7 +149,6 @@ export default function ValorProcedimentos() {
       setCarregando(true);
       try {
         if (!valorProcedimentoSelecionado) return;
-        console.log("Valor", valorProcedimentoSelecionado);
 
         formUpdate.reset({
           tabelaFaturamentosId:
@@ -206,7 +205,6 @@ export default function ValorProcedimentos() {
   ) => {
     setCarregando(true);
     try {
-      console.log("Values:", values);
       await createValorProcedimento(values);
       await carregarValorProcedimentos();
     } catch (error) {
@@ -233,7 +231,6 @@ export default function ValorProcedimentos() {
   ) => {
     setCarregando(true);
     try {
-      console.log("Values:", values);
       if (!valorProcedimentoSelecionado) return;
       await updateValorProcedimento(valorProcedimentoSelecionado.id, values);
       await carregarValorProcedimentos();

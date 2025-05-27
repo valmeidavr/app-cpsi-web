@@ -3,8 +3,11 @@ import { getCookie } from "./cookies";
 
 // Instância de axios compartilhada entre cliente e servidor
 export const http = axios.create({
-  baseURL: "https://app-cpsi-api-production.up.railway.app/",
+  baseURL: "http://localhost:3000/",
 });
+// export const http = axios.create({
+//   baseURL: "https://app-cpsi-api-production.up.railway.app/",
+// });
 
 // Interceptor de requisição para adicionar o token, dependendo do ambiente (cliente ou servidor)
 http.interceptors.request.use(async (request) => {

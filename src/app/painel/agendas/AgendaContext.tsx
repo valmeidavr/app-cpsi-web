@@ -63,7 +63,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-  
+  const [carregarAgenda, setCarregarAgenda] = useState<boolean>(false);
     
     
     const carregarAgendamentos = async () => {
@@ -131,10 +131,6 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
           fetchEspecialidades(),
           fetchPrestadores(),
           fetchUnidades(),
-          // fetchClientes(),
-          //   fetchExpedientes(),
-          //   fetchProcedimentos(),
-          //   fetchConvenios(),
         ]);
 
         const params = new URLSearchParams(window.location.search);

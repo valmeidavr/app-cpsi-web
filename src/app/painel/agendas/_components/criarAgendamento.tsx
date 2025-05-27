@@ -1,11 +1,9 @@
 "use client";
-import {
-  createAgendaSchema,
-  updateAgendaSchema,
-} from "@/app/api/agendas/schema/formSchemaAgendas";
-import { Cliente, TipoCliente } from "@/app/types/Cliente";
+import { createAgendaSchema } from "@/app/api/agendas/schema/formSchemaAgendas";
 
-import { Procedimento } from "@/app/types/Procedimento";
+import { Convenio } from "@/app/types/Convenios";
+import { ValorProcedimento } from "@/app/types/ValorProcedimento"; // Importação correta
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -15,15 +13,20 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import {
   Popover,
   PopoverContent,
@@ -36,57 +39,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { toast } from "sonner";
-import { http } from "@/util/http";
-import { updateAgenda } from "@/app/api/agendas/action";
-import { cn } from "@/lib/utils";
 import { useAgenda } from "../AgendaContext";
-import { Convenio } from "@/app/types/Convenios";
+import { http } from "@/util/http";
+import { createAgenda } from "@/app/api/agendas/action";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
 import ConveniosCliente from "@/app/types/ConveniosCliente";
-import { ValorProcedimento } from "@/app/types/ValorProcedimento";
+import { Cliente, TipoCliente } from "@/app/types/Cliente";
 
-interface ModalAgendamentoProps {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  agendamentoSelecionado: any | null;
-  horaSelecionada: string | null;
+interface CriarAgendamentoProps {
+  isOpenModalCreate: boolean;
+  setIsOpenModalCreate: (open: boolean) => void;
   dataSelecionada: Date | null;
 }
 
-const ModalAgendamento = ({
-  open,
-  setOpen,
-  agendamentoSelecionado,
-  horaSelecionada,
+const CriarAgendamento = ({
+  isOpenModalCreate,
+  setIsOpenModalCreate,
   dataSelecionada,
-}: ModalAgendamentoProps) => {
+}: CriarAgendamentoProps) => {
   const { prestador, unidade, especialidade, carregarAgendamentos } =
     useAgenda();
-  const schema = updateAgendaSchema;
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
+  const form = useForm<z.infer<typeof createAgendaSchema>>({
+    resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
     defaultValues: {
       situacao: "AGENDADO",
       clientesId: 0,
       conveniosId: 0,
       procedimentosId: 0,
-      prestadoresId: prestador?.id ?? 0,
-      unidadesId: unidade?.id ?? 0,
-      especialidadesId: especialidade?.id ?? 0,
+      prestadoresId: 0,
+      unidadesId: 0,
+      especialidadesId: 0,
       dtagenda: "",
       horario: "",
       tipo: "PROCEDIMENTO",
@@ -94,25 +84,46 @@ const ModalAgendamento = ({
   });
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [procedimentos, setProcedimentos] = useState<ValorProcedimento[]>([]);
+  const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [loading, setLoading] = useState(false);
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
     null
   );
-  const [tipoClienteSelecionado, setTipoClienteSelecionada] =
-    useState<TipoCliente>();
-  const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio>();
+  const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
+  const [tipoClienteSelecionado, setTipoClienteSelecionada] =
+    useState<TipoCliente>(TipoCliente.NSOCIO);
+  const [convenioSelecionado, setConvenioSelecionada] = useState<
+    Convenio | undefined
+  >(undefined);
+
+  useEffect(() => {
+    form.reset({
+      ...form.getValues(),
+      prestadoresId: prestador?.id || 0,
+      unidadesId: unidade?.id || 0,
+      especialidadesId: especialidade?.id || 0,
+      dtagenda: dataSelecionada
+        ? new Date(
+            dataSelecionada.getTime() -
+              dataSelecionada.getTimezoneOffset() * 60000
+          ).toISOString()
+        : "",
+    });
+  }, [prestador, unidade, especialidade, dataSelecionada, form.reset]);
 
   useEffect(() => {
     fetchClientes();
-  }, [clienteSelecionado]);
+  }, []);
 
   useEffect(() => {
     if (convenioSelecionado && tipoClienteSelecionado) {
       fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
+    } else {
+      setProcedimentos([]);
+      form.setValue("procedimentosId", 0);
     }
   }, [tipoClienteSelecionado, convenioSelecionado]);
 
@@ -123,17 +134,30 @@ const ModalAgendamento = ({
 
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
-    const { data } = await http.get(
-      `http://localhost:3000/convenios-clientes?clienteId=${clienteId}`
-    );
-    const conveniosListRaw = data.data.map(
-      (item: ConveniosCliente) => item.convenios
-    );
-    const conveniosList = Array.from(
-      new Map(conveniosListRaw.map((c: Convenio) => [c.id, c])).values()
-    ) as Convenio[];
+    try {
+      const { data } = await http.get(
+        `http://localhost:3000/convenios-clientes?clienteId=${clienteId}`
+      );
+      const conveniosListRaw = data.data.map(
+        (item: ConveniosCliente) => item.convenios
+      );
+      const conveniosList = Array.from(
+        new Map(conveniosListRaw.map((c: Convenio) => [c.id, c])).values()
+      ) as Convenio[];
 
-    setConvenios(conveniosList);
+      setConvenios(conveniosList);
+      setConvenioSelecionada(undefined);
+      form.setValue("conveniosId", 0);
+      setProcedimentos([]);
+      form.setValue("procedimentosId", 0);
+    } catch (error) {
+      toast.error("Erro ao carregar convênios para este cliente.");
+      setConvenios([]);
+      setConvenioSelecionada(undefined);
+      form.setValue("conveniosId", 0);
+      setProcedimentos([]);
+      form.setValue("procedimentosId", 0);
+    }
   };
 
   const fetchProcedimentos = async (
@@ -146,58 +170,124 @@ const ModalAgendamento = ({
       );
       setProcedimentos(data);
     } catch (e) {
-      toast.error("Nenhum procedimento encontrado");
+      toast.error(
+        "Nenhum procedimento encontrado para este convênio/tipo de cliente."
+      );
+      setProcedimentos([]); 
     }
   };
-
-  useEffect(() => {
-    if (dataSelecionada && horaSelecionada) {
-      const [h, m] = horaSelecionada.split(":").map(Number);
-      const localDate = new Date(
-        dataSelecionada.getFullYear(),
-        dataSelecionada.getMonth(),
-        dataSelecionada.getDate(),
-        h,
-        m
-      );
-      const isoDate = new Date(
-        localDate.getTime() - localDate.getTimezoneOffset() * 60000
-      ).toISOString();
-      form.setValue("dtagenda", isoDate);
-      form.setValue("horario", horaSelecionada);
-    }
-
-    if (prestador) form.setValue("prestadoresId", prestador.id);
-    if (unidade) form.setValue("unidadesId", unidade.id);
-    if (especialidade) form.setValue("especialidadesId", especialidade.id);
-  }, [dataSelecionada, horaSelecionada, prestador, unidade, especialidade]);
-
   const onSubmit = async (values: any) => {
     setLoading(true);
+
     try {
-      await updateAgenda(agendamentoSelecionado.dadosAgendamento.id, values);
+      if (!unidade?.id || !prestador?.id || !especialidade?.id) {
+        toast.error(
+          "Unidade, Prestador e Especialidade devem ser selecionados na tela principal antes de agendar."
+        );
+        setLoading(false);
+        return;
+      }
+      if (!dataSelecionada || !values.horario) {
+        toast.error(
+          "Data e horário são obrigatórios para criar o agendamento."
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (!values.clientesId || values.clientesId === 0) {
+        toast.error("O Cliente é obrigatório.");
+        setLoading(false);
+        return;
+      }
+      if (!values.conveniosId || values.conveniosId === 0) {
+        toast.error("O Convênio é obrigatório.");
+        setLoading(false);
+        return;
+      }
+      if (!values.procedimentosId || values.procedimentosId === 0) {
+        toast.error("O Procedimento é obrigatório.");
+        setLoading(false);
+        return;
+      }
+      const [horas, minutos] = values.horario.split(":").map(Number);
+
+      const ano = dataSelecionada.getFullYear();
+      const mes = (dataSelecionada.getMonth() + 1).toString().padStart(2, "0"); 
+      const dia = dataSelecionada.getDate().toString().padStart(2, "0");
+      const horasFormatadas = horas.toString().padStart(2, "0");
+      const minutosFormatados = minutos.toString().padStart(2, "0");
+      values.dtagenda = `${ano}-${mes}-${dia}T${horasFormatadas}:${minutosFormatados}:00.000Z`;
+  
+
+      values.prestadoresId = prestador?.id;
+      values.unidadesId = unidade?.id;
+      values.especialidadesId = especialidade?.id;
+      delete values.horario;
+
+      await createAgenda(values);
       toast.success("Agendamento criado com sucesso!");
-      await carregarAgendamentos();
-      setOpen(false);
-    } catch (err) {
-      toast.error("Erro ao salvar agendamento");
+      await carregarAgendamentos(); 
+    } catch (e: any) {
+      console.error("Erro ao salvar agendamento:", e);
+      toast.error(
+        `Erro ao salvar agendamento: ${
+          e.message || "Verifique os dados e tente novamente."
+        }`
+      );
     } finally {
       setLoading(false);
+      setIsOpenModalCreate(false);
+      form.reset(); 
       setClienteSelecionado(null);
       setConvenioSelecionada(undefined);
       setTipoClienteSelecionada(TipoCliente.NSOCIO);
+      setConvenios([]);
+      setProcedimentos([]);
+      setHoraSelecionada(null);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpenModalCreate} onOpenChange={setIsOpenModalCreate}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Atualizar</DialogTitle>
+          <DialogTitle>Criar Encaixe</DialogTitle>{" "}
         </DialogHeader>
         <Form {...form}>
           <div className="flex flex-col">
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+              <div>
+                <FormField
+                  control={form.control}
+                  name="horario"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Horário *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          {...field}
+                          value={field.value ?? ""}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            setHoraSelecionada(e.target.value);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage>
+                        {form.formState.errors.horario?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+
+               
+                <input type="hidden" {...form.register("unidadesId")} />
+                <input type="hidden" {...form.register("prestadoresId")} />
+                <input type="hidden" {...form.register("especialidadesId")} />
+              </div>
+
               <FormField
                 control={form.control}
                 name="clientesId"
@@ -219,8 +309,9 @@ const ModalAgendamento = ({
                             )}
                           >
                             {field.value
-                              ? clientes.find((item) => +item.id == field.value)
-                                  ?.nome
+                              ? clientes.find(
+                                  (item) => +item.id === field.value
+                                )?.nome
                               : "Selecione o cliente"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
@@ -249,7 +340,7 @@ const ModalAgendamento = ({
                                   <Check
                                     className={cn(
                                       "ml-auto",
-                                      +item.id == field.value
+                                      +item.id === field.value
                                         ? "opacity-100"
                                         : "opacity-0"
                                     )}
@@ -267,6 +358,7 @@ const ModalAgendamento = ({
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="conveniosId"
@@ -274,7 +366,7 @@ const ModalAgendamento = ({
                   <FormItem>
                     <FormLabel>Convênios *</FormLabel>
                     <Select
-                      disabled={!clienteSelecionado}
+                      disabled={!clienteSelecionado || convenios.length === 0}
                       onValueChange={(value) => {
                         field.onChange(Number(value));
                         const selectedConvenio = convenios.find(
@@ -288,7 +380,7 @@ const ModalAgendamento = ({
                     >
                       <FormControl
                         className={
-                          form.formState.errors.situacao
+                          form.formState.errors.conveniosId
                             ? "border-red-500"
                             : "border-gray-300"
                         }
@@ -301,7 +393,6 @@ const ModalAgendamento = ({
                         <SelectItem value="0" disabled>
                           Selecione
                         </SelectItem>
-
                         {convenios.map((item) => {
                           return (
                             <SelectItem key={item.id} value={String(item.id)}>
@@ -347,6 +438,8 @@ const ModalAgendamento = ({
                   </SelectContent>
                 </Select>
               </FormItem>
+
+              {/* Input hidden para dtagenda, já que ele é preenchido no onSubmit */}
               <input type="hidden" {...form.register("dtagenda")} />
 
               <FormField
@@ -368,11 +461,17 @@ const ModalAgendamento = ({
                               "w-full justify-between",
                               !field.value && "text-muted-foreground"
                             )}
+                            // Desabilita se não há convênio ou tipo de cliente selecionado, ou nenhum procedimento encontrado
+                            disabled={
+                              !convenioSelecionado ||
+                              !tipoClienteSelecionado ||
+                              procedimentos.length === 0
+                            }
                           >
                             {field.value
                               ? procedimentos.find(
-                                  (p) => p.procedimento.id == field.value
-                                )?.procedimento.nome
+                                  (p) => p.procedimento.id === field.value
+                                )?.procedimento.nome // CORRIGIDO
                               : "Selecione procedimento"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
@@ -386,29 +485,33 @@ const ModalAgendamento = ({
                               Nenhum procedimento encontrado.
                             </CommandEmpty>
                             <CommandGroup className="w-full p-0">
-                              {procedimentos.map((item) => (
-                                <CommandItem
-                                  value={item.procedimento.id.toString()}
-                                  key={item.procedimento.id}
-                                  onSelect={() => {
-                                    form.setValue(
-                                      "procedimentosId",
-                                      item.procedimento.id
-                                    );
-                                    setOpenSelectProcedimentos(false);
-                                  }}
-                                >
-                                  {item.procedimento.nome}
-                                  <Check
-                                    className={cn(
-                                      "ml-auto",
-                                      item.procedimento.id == field.value
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
+                              {procedimentos.map(
+                                (
+                                  item // 'item' é um ValorProcedimento
+                                ) => (
+                                  <CommandItem
+                                    value={item.procedimento.id.toString()}
+                                    key={item.procedimento.id}
+                                    onSelect={() => {
+                                      form.setValue(
+                                        "procedimentosId",
+                                        item.procedimento.id // CORRIGIDO: usa o ID do procedimento aninhado
+                                      );
+                                      setOpenSelectProcedimentos(false);
+                                    }}
+                                  >
+                                    {item.procedimento.nome}
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        item.procedimento.id === field.value // CORRIGIDO: compara com o ID do procedimento aninhado
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                )
+                              )}
                             </CommandGroup>
                           </CommandList>
                         </Command>
@@ -420,10 +523,11 @@ const ModalAgendamento = ({
                   </FormItem>
                 )}
               />
+
               <DialogFooter>
                 <Button
                   variant="secondary"
-                  onClick={() => setOpen(false)}
+                  onClick={() => setIsOpenModalCreate(false)}
                   disabled={loading}
                 >
                   Cancelar
@@ -440,4 +544,4 @@ const ModalAgendamento = ({
   );
 };
 
-export default ModalAgendamento;
+export default CriarAgendamento;

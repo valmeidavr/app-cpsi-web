@@ -70,7 +70,6 @@ export default function EditarUsuario() {
           );
 
           setSelectedGroups(gruposSelecionados);
-          console.log("Data:", data);
           if (!isFormReset) {
             form.reset({
               nome: data.nome,
@@ -135,7 +134,6 @@ export default function EditarUsuario() {
     setLoading(true);
     try {
       if (!userId) redirect("/painel/usuarios");
-      console.log("Values:", values);
       await updateUsuario(userId, values);
       const queryParams = new URLSearchParams();
 

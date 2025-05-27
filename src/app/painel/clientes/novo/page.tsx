@@ -62,6 +62,7 @@ import { RadioGroup } from "@radix-ui/react-dropdown-menu";
 import { RadioGroupItem } from "@radix-ui/react-radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { TipoCliente } from "@/app/types/Cliente";
 
 // Mockup de opções de sexo
 const sexOptions = [
@@ -108,6 +109,7 @@ export default function CustomerRegistrationForm() {
       bairro: "",
       cidade: "",
       uf: "",
+      tipo: TipoCliente.SOCIO,
       telefone1: "",
       telefone2: "",
       dtnascimento: "",
@@ -384,6 +386,50 @@ export default function CustomerRegistrationForm() {
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Cliente *</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(Number(value));
+                    }}
+                    value={String(field.value)}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="0" disabled>
+                        Selecione
+                      </SelectItem>
+
+                      {Object.values(TipoCliente).map((item) => {
+                        return (
+                          <SelectItem key={item} value={String(item)}>
+                            {item}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage>
+                    {form.formState.errors.tipo?.message}
+                  </FormMessage>
                 </FormItem>
               )}
             />

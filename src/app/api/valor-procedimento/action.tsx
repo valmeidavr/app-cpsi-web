@@ -35,8 +35,6 @@ export type UpdateValorProcedimentoDTO = z.infer<
 export async function createValorProcedimento(
   body: CreateValorProcedimentoDTO
 ) {
-
-  console.log("Body:", body)
   try {
     await http.post("http://localhost:3000/valores-procedimentos", body);
     revalidatePath("/painel/valores_procedimentos");

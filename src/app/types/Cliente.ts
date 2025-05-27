@@ -1,8 +1,13 @@
-
-
 export enum Status {
   "Ativo",
   "Inativo",
+}
+
+export enum TipoCliente {
+  SOCIO = "SOCIO",
+  NSOCIO = "NSOCIO",
+  PARCEIRO = "PARCEIRO",
+  FUNCIONARIO = "FUNCIONARIO",
 }
 
 type Convenio = {
@@ -10,6 +15,8 @@ type Convenio = {
   conveniosId: number;
   desconto: number;
   clientesId: number;
+  clientes: Cliente[];
+  convenios: Convenio[];
 };
 export type Cliente = {
   id: string;
@@ -17,6 +24,7 @@ export type Cliente = {
   email: string;
   dtnascimento?: string;
   sexo: string;
+  tipo: TipoCliente;
   cpf: string;
   cep?: string | undefined;
   logradouro?: string;
@@ -34,7 +42,7 @@ export type Cliente = {
 
 export type ClientePaginacao = {
   data: Cliente[];
-  total: number = 10;
-  page: number = 1;
+  total: number;
+  page: number;
   totalPages: number;
 };

@@ -28,7 +28,7 @@ export async function createLancamento(body: CreateLancamentoDTO) {
       if (isValid(parsedDate)) {
         body.data_lancamento = format(parsedDate, "yyyy-MM-dd");
       } else {
-        console.error("Data de nascimento inválida:", body.data_lancamento);
+        console.error("Data de lançamento inválida:", body.data_lancamento);
       }
     }
     const { data } = await http.post("http://localhost:3000/lancamentos", body);

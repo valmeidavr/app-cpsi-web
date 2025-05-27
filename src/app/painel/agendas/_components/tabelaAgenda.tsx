@@ -49,6 +49,7 @@ import { z } from "zod";
 import { statusItems } from "../_helpers/statusItem";
 import { useAgenda } from "../AgendaContext";
 import ModalAgendamento from "./modalAgendamento";
+import CriarAgendamento from "./criarAgendamento";
 
 const TabelaAgenda = () => {
   const {
@@ -66,19 +67,14 @@ const TabelaAgenda = () => {
 
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
-  const [agendamenetoSelecionado, setAgendamentoSelecionado] = useState<
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<
     any | null
   >(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
-  // Estados que controlam o modal
-  const [method, setMethod] = useState<"POST" | "PATCH">("POST");
+  const [isOpenModalCreate, setIsOpenModalCreate] = useState<boolean>(false);
 
-
-  const schema = method === "POST" ? createAgendaSchema : updateAgendaSchema;
-  const form = useForm<
-    z.infer<typeof createAgendaSchema | typeof updateAgendaSchema>
-  >({
-    resolver: zodResolver(schema),
+  const form = useForm<z.infer<typeof createAgendaSchema>>({
+    resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
     defaultValues: {
       situacao: "AGENDADO",
@@ -94,27 +90,25 @@ const TabelaAgenda = () => {
     },
   });
 
-
   const abrirModalAgendamento = async (hora: string, data: Date) => {
     setHoraSelecionada(hora);
     setDataSelecionada(data);
-    if (method == "PATCH")
-      try {
-        if (!agendamenetoSelecionado)
-          throw new Error("agendamento não selecionado");
-        const data = await getAgendaById(
-          agendamenetoSelecionado.dadosAgendamento.id.toString()
-        );
-        form.reset({
-          conveniosId: data.conveniosId,
-          clientesId: data.clientesId,
-          procedimentosId: data.procedimentosId,
-          situacao: "AGENDADO",
-        });
-      } catch (error) {
-        console.error("Erro ao carregar dados do agendamento:", error);
-      } finally {
-      }
+    try {
+      if (!agendamentoSelecionado)
+        throw new Error("agendamento não selecionado");
+      const data = await getAgendaById(
+        agendamentoSelecionado.dadosAgendamento.id.toString()
+      );
+      form.reset({
+        conveniosId: data.conveniosId,
+        clientesId: data.clientesId,
+        procedimentosId: data.procedimentosId,
+        situacao: "AGENDADO",
+      });
+    } catch (error) {
+      console.error("Erro ao carregar dados do agendamento:", error);
+    } finally {
+    }
     setModalAgendamentoOpen(true);
   };
 
@@ -156,6 +150,7 @@ const TabelaAgenda = () => {
   const excluirAgendamento = async (agendaId: number) => {
     try {
       setLoading(true);
+      console.log(agendaId)
       await finalizarAgenda(agendaId.toString());
       toast.error(
         `Agendamento do dia ${
@@ -170,7 +165,7 @@ const TabelaAgenda = () => {
       setIsDeleteModalOpen(false);
     }
   };
-  //FUnção de alterar status do agendamento
+
   const handleStatusAgenda = async (agendaId: number, situacao: string) => {
     try {
       await updateStatusAgenda(agendaId.toString(), situacao);
@@ -255,7 +250,6 @@ const TabelaAgenda = () => {
                           <DropdownMenuItem
                             onSelect={() => {
                               setAgendamentoSelecionado(agenda);
-                              setMethod("PATCH");
                               abrirModalAgendamento(agenda.hora, date);
                             }}
                           >
@@ -295,7 +289,6 @@ const TabelaAgenda = () => {
 
                             <DropdownMenuItem
                               onSelect={() => {
-                                setMethod("PATCH");
                                 abrirModalAgendamento(agenda.hora, date);
                                 setAgendamentoSelecionado(agenda);
                               }}
@@ -325,24 +318,32 @@ const TabelaAgenda = () => {
           </TableBody>
         )}
       </Table>
-      <Button
-        variant={"default"}
-        onClick={() => {
-          setMethod("POST"), setModalAgendamentoOpen(true);
-        }}
-      >
-        Criar encaixa
-      </Button>
-
+      {date && (
+        <Button
+          className="mt-3"
+          variant={"default"}
+          onClick={() => {
+            setDataSelecionada(date);
+            setIsOpenModalCreate(true);
+          }}
+        >
+          Criar encaixa
+        </Button>
+      )}
       <ModalAgendamento
         open={modalAgendamentoOpen}
         setOpen={setModalAgendamentoOpen}
-        method={method}
-        agendamentoSelecionado={agendamenetoSelecionado}
+        agendamentoSelecionado={agendamentoSelecionado}
         horaSelecionada={horaSelecionada}
         dataSelecionada={dataSelecionada}
       />
-      
+
+      <CriarAgendamento
+        isOpenModalCreate={isOpenModalCreate}
+        setIsOpenModalCreate={setIsOpenModalCreate}
+        dataSelecionada={dataSelecionada}
+      />
+
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -352,16 +353,17 @@ const TabelaAgenda = () => {
           {dataSelecionada && format(dataSelecionada!, "dd/MM/yyyy")} no horário{" "}
           {horaSelecionada}
           <DialogFooter>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                excluirAgendamento(agendamenetoSelecionado.dadosAgendamento.id)
-              }
-              disabled={loading}
-            >
+            <Button variant="secondary" disabled={loading}>
               Cancelar
             </Button>
-            <Button variant="destructive" type="submit" disabled={loading}>
+            <Button
+              variant="destructive"
+              type="submit"
+              disabled={loading}
+              onClick={() =>
+                excluirAgendamento(agendamentoSelecionado.dadosAgendamento.id)
+              }
+            >
               Excluir
             </Button>
           </DialogFooter>

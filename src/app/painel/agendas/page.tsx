@@ -4,11 +4,8 @@
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 
-//Zod
-
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-//Components
+
 import {
   FormControl,
   FormField,
@@ -45,8 +42,6 @@ export default function Agendas() {
     setDate,
     carregarAgendamentosGeral,
     carregandoDadosAgenda,
-    loading,
-    setLoading,
     agendamentosGeral,
     prestadores,
     especialidades,
@@ -55,11 +50,10 @@ export default function Agendas() {
 
   useEffect(() => {
     if (unidade && prestador && especialidade) {
-      carregarAgendamentosGeral(); // carrega todos para o calendário
+      carregarAgendamentosGeral();
     }
   }, [unidade, prestador, especialidade]);
 
-  //Validação dos campos do formulário
   const form = useForm({
     resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
@@ -70,7 +64,7 @@ export default function Agendas() {
     },
   });
 
-  //Função de selecionar data quando clicar no caledário
+
   const handleDateClick = (date: Date | undefined) => {
     setDate(date);
   };
@@ -78,6 +72,32 @@ export default function Agendas() {
   const normalizarData = (d: Date) =>
     new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
+  const agendamentosPorDia = new Map<string, Agenda[]>();
+
+  agendamentosGeral.forEach((agenda) => {
+    const data = normalizarData(new Date(agenda.dtagenda));
+    const chave = data.getTime().toString(); 
+
+    if (!agendamentosPorDia.has(chave)) {
+      agendamentosPorDia.set(chave, []);
+    }
+
+    agendamentosPorDia.get(chave)!.push(agenda);
+  });
+
+  const diasVerde: Date[] = [];
+  const diasVermelho: Date[] = [];
+
+  agendamentosPorDia.forEach((agendas, chave) => {
+    const data = new Date(Number(chave));
+    const temLivre = agendas.some((a) => a.situacao === "LIVRE");
+
+    if (temLivre) {
+      diasVerde.push(data);
+    } else {
+      diasVermelho.push(data);
+    }
+  });
   return (
     <div className="container mx-auto">
       <div>
@@ -251,46 +271,10 @@ export default function Agendas() {
                         selected={date}
                         onSelect={handleDateClick}
                         locale={ptBR}
-                        modifiers={(() => {
-                          const agendamentosPorDia = new Map<
-                            string,
-                            Agenda[]
-                          >();
-
-                          agendamentosGeral.forEach((agenda) => {
-                            const data = normalizarData(
-                              new Date(agenda.dtagenda)
-                            );
-                            const chave = data.getTime().toString(); // chave numérica (timestamp)
-
-                            if (!agendamentosPorDia.has(chave)) {
-                              agendamentosPorDia.set(chave, []);
-                            }
-
-                            agendamentosPorDia.get(chave)!.push(agenda);
-                          });
-
-                          const diasVerde: Date[] = [];
-                          const diasVermelho: Date[] = [];
-
-                          agendamentosPorDia.forEach((agendas, chave) => {
-                            const data = new Date(Number(chave));
-                            const temLivre = agendas.some(
-                              (a) => a.situacao === "LIVRE"
-                            );
-
-                            if (temLivre) {
-                              diasVerde.push(data);
-                            } else {
-                              diasVermelho.push(data);
-                            }
-                          });
-
-                          return {
-                            verde: diasVerde,
-                            vermelho: diasVermelho,
-                          };
-                        })()}
+                        modifiers={{
+                          verde: diasVerde,
+                          vermelho: diasVermelho,
+                        }}
                         modifiersClassNames={{
                           verde:
                             "bg-green-200 text-green-800 font-semibold ring-2 ring-green-400",
@@ -300,7 +284,7 @@ export default function Agendas() {
                             "!ring-2 !ring-offset-2 !ring-blue-500 !bg-transparent",
                         }}
                         styles={{
-                          root: { width: "100%" }, // shadcn usa isso internamente
+                          root: { width: "100%" },
                           month: { width: "100%" },
                           table: { width: "100%" },
                           head_cell: {
