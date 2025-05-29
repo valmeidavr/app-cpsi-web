@@ -339,7 +339,9 @@ export default function Lancamentos() {
                     </TableCell>
 
                     <TableCell>
-                      <Badge variant="outline">{lancamento.caixa.nome}</Badge>
+                      <Badge variant="outline">
+                        {lancamento.caixa ? lancamento.caixa.nome : "N/A"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       {lancamento.tipo === "ENTRADA" && (
@@ -348,8 +350,6 @@ export default function Lancamentos() {
                         </Badge>
                       )}
                     </TableCell>
-
-                    {/* Coluna SAÍDA */}
                     <TableCell>
                       {lancamento.tipo === "SAIDA" && (
                         <Badge className="bg-destructive">
@@ -360,7 +360,9 @@ export default function Lancamentos() {
 
                     <TableCell>
                       <Badge variant="default">
-                        <div>{lancamento.plano_conta.nome}</div>
+                        <div>
+                          {lancamento.plano_conta? lancamento.plano_conta.nome : "N/A"}
+                        </div>
                       </Badge>
                     </TableCell>
                     <TableCell>

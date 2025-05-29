@@ -5,15 +5,9 @@
     "href": "#",
     "subItems": [
       {
-        "icon": "BoxIcon",
-        "label": "Procedimentos",
-        "href": "/painel/procedimentos",
-        "requiredGroups": ["ADMIN", "GESTOR"]
-      },
-      {
-        "icon": "Calendar",
-        "label": "Agendamentos",
-        "href": "/painel/agendas",
+        "icon": "HandshakeIcon",
+        "label": "Convênios",
+        "href": "/painel/convenios",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
@@ -23,21 +17,27 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "HandshakeIcon",
-        "label": "Convênios",
-        "href": "/painel/convenios",
-        "requiredGroups": ["ADMIN", "GESTOR"]
-      },
-      {
         "icon": "BookXIcon",
         "label": "Especialidades",
         "href": "/painel/especialidades",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "GraduationCap",
-        "label": "Turmas",
-        "href": "/painel/turmas",
+        "icon": "BoxIcon",
+        "label": "Procedimentos",
+        "href": "/painel/procedimentos",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "HousePlus",
+        "label": "Unidades",
+        "href": "/painel/unidades",
+        "requiredGroups": ["ADMIN", "GESTOR"]
+      },
+      {
+        "icon": "Wrench",
+        "label": "Prestadores",
+        "href": "/painel/prestadores",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
@@ -52,18 +52,23 @@
         "href": "/painel/expedientes",
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
-
       {
-        "icon": "Wrench",
-        "label": "Prestadores",
-        "href": "/painel/prestadores",
+        "icon": "GraduationCap",
+        "label": "Turmas",
+        "href": "/painel/turmas",
         "requiredGroups": ["ADMIN", "GESTOR"]
-      },
-
+      }
+    ]
+  },
+  {
+    "icon": "Calendar",
+    "label": "Agenda",
+    "href": "#",
+    "subItems": [
       {
-        "icon": "HousePlus",
-        "label": "Unidades",
-        "href": "/painel/unidades",
+        "icon": "Calendar",
+        "label": "Agendamentos",
+        "href": "/painel/agendas",
         "requiredGroups": ["ADMIN", "GESTOR"]
       }
     ]
@@ -98,7 +103,7 @@
         "requiredGroups": ["ADMIN", "GESTOR"]
       },
       {
-        "icon": "Table",
+        "icon": "DollarSign",
         "label": "Valores procedimentos",
         "href": "/painel/valores_procedimentos",
         "requiredGroups": ["ADMIN", "GESTOR"]

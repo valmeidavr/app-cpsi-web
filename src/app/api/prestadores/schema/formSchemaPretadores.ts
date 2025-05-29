@@ -4,9 +4,7 @@ export const createPrestadorSchema = z.object({
   nome: z
     .string()
     .min(3, { message: "O nome deve ter pelo menos 3 caracteres" })
-    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, {
-      message: "O nome não pode conter números ou símbolos",
-    }),
+,
 
   rg: z
     .string()

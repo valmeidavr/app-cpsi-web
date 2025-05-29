@@ -1,9 +1,8 @@
 "use client";
 
 //React
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
 //Zod
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,9 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUnidades } from "@/app/api/unidades/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Especialidade } from "@/app/types/Especialidade";
@@ -457,22 +453,21 @@ export default function ExpedientePage() {
                   type="submit"
                   disabled={loading}
                   className="flex items-center gap-2"
+                  asChild
                 >
                   {loading ? (
-                    <>
+                    <span>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Salvando...
-                    </>
+                    </span>
                   ) : (
-                    <>
-                      <Button
-                        type="submit"
-                        variant="default"
-                        disabled={loading || !alocacaoId || alocacaoId === 0}
-                      >
-                        <SaveIcon /> Adicionar
-                      </Button>
-                    </>
+                    <Button
+                      type="submit"
+                      variant="default"
+                      disabled={loading || !alocacaoId || alocacaoId === 0}
+                    >
+                      <SaveIcon /> Adicionar
+                    </Button>
                   )}
                 </Button>
               </form>

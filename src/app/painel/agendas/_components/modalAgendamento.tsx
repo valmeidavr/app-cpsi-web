@@ -103,6 +103,8 @@ const ModalAgendamento = ({
   const [tipoClienteSelecionado, setTipoClienteSelecionada] =
     useState<TipoCliente>();
   const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio>();
+  const [procedimentoSelecionado, setProcedimentoSelecionado] =
+    useState<ValorProcedimento>();
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
 
@@ -175,7 +177,13 @@ const ModalAgendamento = ({
   const onSubmit = async (values: any) => {
     setLoading(true);
     try {
-      await updateAgenda(agendamentoSelecionado.dadosAgendamento.id, values);
+      if (!procedimentoSelecionado)
+        return toast.error("Selecione um procedimento válido");
+      await updateAgenda(
+        agendamentoSelecionado.dadosAgendamento.id,
+        values,
+        +procedimentoSelecionado.valor
+      );
       toast.success("Agendamento criado com sucesso!");
       await carregarAgendamentos();
       setOpen(false);
@@ -185,7 +193,11 @@ const ModalAgendamento = ({
       setLoading(false);
       setClienteSelecionado(null);
       setConvenioSelecionada(undefined);
-      setTipoClienteSelecionada(TipoCliente.NSOCIO);
+      setConvenioSelecionada(undefined);
+      form.setValue("conveniosId", 0);
+      setProcedimentos([]);
+      form.setValue("procedimentosId", 0);
+      setTipoClienteSelecionada(undefined);
     }
   };
 
@@ -369,11 +381,22 @@ const ModalAgendamento = ({
                               !field.value && "text-muted-foreground"
                             )}
                           >
-                            {field.value
-                              ? procedimentos.find(
+                            {(() => {
+                              if (field.value) {
+                                const selectedItem = procedimentos.find(
                                   (p) => p.procedimento.id == field.value
-                                )?.procedimento.nome
-                              : "Selecione procedimento"}
+                                );
+                                if (selectedItem) {
+                                  return `${
+                                    selectedItem.procedimento.nome
+                                  } -  R$${Number(
+                                    selectedItem.valor
+                                  ).toFixed(2)}`;
+                                }
+                              } else {
+                                return "Selecione procedimento";
+                              }
+                            })()}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -388,20 +411,26 @@ const ModalAgendamento = ({
                             <CommandGroup className="w-full p-0">
                               {procedimentos.map((item) => (
                                 <CommandItem
-                                  value={item.procedimento.id.toString()}
+                                  value={item.procedimento.nome}
                                   key={item.procedimento.id}
+                                  className="flex items-center justify-between"
                                   onSelect={() => {
                                     form.setValue(
                                       "procedimentosId",
                                       item.procedimento.id
                                     );
+                                    setProcedimentoSelecionado(item);
+
                                     setOpenSelectProcedimentos(false);
                                   }}
                                 >
-                                  {item.procedimento.nome}
+                                  <span>{item.procedimento.nome}</span>
+                                  <span className="mx-6">
+                                    R${Number(item.valor).toFixed(2)}
+                                  </span>
                                   <Check
                                     className={cn(
-                                      "ml-auto",
+                                      "ml-auto h-4 w-4",
                                       item.procedimento.id == field.value
                                         ? "opacity-100"
                                         : "opacity-0"

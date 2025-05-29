@@ -31,8 +31,8 @@ export async function createLancamento(body: CreateLancamentoDTO) {
         console.error("Data de lançamento inválida:", body.data_lancamento);
       }
     }
-    const { data } = await http.post("http://localhost:3000/lancamentos", body);
-    // revalidatePath("/painel/lancamentos");
+    await http.post("http://localhost:3000/lancamentos", body);
+    revalidatePath("/painel/lancamentos");
   } catch (error: any) {
     console.error("Erro ao criar lancamento:", error);
   }

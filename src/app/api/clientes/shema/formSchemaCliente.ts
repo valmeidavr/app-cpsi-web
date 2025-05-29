@@ -5,11 +5,7 @@ import { TipoCliente } from "@/app/types/Cliente";
 export const createClienteSchema = z.object({
   nome: z
     .string()
-    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" })
-    .regex(/^[a-zA-ZÀ-ÿ\s]+$/, {
-      message: "O nome não pode conter números ou símbolos",
-    }),
-
+    .min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
   email: z
     .string()
     .min(1, { message: "O campo é obrigatório" })

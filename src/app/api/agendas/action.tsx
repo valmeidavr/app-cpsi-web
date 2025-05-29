@@ -71,7 +71,12 @@ export async function getAgendaById(id: string) {
   return data;
 }
 
-export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
+export async function updateAgenda(
+  id: string,
+  body: UpdateAgendaDTO,
+  valor?: number
+) {
+
   try {
     if (body.dtagenda) {
       const dtagenda = parse(body.dtagenda, "dd/MM/yyyy", new Date());
@@ -85,9 +90,20 @@ export async function updateAgenda(id: string, body: UpdateAgendaDTO) {
     const token = cookiesStore.get("accessToken")?.value;
     const payload = getPayload(token);
     const { horario, ...payloadUpdate } = body;
+    console.log({
+      valor: valor,
+      descricao: `Agendamento ${agendamento.dtagenda}`,
+      data_lancamento: new Date().toISOString(),
+      tipo: "ENTRADA",
+      clientes_Id: agendamento.clientesId,
+      forma_pagamento: "DINHEIRO",
+      status_pagamento: "PENDENTE",
+      agendas_id: agendamento.id,
+      usuario_id: payload?.usuario?.id,
+    });
     if (body.situacao == "AGENDADO") {
       await createLancamento({
-        valor: 0,
+        valor: valor ? valor : 0,
         descricao: `Agendamento ${agendamento.dtagenda}`,
         data_lancamento: new Date().toString(),
         tipo: "ENTRADA",
@@ -157,7 +173,7 @@ export async function finalizarAgenda(id: string) {
       procedimentosId: null,
     };
     await http.patch(`http://localhost:3000/agendas/${id}`, payload);
-    console.log('foi')
+    console.log("foi");
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro na requisição:", error);
