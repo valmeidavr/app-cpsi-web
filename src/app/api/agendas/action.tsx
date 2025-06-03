@@ -21,7 +21,7 @@ export async function getAgendas(
   date?: Date
 ) {
   const dateString = date ? date.toISOString().split("T")[0] : undefined;
-  const { data } = await http.get("http://localhost:3000/agendas", {
+  const { data } = await http.get("https://api-cpsi.aapvr.com.br//agendas", {
     params: { page, limit, search, date },
   });
   return data;
@@ -40,7 +40,7 @@ export async function createAgenda(
       }
     }
     const agendamento: Agenda = await http.post(
-      "http://localhost:3000/agendas",
+      "https://api-cpsi.aapvr.com.br//agendas",
       payloadCreate
     );
     const { cookies } = require("next/headers");
@@ -66,7 +66,7 @@ export async function createAgenda(
 }
 
 export async function getAgendaById(id: string) {
-  const { data } = await http.get(`http://localhost:3000/agendas/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//agendas/${id}`);
 
   return data;
 }
@@ -115,7 +115,7 @@ export async function updateAgenda(
       });
     }
 
-    await http.patch(`http://localhost:3000/agendas/${id}`, payloadUpdate);
+    await http.patch(`https://api-cpsi.aapvr.com.br//agendas/${id}`, payloadUpdate);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
     console.error("Erro no update:", error);
@@ -128,7 +128,7 @@ export async function updateAgenda(
 
 export async function updateStatusAgenda(id: string, situacao: string) {
   try {
-    await http.patch(`http://localhost:3000/agendas/${id}`, {
+    await http.patch(`https://api-cpsi.aapvr.com.br//agendas/${id}`, {
       situacao: situacao,
     });
     const agendamento = await getAgendaById(id);
@@ -172,7 +172,7 @@ export async function finalizarAgenda(id: string) {
       conveniosId: null,
       procedimentosId: null,
     };
-    await http.patch(`http://localhost:3000/agendas/${id}`, payload);
+    await http.patch(`https://api-cpsi.aapvr.com.br//agendas/${id}`, payload);
     console.log("foi");
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {

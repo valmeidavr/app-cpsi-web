@@ -18,7 +18,7 @@ export async function getPrestadors(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("http://localhost:3000/prestadores", {
+  const { data } = await http.get("https://api-cpsi.aapvr.com.br//prestadores", {
     params: { page, limit, search },
   });
   return data;
@@ -52,7 +52,7 @@ export async function createPrestador(body: CreatePrestadorDTO) {
   body.rg = limparRG(body.rg);
 ;
   try {
-    const { data } = await http.post(`http://localhost:3000/prestadores`, body);
+    const { data } = await http.post(`https://api-cpsi.aapvr.com.br//prestadores`, body);
 
 
     revalidatePath("/painel/prestadores");
@@ -62,7 +62,7 @@ export async function createPrestador(body: CreatePrestadorDTO) {
 }
 
 export async function getPrestadorById(id: string) {
-  const { data } = await http.get(`http://localhost:3000/prestadores/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//prestadores/${id}`);
   return data;
 }
 
@@ -95,7 +95,7 @@ export async function updatePrestador(id: string, body: UpdatePrestadorDTO) {
 
   try {
     const { data } = await http.patch(
-      `http://localhost:3000/prestadores/${id}`,
+      `https://api-cpsi.aapvr.com.br//prestadores/${id}`,
       body
     );
     revalidatePath("painel/prestadores");

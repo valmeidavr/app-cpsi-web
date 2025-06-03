@@ -16,7 +16,7 @@ export async function getExpedientes(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("http://localhost:3000/expedientes", {
+  const { data } = await http.get("https://api-cpsi.aapvr.com.br//expedientes", {
     params: { page, limit, search },
   });
   return data;
@@ -39,7 +39,7 @@ export async function createExpediente(body: CreateExpedienteDTO) {
         body.dtfinal = format(dtfinal, "yyyy-MM-dd");
       }
     }
-    await http.post("http://localhost:3000/expedientes", body);
+    await http.post("https://api-cpsi.aapvr.com.br//expedientes", body);
     revalidatePath("/painel/expedientes");
   } catch (error: any) {
     console.error("Erro ao criar expediente:", error.message);
@@ -47,7 +47,7 @@ export async function createExpediente(body: CreateExpedienteDTO) {
 }
 
 export async function getExpedienteById(id: string) {
-  const { data } = await http.get(`http://localhost:3000/expedientes/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//expedientes/${id}`);
 
   return data;
 }
@@ -68,7 +68,7 @@ export async function updateExpediente(id: string, body: UpdateExpedienteDTO) {
       }
     }
 
-    await http.patch(`http://localhost:3000/expedientes/${id}`, body);
+    await http.patch(`https://api-cpsi.aapvr.com.br//expedientes/${id}`, body);
     revalidatePath("painel/expedientes");
   } catch (error) {
     console.error("Erro no update:", error);
@@ -81,7 +81,7 @@ export async function updateExpediente(id: string, body: UpdateExpedienteDTO) {
 
 export async function finalizarExpediente(id: string) {
   try {
-    await http.delete(`http://localhost:3000/expedientes/${id}`);
+    await http.delete(`https://api-cpsi.aapvr.com.br//expedientes/${id}`);
     revalidatePath("/painel/expedientes");
   } catch (error) {
     console.error("Erro na requisição:", error);

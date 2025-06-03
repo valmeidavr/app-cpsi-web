@@ -97,7 +97,7 @@ export default function AlocacaoPage() {
       setCarregandoDadosAlocacao;
       true;
       if (!prestador || !unidade) return;
-      const { data } = await http.get("http://localhost:3000/alocacoes", {
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//alocacoes", {
         params: {
           prestadorId: prestador ? prestador.id : null,
           especialidadeId: especialidade ? especialidade.id : null,

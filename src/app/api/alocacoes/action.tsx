@@ -15,7 +15,7 @@ export type UpdateAlocacaoDTO = z.infer<typeof updateAlocacaoSchema>;
 
 export async function createAlocacao(body: CreateAlocacaoDTO) {
   try {
-    await http.post("http://localhost:3000/alocacoes", body);
+    await http.post("https://api-cpsi.aapvr.com.br//alocacoes", body);
     revalidatePath("/painel/alocacoes");
   } catch (error: any) {
     console.error("Erro ao criar alocacao:", error);
@@ -30,7 +30,7 @@ export async function getAlocacaos(
   unidadesId?: number,
   especialidadesId?: number
 ) {
-  const { data } = await http.get("http://localhost:3000/alocacoes", {
+  const { data } = await http.get("https://api-cpsi.aapvr.com.br//alocacoes", {
     params: {
       page,
       limit,
@@ -45,14 +45,14 @@ export async function getAlocacaos(
 }
 
 export async function getAlocacaoById(id: string): Promise<Alocacao> {
-  const { data } = await http.get(`http://localhost:3000/alocacoes/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//alocacoes/${id}`);
 
   return data;
 }
 
 export async function updateAlocacao(id: string, body: UpdateAlocacaoDTO) {
   try {
-    await http.patch(`http://localhost:3000/alocacoes/${id}`, body);
+    await http.patch(`https://api-cpsi.aapvr.com.br//alocacoes/${id}`, body);
     revalidatePath("painel/alocacoes");
   } catch (error) {
     return {
@@ -63,6 +63,6 @@ export async function updateAlocacao(id: string, body: UpdateAlocacaoDTO) {
 }
 
 export async function deleteAlocacao(id: string): Promise<void> {
-  await http.delete(`http://localhost:3000/alocacoes/${id}`);
+  await http.delete(`https://api-cpsi.aapvr.com.br//alocacoes/${id}`);
 }
 

@@ -39,7 +39,7 @@ export default function Caixas() {
   const carregarCaixas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/caixas", {
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

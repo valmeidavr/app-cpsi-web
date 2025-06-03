@@ -10,7 +10,7 @@ type alunosTurma = Omit<
 
 export async function createAlunosTurma(body: alunosTurma) {
   try {
-    await http.post("http://localhost:3000/alunos-turmas", body);
+    await http.post("https://api-cpsi.aapvr.com.br//alunos-turmas", body);
     revalidatePath("/painel/turmas/adicionar_alunos_modal");
   } catch (error: any) {
     console.error("Erro ao criar alunosTurma:", error);
@@ -30,7 +30,7 @@ export async function getalunosTurma(
 }
 
 export async function getalunosTurmaById(id: number): Promise<Aluno> {
-  const { data } = await http.get(`http://localhost:3000/alunos-turmas/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//alunos-turmas/${id}`);
 
   return data;
 }
@@ -49,7 +49,7 @@ export async function updatealunosTurma(id: string, body: Aluno) {
 
 export async function deleteAlunoTurma(id: number): Promise<void> {
   try {
-    await http.delete(`http://localhost:3000/alunos-turmas/${id}`);
+    await http.delete(`https://api-cpsi.aapvr.com.br//alunos-turmas/${id}`);
     revalidatePath("painel/alunosTurma/adicionar_alunos_modal");
   } catch (error) {
     console.error("Erro ao deletar aluno:", error);
@@ -57,7 +57,7 @@ export async function deleteAlunoTurma(id: number): Promise<void> {
 }
 export async function deleteAllAlunoTurma(id: number): Promise<void> {
   try {
-    await http.delete(`http://localhost:3000/alunos-turmas/deleteAll`, {
+    await http.delete(`https://api-cpsi.aapvr.com.br//alunos-turmas/deleteAll`, {
       params: {
         turmasId: id,
       },

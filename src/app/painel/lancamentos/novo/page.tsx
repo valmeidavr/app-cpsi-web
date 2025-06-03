@@ -91,13 +91,13 @@ export default function NovoLancamento() {
 
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("http://localhost:3000/caixas");
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas");
       setCaixas(data.data);
     } catch (error: any) {}
   };
   const fetchPlanoContas = async () => {
     try {
-      const { data } = await http.get("http://localhost:3000/plano-contas");
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//plano-contas");
       setPlanoConta(data.data);
     } catch (error: any) {}
   };

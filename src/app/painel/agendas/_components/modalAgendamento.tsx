@@ -119,14 +119,14 @@ const ModalAgendamento = ({
   }, [tipoClienteSelecionado, convenioSelecionado]);
 
   const fetchClientes = async () => {
-    const { data } = await http.get("http://localhost:3000/clientes");
+    const { data } = await http.get("https://api-cpsi.aapvr.com.br//clientes");
     setClientes(data.data);
   };
 
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     const { data } = await http.get(
-      `http://localhost:3000/convenios-clientes?clienteId=${clienteId}`
+      `https://api-cpsi.aapvr.com.br//convenios-clientes?clienteId=${clienteId}`
     );
     const conveniosListRaw = data.data.map(
       (item: ConveniosCliente) => item.convenios
@@ -144,7 +144,7 @@ const ModalAgendamento = ({
   ) => {
     try {
       const { data } = await http.get(
-        `http://localhost:3000/valores-procedimentos/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
+        `https://api-cpsi.aapvr.com.br//valores-procedimentos/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
       );
       setProcedimentos(data);
     } catch (e) {
@@ -197,6 +197,7 @@ const ModalAgendamento = ({
       form.setValue("conveniosId", 0);
       setProcedimentos([]);
       form.setValue("procedimentosId", 0);
+      form.setValue("clientesId", 0);
       setTipoClienteSelecionada(undefined);
     }
   };

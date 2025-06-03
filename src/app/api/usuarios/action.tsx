@@ -38,7 +38,7 @@ export async function createUsuario({
 }: CreateUsuarioDTO) {
   try {
     const gruposIds = grupoIds ? Object.values(grupoIds) : [];
-    const data = await http.post("http://localhost:3000/users", {
+    const data = await http.post("https://api-cpsi.aapvr.com.br//users", {
       nome,
       email,
       senha,

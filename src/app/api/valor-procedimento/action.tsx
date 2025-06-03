@@ -17,7 +17,7 @@ export async function getValorProcedimentos(
   search?: string
 ) {
   const { data } = await http.get(
-    "http://localhost:3000/valores-procedimentos",
+    "https://api-cpsi.aapvr.com.br//valores-procedimentos",
     {
       params: { page, limit, search },
     }
@@ -36,7 +36,7 @@ export async function createValorProcedimento(
   body: CreateValorProcedimentoDTO
 ) {
   try {
-    await http.post("http://localhost:3000/valores-procedimentos", body);
+    await http.post("https://api-cpsi.aapvr.com.br//valores-procedimentos", body);
     revalidatePath("/painel/valores_procedimentos");
   } catch (error: any) {
     console.error("Erro ao criar ValorProcedimento:", error.message);
@@ -45,7 +45,7 @@ export async function createValorProcedimento(
 
 export async function getValorProcedimentoById(id: string) {
   const { data } = await http.get(
-    `http://localhost:3000/valores-procedimentos/${id}`
+    `https://api-cpsi.aapvr.com.br//valores-procedimentos/${id}`
   );
   return data;
 }
@@ -55,7 +55,7 @@ export async function updateValorProcedimento(
   body: UpdateValorProcedimentoDTO
 ) {
   try {
-    await http.patch(`http://localhost:3000/valores-procedimentos/${id}`, body);
+    await http.patch(`https://api-cpsi.aapvr.com.br//valores-procedimentos/${id}`, body);
     revalidatePath("/painel/valorProcedimentos");
   } catch (error) {
     console.error("Erro no update do ValorProcedimento:", error);
@@ -68,7 +68,7 @@ export async function updateValorProcedimento(
 
 export async function finalizarValorProcedimento(id: number) {
   try {
-    await http.delete(`http://localhost:3000/valores-procedimentos/${id}`);
+    await http.delete(`https://api-cpsi.aapvr.com.br//valores-procedimentos/${id}`);
     revalidatePath("/painel/valorProcedimentos");
   } catch (error) {
     console.error("Erro ao deletar ValorProcedimento:", error);

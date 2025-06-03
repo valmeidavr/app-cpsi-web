@@ -31,14 +31,14 @@ export async function createCliente(body: CreateClienteDTO) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
     const { convenios, desconto, ...payload } = body;
-    const { data } = await http.post("http://localhost:3000/clientes", payload);
+    const { data } = await http.post("https://api-cpsi.aapvr.com.br//clientes", payload);
     for (const convenio of convenios) {
       const convenioBody = {
         conveniosId: convenio,
         clientesId: data.id,
         desconto: desconto[convenio],
       };
-      await http.post("http://localhost:3000/convenios-clientes", convenioBody);
+      await http.post("https://api-cpsi.aapvr.com.br//convenios-clientes", convenioBody);
     }
     revalidatePath("/painel/clientes");
   } catch (error: any) {
@@ -59,7 +59,7 @@ export async function getClientes(
 }
 
 export async function getClienteById(id: number): Promise<Cliente> {
-  const { data } = await http.get(`http://localhost:3000/clientes/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//clientes/${id}`);
 
   return data;
 }
@@ -85,7 +85,7 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
     const { convenios, desconto, ...payload } = body;
 
     const { data } = await http.patch(
-      `http://localhost:3000/clientes/${id}`,
+      `https://api-cpsi.aapvr.com.br//clientes/${id}`,
       payload
     );
     if (convenios && convenios.length > 0) {
@@ -100,7 +100,7 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
 
         try {
           const res = await http.get(
-            "http://localhost:3000/convenios-clientes",
+            "https://api-cpsi.aapvr.com.br//convenios-clientes",
             {
               params: {
                 conveniosId: convenio,
@@ -113,12 +113,12 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
 
           if (existing?.id) {
             await http.patch(
-              `http://localhost:3000/convenios-clientes/${existing.id}`,
+              `https://api-cpsi.aapvr.com.br//convenios-clientes/${existing.id}`,
               convenioBody
             );
           } else {
             await http.post(
-              "http://localhost:3000/convenios-clientes",
+              "https://api-cpsi.aapvr.com.br//convenios-clientes",
               convenioBody
             );
           }

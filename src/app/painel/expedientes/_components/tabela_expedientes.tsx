@@ -103,7 +103,7 @@ const TabelaExpediente = ({
       setloading(true);
 
       const agendamentoExist: Agenda[] = await http.get(
-        `http://localhost:3000/agendas/expediente?expedienteId=${ExpedienteId}`
+        `https://api-cpsi.aapvr.com.br//agendas/expediente?expedienteId=${ExpedienteId}`
       );
       if (agendamentoExist) {
         const agendamentoFeito = agendamentoExist.filter((agendamento) => {

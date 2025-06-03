@@ -40,7 +40,7 @@ export default function PlanoContas() {
   const carregarPlanoContas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/plano-contas", {
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//plano-contas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

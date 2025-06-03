@@ -138,7 +138,7 @@ export default function AdicionarAlunosModal({
   const carregarAlunos = async () => {
     try {
       setLoadingAluno(true);
-      const { data } = await http.get("http://localhost:3000/alunos-turmas/", {
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//alunos-turmas/", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

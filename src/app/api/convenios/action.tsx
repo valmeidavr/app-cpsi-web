@@ -14,7 +14,7 @@ export async function getConvenios(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("http://localhost:3000/convenios", {
+  const { data } = await http.get("https://api-cpsi.aapvr.com.br//convenios", {
     params: { page, limit, search },
   });
   return data;
@@ -24,7 +24,7 @@ export type CreateConvenioDTO = z.infer<typeof createConvenioSchema>;
 export type UpdateConvenioDTO = z.infer<typeof updateConvenioSchema>;
 export async function createConvenio(body: CreateConvenioDTO) {
   try {
-    await http.post("http://localhost:3000/convenios", body);
+    await http.post("https://api-cpsi.aapvr.com.br//convenios", body);
     revalidatePath("/painel/convenios");
   } catch (error: any) {
     console.error("Erro ao criar convenio:", error);
@@ -40,7 +40,7 @@ export async function getConvenioById(id: string) {
 export async function updateConvenio(id: string, body: UpdateConvenioDTO) {
   try {
     const { data } = await http.patch(
-      `http://localhost:3000/convenios/${id}`,
+      `https://api-cpsi.aapvr.com.br//convenios/${id}`,
       body
     );
     revalidatePath("painel/convenios?status=success");

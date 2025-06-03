@@ -74,7 +74,7 @@ export default function Turmas() {
   const carregarTurmas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("http://localhost:3000/turmas", {
+      const { data } = await http.get("https://api-cpsi.aapvr.com.br//turmas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

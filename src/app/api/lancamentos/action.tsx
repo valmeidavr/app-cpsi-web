@@ -31,7 +31,7 @@ export async function createLancamento(body: CreateLancamentoDTO) {
         console.error("Data de lançamento inválida:", body.data_lancamento);
       }
     }
-    await http.post("http://localhost:3000/lancamentos", body);
+    await http.post("https://api-cpsi.aapvr.com.br//lancamentos", body);
     revalidatePath("/painel/lancamentos");
   } catch (error: any) {
     console.error("Erro ao criar lancamento:", error);
@@ -39,14 +39,14 @@ export async function createLancamento(body: CreateLancamentoDTO) {
 }
 
 export async function getLancamentoById(id: string) {
-  const { data } = await http.get(`http://localhost:3000/lancamentos/${id}`);
+  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//lancamentos/${id}`);
   return data;
 }
 
 export async function updateLancamento(id: string, body: UpdateLancamentoDTO) {
   try {
     const { data } = await http.patch(
-      `http://localhost:3000/lancamentos/${id}`,
+      `https://api-cpsi.aapvr.com.br//lancamentos/${id}`,
       body
     );
     revalidatePath("painel/lancamentos");
@@ -63,7 +63,7 @@ export async function updateLancamento(id: string, body: UpdateLancamentoDTO) {
 export async function deleteLancamento(id: number) {
   try {
     const response = await http.delete(
-      `http://localhost:3000/lancamentos/${id}`
+      `https://api-cpsi.aapvr.com.br//lancamentos/${id}`
     );
     revalidatePath("painel/lancamentos");
   } catch {
