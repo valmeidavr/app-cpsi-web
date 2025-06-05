@@ -50,8 +50,7 @@ import { formatDate } from "date-fns";
 
 //Types
 import { Turma } from "@/app/types/Turma";
-import adicionarAlunosModal from "./adicionar_alunos_modal/page";
-import AdicionarAlunosModal from "./adicionar_alunos_modal/page";
+import AdicionarAlunosModal from "./adicionar_alunos_modal/AdicionarAlunosModalComponent";
 
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([]);

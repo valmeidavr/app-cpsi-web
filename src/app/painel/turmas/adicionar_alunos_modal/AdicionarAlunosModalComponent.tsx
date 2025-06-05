@@ -14,6 +14,7 @@ import { Cliente } from "@/app/types/Cliente";
 import { http } from "@/util/http";
 import { getClientes } from "@/app/api/clientes/action";
 import { Input } from "@/components/ui/input";
+import { FC } from "react";
 import {
   Table,
   TableBody,
@@ -56,11 +57,7 @@ interface Props {
   turmaId: number;
 }
 
-export default function AdicionarAlunosModal({
-  isOpen,
-  onOpenChange,
-  turmaId,
-}: Props) {
+const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }) => {
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingAluno, setLoadingAluno] = useState(false);
@@ -492,3 +489,5 @@ export default function AdicionarAlunosModal({
     </div>
   );
 }
+
+export default AdicionarAlunosModal;
