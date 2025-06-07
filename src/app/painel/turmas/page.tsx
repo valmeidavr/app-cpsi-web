@@ -50,8 +50,8 @@ import { formatDate } from "date-fns";
 
 //Types
 import { Turma } from "@/app/types/Turma";
-import adicionarAlunosModal from "./adicionar_alunos_modal/page";
-import AdicionarAlunosModal from "./adicionar_alunos_modal/page";
+import adicionarAlunosModal from "./_components/adicionarAlunosModal";
+import AdicionarAlunosModal from "./_components/adicionarAlunosModal";
 
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([]);
@@ -74,7 +74,7 @@ export default function Turmas() {
   const carregarTurmas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//turmas", {
+      const { data } = await http.get("/turmas", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

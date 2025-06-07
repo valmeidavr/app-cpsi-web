@@ -11,7 +11,7 @@ export async function getCaixa(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas", {
+  const { data } = await http.get("/caixas", {
     params: { page, limit, search },
   });
   return data;
@@ -22,7 +22,7 @@ export type UpdateCaixaDTO = z.infer<typeof updateCaixaSchema>;
 
 export async function createCaixa({ nome, saldo, tipo }: CreateCaixaDTO) {
   try {
-    await http.post("https://api-cpsi.aapvr.com.br//caixas", {
+    await http.post("/caixas", {
       nome,
       saldo,
       tipo,
@@ -35,14 +35,14 @@ export async function createCaixa({ nome, saldo, tipo }: CreateCaixaDTO) {
 }
 
 export async function getCaixaById(id: string) {
-  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//caixas/${id}`);
+  const { data } = await http.get(`/caixas/${id}`);
   return data;
 }
 
 export async function updateCaixa(id: string, body: UpdateCaixaDTO) {
   try {
     const { data } = await http.patch(
-      `https://api-cpsi.aapvr.com.br//caixas/${id}`,
+      `/caixas/${id}`,
       body
     );
     revalidatePath("painel/caixa?status=success");
@@ -58,7 +58,7 @@ export async function updateCaixa(id: string, body: UpdateCaixaDTO) {
 
 export async function deleteCaixa(id: number) {
   try {
-    const response = await http.delete(`https://api-cpsi.aapvr.com.br//caixas/${id}`);
+    const response = await http.delete(`/caixas/${id}`);
     revalidatePath("painel/caixa");
   } catch {
     return {

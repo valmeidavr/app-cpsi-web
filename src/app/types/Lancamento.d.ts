@@ -22,10 +22,7 @@ export type Lancamento = {
   plano_conta: PlanoConta;
   caixa: Caixa;
   usuario: Usuario;
+  status?: string;
   created_at: string;
   updated_at: string;
 };
-
-
-
-

@@ -47,6 +47,7 @@ import {
 import { getTurmaById } from "@/app/api/turmas/action";
 import { Turma } from "@/app/types/Turma";
 import { toast } from "sonner";
+import AlunoDetalhesModal from "./detalhesAlunoModal";
 
 interface Props {
   isOpen: boolean;
@@ -69,7 +70,7 @@ export default function AdicionarAlunosModal({
   const [isModalDeleteAllOpen, setisModalDeleteAllOpen] = useState(false);
   const [isModalDeleteOpen, setisModalDeleteOpen] = useState(false);
   const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null);
-
+  const [isDetalhesOpen, setIsDetalhesOpen] = useState(false);
   const [turmaSelected, setTurmaSelected] = useState<number>(0);
   const [loadingDeleteAll, setLoadingDeleteAll] = useState(false);
   const carregarClientes = async () => {
@@ -84,7 +85,6 @@ export default function AdicionarAlunosModal({
       });
 
       setClientes(data.data);
-
     } catch (error) {
       console.error("Erro ao carregar clientes:", error);
     } finally {
@@ -138,14 +138,17 @@ export default function AdicionarAlunosModal({
   const carregarAlunos = async () => {
     try {
       setLoadingAluno(true);
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//alunos-turmas/", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBuscaAluno,
-          turmaId: turmaId,
-        },
-      });
+      const { data } = await http.get(
+        "https://api-cpsi.aapvr.com.br//alunos-turmas/",
+        {
+          params: {
+            page: paginaAtual + 1,
+            limit: 5,
+            search: termoBuscaAluno,
+            turmaId: turmaId,
+          },
+        }
+      );
       setAlunos(data.data);
     } catch (error) {
       console.error("Erro ao carregar alunos:", error);
@@ -260,9 +263,19 @@ export default function AdicionarAlunosModal({
                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onSelect={() =>
-                                alert(`Ver perfil de ${cliente.nome}`)
-                              }
+                              onSelect={() => {
+                                const alunoCorrespondente = alunos.find(
+                                  (aluno) => aluno.clientesId == +cliente.id
+                                );
+                                if (alunoCorrespondente) {
+                                  setAlunoSelecionado(alunoCorrespondente);
+                                  setIsDetalhesOpen(true);
+                                } else {
+                                  toast.info(
+                                    "Este cliente não está matriculado nesta turma."
+                                  );
+                                }
+                              }}
                             >
                               Ver Perfil
                             </DropdownMenuItem>
@@ -390,9 +403,10 @@ export default function AdicionarAlunosModal({
                             <DropdownMenuLabel>Ações</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onSelect={() =>
-                                alert(`Ver perfil de ${aluno.cliente.nome}`)
-                              }
+                              onSelect={() => {
+                                setAlunoSelecionado(aluno);
+                                setIsDetalhesOpen(true);
+                              }}
                             >
                               Ver Perfil
                             </DropdownMenuItem>
@@ -457,15 +471,15 @@ export default function AdicionarAlunosModal({
         </DialogContent>
       </Dialog>
 
-      <Dialog
-        open={isModalDeleteOpen}
-        onOpenChange={setisModalDeleteOpen}
-      >
+      <Dialog open={isModalDeleteOpen} onOpenChange={setisModalDeleteOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar Ação</DialogTitle>
           </DialogHeader>
-          <p>Tem certeza que deseja excluir o {alunoSelecionado?.cliente.nome} da turma?</p>
+          <p>
+            Tem certeza que deseja excluir o {alunoSelecionado?.cliente.nome} da
+            turma?
+          </p>
           <DialogFooter>
             <Button
               variant="secondary"
@@ -487,6 +501,12 @@ export default function AdicionarAlunosModal({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlunoDetalhesModal
+        isOpen={isDetalhesOpen}
+        onOpenChange={setIsDetalhesOpen}
+        aluno={alunoSelecionado}
+      />
     </div>
   );
 }

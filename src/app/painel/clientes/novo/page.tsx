@@ -191,7 +191,7 @@ export default function CustomerRegistrationForm() {
     setIsCheckingCpf(true);
     try {
       const data = await http.get(
-        `https://api-cpsi.aapvr.com.br//clientes/findByCpf/${cpf}`
+        `/clientes/findByCpf/${cpf}`
       );
       if (data.data) {
         setCpfError("Este cpf já está em uso.");

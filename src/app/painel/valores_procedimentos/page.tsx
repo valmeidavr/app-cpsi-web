@@ -106,7 +106,7 @@ export default function ValorProcedimentos() {
           : "",
       };
       const { data } = await http.get(
-        "https://api-cpsi.aapvr.com.br//valores-procedimentos",
+        "/valores-procedimentos",
         {
           params,
         }
@@ -170,7 +170,7 @@ export default function ValorProcedimentos() {
 
   const fetchProcedimentos = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//Procedimentos");
+      const { data } = await http.get("/Procedimentos");
 
       setProcedimentos(data.data);
     } catch (error: any) {}
@@ -178,7 +178,7 @@ export default function ValorProcedimentos() {
   const fetchTabelaFaturamentos = async () => {
     try {
       const { data } = await http.get(
-        "https://api-cpsi.aapvr.com.br//tabela-faturamentos"
+        "/tabela-faturamentos"
       );
       setTabelaFaturamentos(data.data);
     } catch (error: any) {}

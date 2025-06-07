@@ -14,7 +14,7 @@ export async function getPlanos(
   limit: number = 5,
   search?: string
 ) {
-  const { data } = await http.get("https://api-cpsi.aapvr.com.br//plano-contas", {
+  const { data } = await http.get("/plano-contas", {
     params: { page, limit, search },
   });
   return data;
@@ -30,7 +30,7 @@ export async function createPlano({
   descricao,
 }: CreatePlanoDTO) {
   try {
-    await http.post("https://api-cpsi.aapvr.com.br//plano-contas", {
+    await http.post("/plano-contas", {
       nome,
       tipo,
       categoria,
@@ -44,14 +44,14 @@ export async function createPlano({
 }
 
 export async function getPlanoById(id: string) {
-  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//plano-contas/${id}`);
+  const { data } = await http.get(`/plano-contas/${id}`);
   return data;
 }
 
 export async function updatePlano(id: string, body: UpdatePlanoDTO) {
   try {
     const { data } = await http.patch(
-      `https://api-cpsi.aapvr.com.br//plano-contas/${id}`,
+      `/plano-contas/${id}`,
       body
     );
     revalidatePath("painel/plano_contas?status=success");
@@ -68,7 +68,7 @@ export async function updatePlano(id: string, body: UpdatePlanoDTO) {
 export async function deletePlano(id: number) {
   try {
     const response = await http.delete(
-      `https://api-cpsi.aapvr.com.br//plano-contas/${id}`
+      `/plano-contas/${id}`
     );
     revalidatePath("painel/plano_contas");
   } catch {

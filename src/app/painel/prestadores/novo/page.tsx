@@ -93,7 +93,7 @@ export default function NovoPrestador() {
     setIsCheckingCpf(true);
     try {
       const { data } = await http.get(
-        `https://api-cpsi.aapvr.com.br//prestadores/findByCpf/${cpf}`
+        `/prestadores/findByCpf/${cpf}`
       );
       if (data) {
         setCpfError("Este cpf já está em uso.");

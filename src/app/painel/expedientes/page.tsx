@@ -163,7 +163,7 @@ export default function ExpedientePage() {
       setAlocacaoId(alocacaoId[0]);
 
       form.setValue("alocacaoId", alocacaoId[0]);
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//expedientes", {
+      const { data } = await http.get("/expedientes", {
         params: {
           limit: 50,
           alocacaoId: alocacaoId[0],

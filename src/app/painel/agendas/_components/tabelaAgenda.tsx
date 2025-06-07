@@ -50,6 +50,7 @@ import { statusItems } from "../_helpers/statusItem";
 import { useAgenda } from "../AgendaContext";
 import ModalAgendamento from "./modalAgendamento";
 import CriarAgendamento from "./criarAgendamento";
+import { Badge } from "@/components/ui/badge";
 
 const TabelaAgenda = () => {
   const {
@@ -150,7 +151,7 @@ const TabelaAgenda = () => {
   const excluirAgendamento = async (agendaId: number) => {
     try {
       setLoading(true);
-      console.log(agendaId)
+      console.log(agendaId);
       await finalizarAgenda(agendaId.toString());
       toast.error(
         `Agendamento do dia ${
@@ -234,9 +235,9 @@ const TabelaAgenda = () => {
                   </TableCell>
                   <TableCell>{agenda.tipo || "-"}</TableCell>
                   <TableCell>
-                    <span className={getStatusClass(agenda.situacao)}>
+                    <Badge className={getStatusClass(agenda.situacao)}>
                       {agenda.situacao}
-                    </span>
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -244,17 +245,29 @@ const TabelaAgenda = () => {
                         <MenuIcon />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {agenda.situacao === "LIVRE" ? (
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setAgendamentoSelecionado(agenda);
-                              abrirModalAgendamento(agenda.hora, date);
-                            }}
-                          >
-                            Fazer Agendamento
-                          </DropdownMenuItem>
+                          <>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setAgendamentoSelecionado(agenda);
+                                abrirModalAgendamento(agenda.hora, date);
+                              }}
+                            >
+                              Agendar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setAgendamentoSelecionado(agenda);
+                                handleStatusAgenda(
+                                  agenda.dadosAgendamento.id,
+                                  "BLOQUEADO"
+                                );
+                              }}
+                            >
+                              Bloquear
+                            </DropdownMenuItem>
+                          </>
                         ) : (
                           <>
                             {statusItems.map(({ label, color, icon }) => (

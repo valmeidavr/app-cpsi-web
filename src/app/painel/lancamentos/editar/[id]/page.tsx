@@ -97,13 +97,13 @@ export default function EditarLancamento() {
 
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas");
+      const { data } = await http.get("/caixas");
       setCaixas(data.data);
     } catch (error: any) {}
   };
   const fetchPlanoContas = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//plano-contas");
+      const { data } = await http.get("/plano-contas");
       setPlanoConta(data.data);
     } catch (error: any) {}
   };

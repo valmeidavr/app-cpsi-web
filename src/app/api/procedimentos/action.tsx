@@ -24,7 +24,7 @@ export type CreateProcedimentoDTO = z.infer<typeof createProcedimentoSchema>;
 export type UpdateProcedimentoDTO = z.infer<typeof updateProcedimentoSchema>;
 export async function createProcedimento(body: CreateProcedimentoDTO) {
   try {
-    await http.post("https://api-cpsi.aapvr.com.br//procedimentos", body);
+    await http.post("/procedimentos", body);
     revalidatePath("/painel/procedimentos");
   } catch (error: any) {
     console.error("Erro ao criar procedimento:", error);

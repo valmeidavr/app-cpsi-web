@@ -4,7 +4,10 @@ import { http } from "@/util/http";
 import { format, isValid, parse } from "date-fns";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
+import {
+  createLancamentoSchema,
+  updateLancamentoSchema,
+} from "./schema/formSchemeLancamentos";
 
 export async function getLancamentos(
   page: number = 1,
@@ -31,7 +34,7 @@ export async function createLancamento(body: CreateLancamentoDTO) {
         console.error("Data de lançamento inválida:", body.data_lancamento);
       }
     }
-    await http.post("https://api-cpsi.aapvr.com.br//lancamentos", body);
+    await http.post("/lancamentos", body);
     revalidatePath("/painel/lancamentos");
   } catch (error: any) {
     console.error("Erro ao criar lancamento:", error);
@@ -39,14 +42,23 @@ export async function createLancamento(body: CreateLancamentoDTO) {
 }
 
 export async function getLancamentoById(id: string) {
-  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//lancamentos/${id}`);
+  const { data } = await http.get(
+    `/lancamentos/${id}`
+  );
+  return data;
+}
+export async function getLancamentoByAgendaId(id: string) {
+  const { data } = await http.get(
+    `/lancamentos/findByAgendaId/${id}`
+  );
+  console.log("Dados do lançamento por agenda:", data);
   return data;
 }
 
 export async function updateLancamento(id: string, body: UpdateLancamentoDTO) {
   try {
     const { data } = await http.patch(
-      `https://api-cpsi.aapvr.com.br//lancamentos/${id}`,
+      `/lancamentos/${id}`,
       body
     );
     revalidatePath("painel/lancamentos");
@@ -62,13 +74,25 @@ export async function updateLancamento(id: string, body: UpdateLancamentoDTO) {
 
 export async function deleteLancamento(id: number) {
   try {
-    const response = await http.delete(
-      `https://api-cpsi.aapvr.com.br//lancamentos/${id}`
-    );
+    const response = await http.delete(`/lancamentos/${id}`);
     revalidatePath("painel/lancamentos");
   } catch {
     return {
       message: "Não foi possível inativar o lancamento",
+      error: true,
+    };
+  }
+}
+
+export async function updateStatusLancamento(id: number, status: string) {
+  try {
+    console.log(status)
+    const response = await http.patch(`/lancamentos/${id}`, { status });
+    console.log(response)
+    revalidatePath("painel/lancamentos");
+  } catch {
+    return {
+      message: `Não foi possível alterar o status para ${status} do lançamento`,
       error: true,
     };
   }

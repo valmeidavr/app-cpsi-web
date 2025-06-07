@@ -128,7 +128,7 @@ const CriarAgendamento = ({
   }, [tipoClienteSelecionado, convenioSelecionado]);
 
   const fetchClientes = async () => {
-    const { data } = await http.get("https://api-cpsi.aapvr.com.br//clientes");
+    const { data } = await http.get("/clientes");
     setClientes(data.data);
   };
 
@@ -136,7 +136,7 @@ const CriarAgendamento = ({
     if (!clienteId) return;
     try {
       const { data } = await http.get(
-        `https://api-cpsi.aapvr.com.br//convenios-clientes?clienteId=${clienteId}`
+        `/convenios-clientes?clienteId=${clienteId}`
       );
       const conveniosListRaw = data.data.map(
         (item: ConveniosCliente) => item.convenios
@@ -166,7 +166,7 @@ const CriarAgendamento = ({
   ) => {
     try {
       const { data } = await http.get(
-        `https://api-cpsi.aapvr.com.br//valores-procedimentos/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
+        `/valores-procedimentos/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
       );
       setProcedimentos(data);
     } catch (e) {
@@ -176,6 +176,8 @@ const CriarAgendamento = ({
       setProcedimentos([]); 
     }
   };
+
+
   const onSubmit = async (values: any) => {
     setLoading(true);
 
@@ -461,18 +463,23 @@ const CriarAgendamento = ({
                               "w-full justify-between",
                               !field.value && "text-muted-foreground"
                             )}
-                            // Desabilita se não há convênio ou tipo de cliente selecionado, ou nenhum procedimento encontrado
-                            disabled={
-                              !convenioSelecionado ||
-                              !tipoClienteSelecionado ||
-                              procedimentos.length === 0
-                            }
                           >
-                            {field.value
-                              ? procedimentos.find(
-                                  (p) => p.procedimento.id === field.value
-                                )?.procedimento.nome // CORRIGIDO
-                              : "Selecione procedimento"}
+                            {(() => {
+                              if (field.value) {
+                                const selectedItem = procedimentos.find(
+                                  (p) => p.procedimento.id == field.value
+                                );
+                                if (selectedItem) {
+                                  return `${
+                                    selectedItem.procedimento.nome
+                                  } -  R$${Number(
+                                    selectedItem.valor
+                                  ).toFixed(2)}`;
+                                }
+                              } else {
+                                return "Selecione procedimento";
+                              }
+                            })()}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </FormControl>
@@ -485,33 +492,33 @@ const CriarAgendamento = ({
                               Nenhum procedimento encontrado.
                             </CommandEmpty>
                             <CommandGroup className="w-full p-0">
-                              {procedimentos.map(
-                                (
-                                  item // 'item' é um ValorProcedimento
-                                ) => (
-                                  <CommandItem
-                                    value={item.procedimento.id.toString()}
-                                    key={item.procedimento.id}
-                                    onSelect={() => {
-                                      form.setValue(
-                                        "procedimentosId",
-                                        item.procedimento.id // CORRIGIDO: usa o ID do procedimento aninhado
-                                      );
-                                      setOpenSelectProcedimentos(false);
-                                    }}
-                                  >
-                                    {item.procedimento.nome}
-                                    <Check
-                                      className={cn(
-                                        "ml-auto",
-                                        item.procedimento.id === field.value // CORRIGIDO: compara com o ID do procedimento aninhado
-                                          ? "opacity-100"
-                                          : "opacity-0"
-                                      )}
-                                    />
-                                  </CommandItem>
-                                )
-                              )}
+                              {procedimentos.map((item) => (
+                                <CommandItem
+                                  value={item.procedimento.nome}
+                                  key={item.procedimento.id}
+                                  className="flex items-center justify-between"
+                                  onSelect={() => {
+                                    form.setValue(
+                                      "procedimentosId",
+                                      item.procedimento.id
+                                    );
+                                    setOpenSelectProcedimentos(false);
+                                  }}
+                                >
+                                  <span>{item.procedimento.nome}</span>
+                                  <span className="mx-6">
+                                    R${Number(item.valor).toFixed(2)}
+                                  </span>
+                                  <Check
+                                    className={cn(
+                                      "ml-auto h-4 w-4",
+                                      item.procedimento.id == field.value
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    )}
+                                  />
+                                </CommandItem>
+                              ))}
                             </CommandGroup>
                           </CommandList>
                         </Command>

@@ -12,11 +12,6 @@ export const statusItems = [
     icon: <XCircleIcon className="w-4 h-4 mr-2" />,
   },
   {
-    label: "AGENDADO",
-    color: "text-green-500",
-    icon: <CheckCircleIcon className="w-4 h-4 mr-2" />,
-  },
-  {
     label: "FALTA",
     color: "text-red-500",
     icon: <XCircleIcon className="w-4 h-4 mr-2" />,
@@ -26,11 +21,7 @@ export const statusItems = [
     color: "text-red-500",
     icon: <CheckCircleIcon className="w-4 h-4 mr-2" />,
   },
-  {
-    label: "BLOQUEADO",
-    color: "text-yellow-500",
-    icon: <ClockIcon className="w-4 h-4 mr-2" />,
-  },
+
   {
     label: "CONFIRMADO",
     color: "text-purple-500",

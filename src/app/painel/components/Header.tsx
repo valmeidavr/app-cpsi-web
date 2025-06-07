@@ -10,11 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, LogOut, Key } from "lucide-react";
+import { Bell, LogOut, Key, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getCookie, delCookie } from "@/util/cookies";
 import { getPayload } from "@/util/auth";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Header() {
   const [userName, setUserName] = useState<string>("Usuário");
@@ -56,7 +57,9 @@ export default function Header() {
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 {/* <AvatarImage src="/avatars/01.png" alt="@usuario" /> */}
-                <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
+                <AvatarFallback>
+                  {userName.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
@@ -64,14 +67,16 @@ export default function Header() {
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">{userName}</p>
-                <p className="text-xs leading-none text-muted-foreground">{userEmail}</p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {userEmail}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-          {/*   <DropdownMenuItem>
-              <Key className="mr-2 h-4 w-4" />
-              <span>Trocar Senha</span>
-            </DropdownMenuItem> */}
+            <DropdownMenuItem>
+              <User className="mr-2 h-4 w-4" />
+              <Link href="/painel/perfil">Perfil</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOut className="mr-2 h-4 w-4" />

@@ -44,7 +44,7 @@ export default function Convenios() {
   const carregarConvenios = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//convenios", {
+      const { data } = await http.get("/convenios", {
         params: {
           page: paginaAtual + 1,
           limit: 5,

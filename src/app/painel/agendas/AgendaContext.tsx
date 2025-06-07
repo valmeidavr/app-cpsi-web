@@ -72,7 +72,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
       if (!unidade || !prestador || !especialidade) return;
       const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
 
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//agendas", {
+      const { data } = await http.get("/agendas", {
         params: {
           date: formattedDate,
           unidadesId: unidade.id,
@@ -103,7 +103,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const carregarAgendamentosGeral = async () => {
     setCarregandoDadosAgenda(true);
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//agendas", {
+      const { data } = await http.get("/agendas", {
         params: {
           unidadesId: unidade?.id,
           prestadoresId: prestador?.id,

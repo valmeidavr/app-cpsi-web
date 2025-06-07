@@ -35,7 +35,7 @@ export async function createTurma(body: CreateTurmaDTO) {
   };
   try {
     const { data } = await http.post(
-      "https://api-cpsi.aapvr.com.br//turmas",
+      "/turmas",
       bodyFormatado
     );
     revalidatePath("/painel/turmas");
@@ -45,7 +45,7 @@ export async function createTurma(body: CreateTurmaDTO) {
 }
 
 export async function getTurmaById(id: number) {
-  const { data } = await http.get(`https://api-cpsi.aapvr.com.br//turmas/${id}`);
+  const { data } = await http.get(`/turmas/${id}`);
 
   return data;
 }
@@ -66,7 +66,7 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
 
 
   try {
-    await http.patch(`https://api-cpsi.aapvr.com.br//turmas/${id}`, bodyFormatado);
+    await http.patch(`/turmas/${id}`, bodyFormatado);
     revalidatePath("painel/turmas");
   } catch (error) {
     console.error("Erro no update:", error);
@@ -79,7 +79,7 @@ export async function updateTurma(id: string, body: UpdateTurmaDTO) {
 
 export async function finalizarTurma(id: number, dataFim: string) {
   try {
-    await http.patch(`https://api-cpsi.aapvr.com.br//turmas/${id}`, {
+    await http.patch(`/turmas/${id}`, {
       dataFim
     });
     revalidatePath("/painel/turmas");

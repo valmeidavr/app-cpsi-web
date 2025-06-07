@@ -20,17 +20,16 @@ import {
   Loader2,
   Search,
   Edit,
-  Power,
-  Plus,
   Trash2,
   PlusCircle,
   Calendar,
+  ToggleLeft,
+  ToggleRight,
 } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -57,7 +56,10 @@ import { toast } from "sonner";
 //Helpers
 import { http } from "@/util/http";
 //API
-import { deleteLancamento } from "@/app/api/lancamentos/action";
+import {
+  deleteLancamento,
+  updateStatusLancamento,
+} from "@/app/api/lancamentos/action";
 //Types
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
@@ -73,7 +75,7 @@ export default function Lancamentos() {
   const [lancamentoSelecionado, setLancamentoSelecionado] =
     useState<Lancamento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loadingInativar, setLoadingInativar] = useState(false);
+  const [loadingAction, setLoadingAction] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
   const carregarLancamentos = async (filters?: any) => {
@@ -92,15 +94,20 @@ export default function Lancamentos() {
       if (filters?.plano_contas_id && filters.plano_contas_id != 0) {
         params.plano_contas_id = filters.plano_contas_id;
       }
-
-      if (filters?.data_lancamento && filters.data_lancamento.trim() !== "") {
-        params.data_lancamento = filters.data_lancamento;
+      if (
+        filters?.data_inicio &&
+        filters.data_inicio.trim() !== "" &&
+        filters?.data_fim &&
+        filters.data_fim.trim() !== ""
+      ) {
+        params.data_inicio = filters.data_inicio;
+        params.data_fim = filters.data_fim;
       }
 
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//lancamentos", {
+      const { data } = await http.get("/lancamentos", {
         params,
       });
-  
+
       setLancamentos(data.data);
       setTotalPaginas(data.totalPages);
       setTotalLancamentos(data.total);
@@ -115,42 +122,55 @@ export default function Lancamentos() {
     defaultValues: {
       plano_contas_id: 0,
       caixas_id: 0,
-      data_lancamento: "",
+      data_inicio: "",
+      data_fim: "",
     },
   });
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas");
+      const { data } = await http.get("/caixas");
 
       setCaixas(data.data);
     } catch (error: any) {}
   };
   const fetchPlanoContas = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//plano-contas");
+      const { data } = await http.get("/plano-contas");
       setPlanoConta(data.data);
     } catch (error: any) {}
   };
 
-  const HandlefinalizarTurma = async (values: any) => {
+  const handleUpdateStatus = async () => {
     if (!lancamentoSelecionado) return;
-    setLoadingInativar(true);
+    setLoadingAction(true);
+
     try {
-      await deleteLancamento(lancamentoSelecionado.id);
-      await carregarLancamentos();
-      toast.error("Lançamento salvo com sucesso!");
-      setIsDialogOpen(false);
+      const novoStatus =
+        lancamentoSelecionado.status === "ATIVO" ? "INATIVO" : "ATIVO";
+      console.log(lancamentoSelecionado.id, novoStatus);
+      await updateStatusLancamento(lancamentoSelecionado.id, novoStatus);
+
+      toast.success(
+        `Lançamento ${
+          novoStatus === "ATIVO" ? "ativado" : "desativado"
+        } com sucesso!`
+      );
+
+      await carregarLancamentos(form.getValues());
     } catch (error) {
       console.error("Erro ao alterar status do lançamento:", error);
+      toast.error("Erro ao tentar alterar o status do lançamento.");
     } finally {
-      setLoadingInativar(false);
+      setLoadingAction(false);
+      setIsDialogOpen(false);
     }
   };
+
+  const isAtivando = lancamentoSelecionado?.status === "INATIVO";
 
   useEffect(() => {
     fetchCaixas();
     fetchPlanoContas();
-    carregarLancamentos();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -180,95 +200,114 @@ export default function Lancamentos() {
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
 
       <Form {...form}>
-        <form className="space-y-4" onSubmit={form.handleSubmit(handleSearch)}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
-            <FormField
-              control={form.control}
-              name="caixas_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Caixa *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value.toString() || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
-                      {caixas.map((caixa) => (
-                        <SelectItem key={caixa.id} value={caixa.id.toString()}>
-                          {caixa.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="plano_contas_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Plano de Conta *</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value.toString() || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
-                      {planoConta.map((planoConta) => (
-                        <SelectItem
-                          key={planoConta.id}
-                          value={planoConta.id.toString()}
-                        >
-                          {planoConta.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 mt-1 font-light" />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 items-end">
-            <FormField
-              control={form.control}
-              name="data_lancamento"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Data Início *</FormLabel>
-                  <FormControl>
-                    <div className=" field-wrapper flex align-center items-center gap-2 p-[8px] border-2 rounded-lg">
-                      <Calendar className="w-4 h-4" />
-                      <Input
-                        type="date"
-                        {...field}
-                        className={`input-modified focus-visible:ring-0`}
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button className="w-[120px]" variant="default" type="submit">
-              <Search className="w-4 h-4" />
-              Buscar
-            </Button>
-          </div>
-        </form>
+        <div className="border bg-card text-card-foreground p-6 rounded-lg shadow-sm mb-8">
+          <form onSubmit={form.handleSubmit(handleSearch)}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 items-end gap-6">
+              <div className="lg:col-span-1">
+                <FormField
+                  control={form.control}
+                  name="caixas_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Caixa</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value.toString() || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">Todos</SelectItem>
+                          {caixas.map((caixa) => (
+                            <SelectItem
+                              key={caixa.id}
+                              value={caixa.id.toString()}
+                            >
+                              {caixa.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <FormField
+                  control={form.control}
+                  name="plano_contas_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plano de Conta</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value.toString() || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">Todos</SelectItem>
+                          {planoConta.map((plano) => (
+                            <SelectItem
+                              key={plano.id}
+                              value={plano.id.toString()}
+                            >
+                              {plano.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <FormField
+                  control={form.control}
+                  name="data_inicio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Início</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="lg:col-span-1">
+                <FormField
+                  control={form.control}
+                  name="data_fim"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data Fim</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="flex items-center gap-2 lg:col-span-1">
+                <Button className="w-full" variant="default" type="submit">
+                  <Search className="w-4 h-4 mr-2" />
+                  Buscar
+                </Button>
+              </div>
+            </div>
+          </form>
+        </div>
       </Form>
       <div className="flex justify-start  gap-3 items-center mt-7 mb-3">
         <Badge className="bg-green-500 px-3 py-2">
@@ -318,7 +357,7 @@ export default function Lancamentos() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="h-12-1">ID</TableHead>
-                  <TableHead className="h-12-1">Data</TableHead>
+                  <TableHead className="h-12-1">Data Lançamento</TableHead>
                   <TableHead className="h-12-1">Caixa</TableHead>
                   <TableHead className="h-12-1">Entrada</TableHead>
                   <TableHead className="h-12-1">Saída</TableHead>
@@ -361,7 +400,9 @@ export default function Lancamentos() {
                     <TableCell>
                       <Badge variant="default">
                         <div>
-                          {lancamento.plano_conta? lancamento.plano_conta.nome : "N/A"}
+                          {lancamento.plano_conta
+                            ? lancamento.plano_conta.nome
+                            : "N/A"}
                         </div>
                       </Badge>
                     </TableCell>
@@ -369,8 +410,6 @@ export default function Lancamentos() {
                       <Badge variant="outline">{lancamento.usuario.nome}</Badge>
                     </TableCell>
                     <TableCell className="flex gap-3 justify-center">
-                      {/* ✅ Botão Editar com Tooltip */}
-
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -392,20 +431,27 @@ export default function Lancamentos() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-                      {/* ✅ Botão Editar com Tooltip */}
 
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
                             <Button
                               size="icon"
-                              variant="destructive"
+                              variant={
+                                lancamento.status === "ATIVO"
+                                  ? "destructive"
+                                  : "outline"
+                              }
                               onClick={() => {
                                 setLancamentoSelecionado(lancamento);
                                 setIsDialogOpen(true);
                               }}
                             >
-                              <Trash2 className="h-5 w-5 " />
+                              {lancamento.status === "ATIVO" ? (
+                                <ToggleLeft className="h-5 w-5 " />
+                              ) : (
+                                <ToggleRight className="h-5 w-5 text-green-500" />
+                              )}
                             </Button>
                           </Tooltip.Trigger>
                           <Tooltip.Portal>
@@ -413,7 +459,9 @@ export default function Lancamentos() {
                               side="top"
                               className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                             >
-                              Deletar Lançamento
+                              {lancamento.status === "ATIVO"
+                                ? "Desativar Lançamento"
+                                : "Ativar Lançamento"}
                             </Tooltip.Content>
                           </Tooltip.Portal>
                         </Tooltip.Root>
@@ -476,39 +524,39 @@ export default function Lancamentos() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <FormProvider {...form}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirmar Ação</DialogTitle>
-            </DialogHeader>
-            <p className="text-gray-700">
-              Você tem certeza que deseja finalizar o lançamento?
-            </p>
-            <DialogFooter>
-              <Button
-                variant="secondary"
-                onClick={() => setIsDialogOpen(false)}
-                disabled={loadingInativar}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="default"
-                onClick={() => {
-                  HandlefinalizarTurma(form.getValues());
-                }}
-                disabled={loadingInativar}
-              >
-                {loadingInativar ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <span>Finalizar</span>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </FormProvider>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Confirmar {isAtivando ? "Ativação" : "Desativação"}
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-gray-700">
+            Você tem certeza que deseja{" "}
+            <b>{isAtivando ? "ativar" : "desativar"}</b> o lançamento de ID{" "}
+            <b>{lancamentoSelecionado?.id}</b>?
+          </p>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={loadingAction}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button" // Mudado para type="button" para não submeter forms
+              variant={isAtivando ? "default" : "destructive"}
+              onClick={handleUpdateStatus} // Chama a nova função
+              disabled={loadingAction}
+            >
+              {loadingAction ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <span>Confirmar {isAtivando ? "Ativação" : "Desativação"}</span>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );
