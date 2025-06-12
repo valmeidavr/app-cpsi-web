@@ -24,10 +24,10 @@ export default function Header() {
 
   useEffect(() => {
     try {
-      const accessToken = getCookie("accessToken"); // Pega o JWT do cookie
+      const accessToken = getCookie("accessToken"); 
 
       if (accessToken) {
-        const payload = getPayload(accessToken); // Decodifica o JWT
+        const payload = getPayload(accessToken); 
 
         setUserName(payload?.usuario?.nome || "Usuário");
         setUserEmail(payload?.usuario?.email || "usuario@exemplo.com");

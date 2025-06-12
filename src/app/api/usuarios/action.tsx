@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
+import { Usuario } from "@/app/types/Usuario";
 
 export async function getUsuarios() {
   const { data } = await http.get("/users");
@@ -50,16 +51,19 @@ export async function createUsuario({
   }
 }
 
-export async function getUsuarioById(id: string) {
-  const { data } = await http.get(`/users/${id}`);
+export async function getUsuarioById(id: string): Promise<Usuario> {
+  const { data } = await http.get(`users/${id}`);
   return data;
 }
 
 export async function updateUsuario(id: string, body: updateUsuariosPayload) {
   try {
-    body.grupoIds = Object.values(body.grupoIds);
+    if (body.grupoIds) {
+      body.grupoIds = Object.values(body.grupoIds);
+    }
     const { data } = await http.patch(`/users/${id}`, body);
     revalidatePath("painel/usuarios?status=success");
+    revalidatePath("painel/perfil");
     return data;
   } catch (error) {
     console.error("Erro no update:", error);

@@ -31,13 +31,17 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 //API
-import { createUsuario } from "@/app/api/usuarios/action";
-import { createUsuarioSchema } from "@/app/api/usuarios/schema/formSchemaUsuarios";
+import {
+  getUsuarioById,
+  updateUsuario,
+} from "@/app/api/usuarios/action";
+
 //Helpers
 import { http } from "@/util/http";
-import { getCookie } from "@/util/cookies";
+import { getCookie, setCookie } from "@/util/cookies";
 import { getPayload } from "@/util/auth";
 import { Usuario } from "@/app/types/Usuario";
+import { updateUsuarioSchema } from "@/app/api/usuarios/schema/formShemaUpdateUsuario";
 
 export default function UsuarioProfilePage() {
   const router = useRouter();
@@ -51,7 +55,7 @@ export default function UsuarioProfilePage() {
   const [carregando, setCarregando] = useState(true); // Inicia como true
 
   const form = useForm({
-    resolver: zodResolver(createUsuarioSchema),
+    resolver: zodResolver(updateUsuarioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
@@ -61,32 +65,49 @@ export default function UsuarioProfilePage() {
     },
   });
 
-  useEffect(() => {
+  const fetchUsuario = async () => {
     setCarregando(true);
-    const token = getCookie("accessToken");
-    if (token) {
-      const payload = getPayload(token);
-      const userData = payload?.usuario;
+    try {
+      const token = getCookie("accessToken");
+      if (token) {
+        const payload = getPayload(token);
+        const userId = payload?.usuario.id;
 
-      if (userData) {
-        setUsuario(userData);
-        form.reset({
-          nome: userData.nome,
-          email: userData.email,
-          senha: "",
-          confirmedsenha: "",
-        });
+        if (userId) {
+          const response = await getUsuarioById(userId);
+          const usuarioDoBanco = response;
+
+          if (usuarioDoBanco) {
+            setUsuario(usuarioDoBanco);
+            form.reset({
+              nome: usuarioDoBanco.nome,
+              email: usuarioDoBanco.email,
+              senha: "",
+              confirmedsenha: "",
+            });
+          } else {
+            console.error(
+              "ERRO: 'usuarioDoBanco' está vazio ou indefinido após extração."
+            );
+          }
+        }
       }
+    } catch (e: any) {
+      toast.error("Erro ao carregar os dados do perfil.");
+    } finally {
+      setCarregando(false);
     }
-    setCarregando(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form]);
+  };
+
+  useEffect(() => {
+    fetchUsuario();
+  }, []);
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
   const toggleConfirmPasswordVisibility = () =>
     setShowConfirmPassword((prev) => !prev);
 
-  const onSubmit = async (values: z.infer<typeof createUsuarioSchema>) => {
+  const onSubmit = async (values: z.infer<typeof updateUsuarioSchema>) => {
     setLoading(true);
     if (emailError) {
       toast.error("Corrija os erros antes de enviar o formulário.");
@@ -94,10 +115,16 @@ export default function UsuarioProfilePage() {
       return;
     }
     try {
-      await createUsuario(values);
-      toast.success("Perfil atualizado com sucesso!");
-      // Opcional: redirecionar ou apenas mostrar a mensagem
-      // router.push(`/painel/`);
+      if (usuario?.id) {
+        const response = await updateUsuario(usuario.id.toString()!, values);
+        if (response && response.token) {
+          setCookie("accessToken", response.token);
+        }
+        toast.success("Perfil atualizado com sucesso!");
+        router.refresh(); 
+      } else {
+        throw new Error("Usuário não encontrado");
+      }
     } catch (error: any) {
       const errorMessage =
         error.response?.data?.message || "Erro ao salvar usuário";
@@ -107,7 +134,6 @@ export default function UsuarioProfilePage() {
     }
   };
 
-  // Funções checkEmail e handleEmailChange permanecem as mesmas...
   const checkEmail = async (email: string) => {
     if (!email || email === usuario?.email) {
       setEmailError(null);
@@ -171,14 +197,12 @@ export default function UsuarioProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
-              <CardDescription>
-                Atualize seu nome e e-mail .
-              </CardDescription>
+              <CardDescription>Atualize seu nome e e-mail .</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center space-x-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage  />
+                  <AvatarImage />
                   <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                     {usuario?.nome ? (
                       usuario.nome.charAt(0).toUpperCase()
