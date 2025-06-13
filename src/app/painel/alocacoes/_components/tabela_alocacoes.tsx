@@ -1,13 +1,10 @@
 "use client";
 import {
   deleteAlocacao,
-  getAlocacaoById,
-  updateAlocacao,
+
 } from "@/app/api/alocacoes/action";
 import { updateAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
 import { getEspecialidades } from "@/app/api/especialidades/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getUnidades } from "@/app/api/unidades/action";
 import { Alocacao } from "@/app/types/Alocacao";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -28,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Form,
   FormControl,
   FormField,
   FormItem,
@@ -50,8 +48,7 @@ import {
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { SelectItem } from "@radix-ui/react-select";
-import { Loader2, MenuIcon, SaveIcon } from "lucide-react";
+import { Loader2, MenuIcon, Pencil, SaveIcon, Trash2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -83,7 +80,8 @@ const TabelaAlocacoes = ({
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
 
   const form = useForm({
-    resolver: zodResolver(updateAlocacaoSchema),
+    resolver:
+      zodResolver<z.infer<typeof updateAlocacaoSchema>>(updateAlocacaoSchema),
     mode: "onChange",
     defaultValues: {
       prestadoresId: prestador?.id ?? 0,
@@ -107,32 +105,37 @@ const TabelaAlocacoes = ({
     }
   };
 
-  useEffect(() => {
-    const buscarDadasAlocacao = async () => {
-      if (alocacaoSelecionada && isUpdateModalOpen) {
-        const data = await getAlocacaoById(alocacaoSelecionada.id.toString());
-        form.reset({
-          prestadoresId: data.prestadoresId,
-          unidadesId: data.unidadesId,
-          especialidadesId: data.especialidadesId,
-        });
-      }
-    };
-    buscarDadasAlocacao();
-  }, [alocacaoSelecionada, isUpdateModalOpen, form]);
-  const onSubmit = async (values: z.infer<typeof updateAlocacaoSchema>) => {
-    try {
-      setCarregandoDadosAlocacao(true);
-      if (!alocacaoSelecionada) return;
-      await updateAlocacao(alocacaoSelecionada.id.toString(), values);
-      await fetchAlocacoes();
-      toast.success("Alocação criada com sucesso!");
-    } catch (error) {
-      toast.error("Não foi possivel criar a Alocação!");
-    } finally {
-      setCarregandoDadosAlocacao(false);
-    }
-  };
+  // const handleOpenUpdateModal = async (alocacaoParaAtualizar: Alocacao) => {
+  //   try {
+  //     setAlocacaoSelecionada(alocacaoParaAtualizar);
+  //     const data = await getAlocacaoById(alocacaoParaAtualizar.id.toString());
+
+  //     console.log("Dados recebidos da API:", data);
+  //     form.reset({
+  //       prestadoresId: data.prestadoresId,
+  //       unidadesId: data.unidadesId,
+  //       especialidadesId: data.especialidadesId,
+  //     });
+  //     setIsUpdateModalOpen(true);
+  //   } catch (error) {
+  //     toast.error("Falha ao carregar os dados da alocação para edição.");
+  //     console.error(error);
+  //   }
+  // };
+
+  // const onSubmit = async (values: z.infer<typeof updateAlocacaoSchema>) => {
+  //   try {
+  //     setCarregandoDadosAlocacao(true);
+  //     if (!alocacaoSelecionada) return;
+  //     await updateAlocacao(alocacaoSelecionada.id.toString(), values);
+  //     await fetchAlocacoes();
+  //     toast.success("Alocação criada com sucesso!");
+  //   } catch (error) {
+  //     toast.error("Não foi possivel criar a Alocação!");
+  //   } finally {
+  //     setCarregandoDadosAlocacao(false);
+  //   }
+  // };
 
   const fetchEspecialidades = async () => {
     try {
@@ -174,28 +177,30 @@ const TabelaAlocacoes = ({
                   <TableCell className="flex justify-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <MenuIcon />
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MenuIcon className="h-4 w-4" />
+                        </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="p-2">
-                        <>
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setAlocacaoSelecionada(row),
-                                setIsDeleteModalOpen(true);
-                            }}
-                          >
-                            Excluir alocação
-                          </DropdownMenuItem>
-                          {/* <DropdownMenuSeparator /> */}
-                          {/* <DropdownMenuItem
-                            onSelect={() => {
-                              setAlocacaoSelecionada(row),
-                                setIsUpdateModalOpen(true);
-                            }}
-                          >
-                            Editar alocação
-                          </DropdownMenuItem> */}
-                        </>
+                      <DropdownMenuContent align="end" className="p-2">
+                        {/* <DropdownMenuItem
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => handleOpenUpdateModal(row)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Editar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator /> */}
+                        <DropdownMenuItem
+                          className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                          onSelect={() => {
+                            setAlocacaoSelecionada(row);
+                            setIsDeleteModalOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Excluir</span>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -237,80 +242,58 @@ const TabelaAlocacoes = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
+{/* 
+      <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Atualizar Alocação </DialogTitle>
+            <DialogTitle>Atualizar Alocação</DialogTitle>
           </DialogHeader>
-          <FormProvider {...form}>
-            <div className="flex flex-col">
-              <form
-                className="space-y-4"
-                onSubmit={form.handleSubmit(onSubmit)}
-              >
-                <FormField
-                  control={form.control}
-                  name="especialidadesId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Especialidade *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(Number(value));
-                        }}
-                        value={
-                          field.value !== null && field.value !== undefined
-                            ? String(field.value)
-                            : ""
-                        }
-                      >
-                        <FormControl
-                          className={
-                            form.formState.errors.especialidadesId
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0" disabled>
-                            Selecione
+          <Form {...form}>
+            <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <FormField
+                control={form.control}
+                name="especialidadesId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Especialidade *</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value ? String(field.value) : ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma especialidade" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {especialidades.map((item) => (
+                          <SelectItem key={item.id} value={String(item.id)}>
+                            {item.nome}
                           </SelectItem>
-                          {especialidades.map((item) => {
-                            return (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.nome}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage>
-                        {form.formState.errors.especialidadesId?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-                <DialogFooter>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setIsUpdateModalOpen(false)}
-                    disabled={loading}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button variant="default" type="submit" disabled={loading}>
-                    Salvar Agendamento
-                  </Button>
-                </DialogFooter>
-              </form>
-            </div>
-          </FormProvider>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsUpdateModalOpen(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button variant="default" type="submit" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog> */}
     </>

@@ -12,7 +12,7 @@ const expedienteBaseSchema = z.object({
   }),
   hinicio: z.string().min(1, "Este campo é obrigatório"),
   hfinal: z.string(),
-  intervalo: z.string(),
+  intervalo: z.string().min(1, "O intervalo é obrigatório."),
   semana: z.string().optional(),
   alocacaoId: z
     .number()

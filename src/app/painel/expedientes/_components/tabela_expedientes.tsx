@@ -1,7 +1,5 @@
 "use client";
-import { getEspecialidades } from "@/app/api/especialidades/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getUnidades } from "@/app/api/unidades/action";
+
 import { Expediente } from "@/app/types/Expediente";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -32,6 +30,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -45,8 +44,7 @@ import {
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DropdownMenuItem } from "@radix-ui/react-dropdown-menu";
-import { SelectItem } from "@radix-ui/react-select";
-import { Loader2, MenuIcon, SaveIcon } from "lucide-react";
+import { Loader2, MenuIcon, Pencil, SaveIcon, Trash2 } from "lucide-react";
 import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -60,6 +58,7 @@ import { formatDate } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { http } from "@/util/http";
 import { Agenda } from "@/app/types/Agenda";
+import { formatDateAsUTC } from "@/app/helpers/format";
 
 interface TabelaExpedienteProps {
   expedientes: Expediente[];
@@ -78,9 +77,8 @@ const TabelaExpediente = ({
 }: TabelaExpedienteProps) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
-  const [ExpedienteSelecionada, setExpedienteSelecionada] =
+  const [expedienteSelecionado, setExpedienteSelecionado] =
     useState<Expediente | null>(null);
-
   const [loading, setloading] = useState<boolean>(false);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
 
@@ -94,6 +92,7 @@ const TabelaExpediente = ({
       hinicio: "",
       hfinal: "",
       semana: "",
+      intervalo: "",
       alocacaoId: 0,
     },
   });
@@ -110,7 +109,8 @@ const TabelaExpediente = ({
           agendamento.situacao == "AGENDADO" ||
             agendamento.situacao == "CONFIRMADO";
         });
-        if(agendamentoFeito) throw new Error("Existe agendamentos feitos neste expediente")
+        if (agendamentoFeito)
+          throw new Error("Existe agendamentos feitos neste expediente");
       }
 
       await finalizarExpediente(ExpedienteId.toString());
@@ -125,25 +125,36 @@ const TabelaExpediente = ({
     }
   };
 
-  // useEffect(() => {
-  //   if (ExpedienteSelecionada) {
-  //     form.reset({
-  //       especialidadesId: +ExpedienteSelecionada.especialidadesId,
-  //     });
-  //   }
-  // }, [ExpedienteSelecionada]);
+  const handleOpenUpdateModal = (expediente: Expediente) => {
+    setExpedienteSelecionado(expediente);
+    const dtinicioFormatada = formatDate(expediente.dtinicio, "yyyy-MM-dd");
+    const dtfinalFormatada = formatDate(expediente.dtfinal, "yyyy-MM-dd");
+
+    form.reset({
+      dtinicio: dtinicioFormatada,
+      dtfinal: dtfinalFormatada,
+      hinicio: expediente.hinicio,
+      hfinal: expediente.hfinal,
+      semana: expediente.semana.toUpperCase(),
+      intervalo: String(expediente.intervalo.split(" ")[0]),
+      alocacaoId: expediente.alocacaoId,
+    });
+    setIsUpdateModalOpen(true);
+  };
 
   const onSubmit = async (values: z.infer<typeof updateExpedienteSchema>) => {
+    if (!expedienteSelecionado) return;
+
     try {
-      setCarregandoDadosExpediente(true);
-      if (!ExpedienteSelecionada) return;
-      await updateExpediente(ExpedienteSelecionada.id.toString(), values);
+      setloading(true);
+      await updateExpediente(expedienteSelecionado.id.toString(), values);
       await fetchExpedientes();
-      toast.success("Expediente criada com sucesso!");
+      toast.success("Expediente atualizado com sucesso!");
+      setIsUpdateModalOpen(false);
     } catch (error) {
-      toast.error("Não foi possivel criar a Expediente!");
+      toast.error("Não foi possível atualizar o Expediente!");
     } finally {
-      setCarregandoDadosExpediente(false);
+      setloading(false);
     }
   };
 
@@ -177,8 +188,8 @@ const TabelaExpediente = ({
                   <TableCell>{row.intervalo}</TableCell>
                   <TableCell>
                     <div className="flex flex-col">
-                      <p>{formatDate(row.dtinicio, "dd/MM/yyyy")} </p>
-                      <p> {formatDate(row.dtfinal, "dd/MM/yyyy")}</p>
+                      <p>{formatDateAsUTC(row.dtinicio)} </p>
+                      <p> {formatDateAsUTC(row.dtfinal)}</p>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -188,28 +199,31 @@ const TabelaExpediente = ({
                   <TableCell className="flex justify-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <MenuIcon />
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MenuIcon className="h-4 w-4" />
+                        </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="p-2">
-                        <>
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setExpedienteSelecionada(row),
-                                setIsDeleteModalOpen(true);
-                            }}
-                          >
-                            Excluir alocação
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onSelect={() => {
-                              setExpedienteSelecionada(row),
-                                setIsUpdateModalOpen(true);
-                            }}
-                          >
-                            Editar alocação
-                          </DropdownMenuItem>
-                        </>
+                      <DropdownMenuContent align="end" className="p-2">
+                        {/* AJUSTE: Usando a nova função handleOpenUpdateModal */}
+                        <DropdownMenuItem
+                          className="flex items-center gap-2 cursor-pointer"
+                          onSelect={() => handleOpenUpdateModal(row)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                          <span>Editar</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
+                          onSelect={() => {
+                            setExpedienteSelecionado(row);
+                            setIsDeleteModalOpen(true);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Finalizar</span>
+                        </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -230,39 +244,47 @@ const TabelaExpediente = ({
         )}
       </Table>
 
+      {/* MODAL DE DELEÇÃO (AJUSTADO) */}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir Alocação </DialogTitle>
+            <DialogTitle>Finalizar Expediente</DialogTitle>
           </DialogHeader>
-          Tem certeza que deseja excluir a alocação do dia{" "}
-          <DialogFooter>
-            <Button variant="secondary" disabled={loading}>
+          <div>
+            Tem certeza que deseja finalizar este expediente? Esta ação não
+            poderá ser desfeita.
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={loading}
+            >
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              type="submit"
-              onClick={() => excluirExpediente(ExpedienteSelecionada!.id)}
+              onClick={() => excluirExpediente(expedienteSelecionado!.id)}
               disabled={loading}
             >
-              Excluir
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Finalizar
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
+      {/* MODAL DE ATUALIZAÇÃO (CORRIGIDO) */}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Atualizar Alocação </DialogTitle>
+            <DialogTitle>Atualizar Expediente</DialogTitle>
           </DialogHeader>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex-1 overflow-y-auto space-y-4 p-2 justify-start"
+              className="space-y-6 pt-4"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="hinicio"
@@ -270,11 +292,9 @@ const TabelaExpediente = ({
                     <FormItem>
                       <FormLabel>Horário Início *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="time" placeholder="08:00" />
+                        <Input {...field} type="time" />
                       </FormControl>
-                      <FormMessage>
-                        {form.formState.errors.hinicio?.message}
-                      </FormMessage>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -283,18 +303,16 @@ const TabelaExpediente = ({
                   name="hfinal"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Horário Fim </FormLabel>
+                      <FormLabel>Horário Fim *</FormLabel>
                       <FormControl>
-                        <Input {...field} type="time" placeholder="08:00" />
+                        <Input {...field} type="time" />
                       </FormControl>
-                      <FormMessage>
-                        {form.formState.errors.hfinal?.message}
-                      </FormMessage>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="dtinicio"
@@ -304,9 +322,7 @@ const TabelaExpediente = ({
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
-                      <FormMessage>
-                        {form.formState.errors.dtinicio?.message}
-                      </FormMessage>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -320,84 +336,85 @@ const TabelaExpediente = ({
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
-                      <FormMessage>
-                        {form.formState.errors.dtfinal?.message}
-                      </FormMessage>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="intervalo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Intervalo em minuntos*</FormLabel>
+                      <FormLabel>Intervalo (minutos)*</FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
                           type="text"
-                          maxLength={2}
-                          placeholder="00"
+                          placeholder="Ex: 15"
+                          value={field.value || ""}
+                          onChange={(event) =>
+                            field.onChange(event.target.value)
+                          }
+                          onBlur={field.onBlur}
+                          ref={field.ref}
                         />
                       </FormControl>
-                      <FormMessage>
-                        {form.formState.errors.intervalo?.message}
-                      </FormMessage>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="semana"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Dia da semana *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um dia" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value={"SEGUNDA"}>
+                            Segunda-feira
+                          </SelectItem>
+                          <SelectItem value={"TERCA"}>Terça-feira</SelectItem>
+                          <SelectItem value={"QUARTA"}>Quarta-feira</SelectItem>
+                          <SelectItem value={"QUINTA"}>Quinta-feira</SelectItem>
+                          <SelectItem value={"SEXTA"}>Sexta-feira</SelectItem>
+                          <SelectItem value={"SABADO"}>Sábado</SelectItem>
+                          <SelectItem value={"DOMINGO"}>Domingo</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-              <FormField
-                control={form.control}
-                name="semana"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Dias da semana</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="0" disabled>
-                          Selecione
-                        </SelectItem>
-                        <SelectItem value={"Segunda"}>Segunda</SelectItem>
-                        <SelectItem value={"Terça"}>Terça</SelectItem>
-                        <SelectItem value={"Quarta"}>Quarta</SelectItem>
-                        <SelectItem value={"Quinta"}>Quinta</SelectItem>
-                        <SelectItem value={"Sexta"}>Sexta</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage>
-                      {form.formState.errors.semana?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Button type="submit" variant="default">
-                      <SaveIcon /> Adicionar
-                    </Button>
-                  </>
-                )}
-              </Button>
+              <DialogFooter className="pt-4">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setIsUpdateModalOpen(false)}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <SaveIcon className="mr-2 h-4 w-4" />
+                  )}
+                  Salvar Alterações
+                </Button>
+              </DialogFooter>
             </form>
           </Form>
         </DialogContent>

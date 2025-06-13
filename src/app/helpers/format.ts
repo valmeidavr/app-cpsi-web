@@ -63,3 +63,19 @@ export const formatRGInput = (value: string) => {
     )}-${rawValue.slice(8, 9)}`;
   }
 };
+
+export function formatDateAsUTC(dateInput: any) {
+  const date = new Date(dateInput);
+
+  // getTimezoneOffset() retorna a diferença em minutos entre UTC e o fuso local.
+  // Ex: Para UTC-3, retorna 180.
+  // Somamos esses minutos de volta à data para "cancelar" a conversão do fuso.
+  date.setMinutes(date.getMinutes() + date.getTimezoneOffset());
+
+  // Agora podemos formatar a data com segurança
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0"); // Mês começa em 0
+  const year = date.getFullYear();
+
+  return `${day}/${month}/${year}`;
+}

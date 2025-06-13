@@ -26,19 +26,6 @@ export type UpdateExpedienteDTO = z.infer<typeof updateExpedienteSchema>;
 
 export async function createExpediente(body: CreateExpedienteDTO) {
   try {
-    if (body.dtinicio) {
-      const dtinicio = parse(body.dtinicio, "dd/MM/yyyy", new Date());
-      if (isValid(dtinicio)) {
-        body.dtinicio = format(dtinicio, "yyyy-MM-dd");
-      }
-    }
-
-    if (body.dtfinal) {
-      const dtfinal = parse(body.dtfinal, "dd/MM/yyyy", new Date());
-      if (isValid(dtfinal)) {
-        body.dtfinal = format(dtfinal, "yyyy-MM-dd");
-      }
-    }
     await http.post("/expedientes", body);
     revalidatePath("/painel/expedientes");
   } catch (error: any) {
@@ -52,22 +39,12 @@ export async function getExpedienteById(id: string) {
   return data;
 }
 
-export async function updateExpediente(id: string, body: UpdateExpedienteDTO) {
+export async function updateExpediente(
+  id: string,
+  body: Partial<UpdateExpedienteDTO>
+) {
   try {
-    if (body.dtinicio) {
-      const dtinicio = parse(body.dtinicio, "dd/MM/yyyy", new Date());
-      if (isValid(dtinicio)) {
-        body.dtinicio = format(dtinicio, "yyyy-MM-dd");
-      }
-    }
-
-    if (body.dtfinal) {
-      const dtfinal = parse(body.dtfinal, "dd/MM/yyyy", new Date());
-      if (isValid(dtfinal)) {
-        body.dtfinal = format(dtfinal, "yyyy-MM-dd");
-      }
-    }
-
+    console.log("UPDATE", body)
     await http.patch(`/expedientes/${id}`, body);
     revalidatePath("painel/expedientes");
   } catch (error) {
