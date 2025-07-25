@@ -117,21 +117,44 @@ export default function CustomerRegistrationForm() {
       desconto: {},
     },
   });
+
+  // Inicializar descontos quando convênios são carregados
+  useEffect(() => {
+    if (convenios.length > 0) {
+      const initialDescontos: Record<string, number> = {};
+      convenios.forEach((convenio) => {
+        initialDescontos[convenio.id] = convenio.desconto;
+      });
+      form.setValue("desconto", initialDescontos);
+    }
+  }, [convenios, form]);
+
   const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     if (emailError || cpfError) {
       toast.error("Corrija os erros antes de enviar o formulário.");
+      setLoading(false);
       return;
     }
     try {
-      const descontosPreenchidos = { ...values.desconto };
+      // Garantir que todos os convênios selecionados tenham desconto definido
+      const descontosPreenchidos: Record<string, number> = {};
 
-      convenios.forEach((item) => {
-        if (
-          descontosPreenchidos[item.id] === undefined ||
-          descontosPreenchidos[item.id] === null
-        ) {
-          descontosPreenchidos[item.id] = item.desconto;
+      // Para cada convênio selecionado, garantir que tenha um desconto válido
+      values.convenios.forEach((convenioId) => {
+        const convenio = convenios.find(c => c.id === convenioId);
+        if (convenio) {
+          const descontoAtual = values.desconto[convenioId];
+          // Se não há desconto definido ou é inválido, usar o desconto padrão do convênio
+          if (
+            descontoAtual === undefined ||
+            descontoAtual === null ||
+            isNaN(descontoAtual)
+          ) {
+            descontosPreenchidos[convenioId] = convenio.desconto;
+          } else {
+            descontosPreenchidos[convenioId] = descontoAtual;
+          }
         }
       });
 
@@ -157,7 +180,6 @@ export default function CustomerRegistrationForm() {
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const checkEmail = async (email: string) => {
@@ -777,7 +799,8 @@ export default function CustomerRegistrationForm() {
                                     placeholder="0%"
                                     value={
                                       field.value !== undefined &&
-                                      field.value !== null
+                                      field.value !== null &&
+                                      !isNaN(field.value)
                                         ? `${field.value}%`
                                         : `${item.desconto}%`
                                     }
@@ -791,6 +814,12 @@ export default function CustomerRegistrationForm() {
                                       if (value > 100) value = 100;
                                       if (value < 0) value = 0;
                                       field.onChange(value);
+                                    }}
+                                    onBlur={() => {
+                                      // Se o campo ficou vazio, usar o desconto padrão do convênio
+                                      if (field.value === undefined || field.value === null || isNaN(field.value)) {
+                                        field.onChange(item.desconto);
+                                      }
                                     }}
                                     className={`text-right ${
                                       form.formState.errors.desconto?.[item.id]

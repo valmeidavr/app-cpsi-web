@@ -2,17 +2,27 @@
 
 import { http } from "@/util/http";
 import { revalidatePath } from "next/cache";
-
 import { format, isValid, parse } from "date-fns";
-
 import { z } from "zod";
 import {
   createAgendaSchema,
   updateAgendaSchema,
 } from "./schema/formSchemaAgendas";
 import { Agenda } from "@/app/types/Agenda";
-import { createLancamento, deleteLancamento, getLancamentoByAgendaId, getLancamentoById } from "../lancamentos/action";
+import {
+  createLancamento,
+  deleteLancamento,
+  getLancamentoByAgendaId,
+} from "../lancamentos/action";
 import { getPayload } from "@/util/auth";
+
+export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
+export type UpdateAgendaDTO = z.infer<typeof updateAgendaSchema>;
+
+const { cookies } = require("next/headers");
+const cookiesStore = await cookies();
+const token = cookiesStore.get("accessToken")?.value;
+const payload = getPayload(token);
 
 export async function getAgendas(
   page: number = 1,
@@ -20,14 +30,12 @@ export async function getAgendas(
   search?: string,
   date?: Date
 ) {
-  const dateString = date ? date.toISOString().split("T")[0] : undefined;
   const { data } = await http.get("/agendas", {
     params: { page, limit, search, date },
   });
   return data;
 }
-export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
-export type UpdateAgendaDTO = z.infer<typeof updateAgendaSchema>;
+
 export async function createAgenda(
   body: CreateAgendaDTO
 ): Promise<Agenda | any> {
@@ -39,14 +47,8 @@ export async function createAgenda(
         payloadCreate.dtagenda = format(dtagenda, "yyyy-MM-dd");
       }
     }
-    const agendamento: Agenda = await http.post(
-      "/agendas",
-      payloadCreate
-    );
-    const { cookies } = require("next/headers");
-    const cookiesStore = await cookies();
-    const token = cookiesStore.get("accessToken")?.value;
-    const payload = getPayload(token);
+    const agendamento: Agenda = await http.post("/agendas", payloadCreate);
+
     await createLancamento({
       valor: 0,
       descricao: `Agendamento ${agendamento.dtagenda}`,
@@ -66,9 +68,7 @@ export async function createAgenda(
 }
 
 export async function getAgendaById(id: string) {
-  const { data } = await http.get(
-    `/agendas/${id}`
-  );
+  const { data } = await http.get(`/agendas/${id}`);
 
   return data;
 }
@@ -86,27 +86,10 @@ export async function updateAgenda(
       }
     }
 
-    const { cookies } = require("next/headers");
-    const cookiesStore = await cookies();
-    const token = cookiesStore.get("accessToken")?.value;
-    const payload = getPayload(token);
     const { horario, ...payloadUpdate } = body;
-    console.log("Payload Update:", id);
-    const agendamento: Agenda = await http.patch(
-      `/agendas/${id}`,
-      payloadUpdate
-    );
-    console.log({
-      valor: valor,
-      descricao: `Agendamento ${payloadUpdate.dtagenda}`,
-      data_lancamento: new Date().toISOString(),
-      tipo: "ENTRADA",
-      clientes_Id: payloadUpdate.clientesId,
-      forma_pagamento: "DINHEIRO",
-      status_pagamento: "PENDENTE",
-      agendas_id: +id,
-      usuario_id: payload?.usuario?.id,
-    });
+
+    await http.patch(`/agendas/${id}`, payloadUpdate);
+
     if (body.situacao == "AGENDADO") {
       await createLancamento({
         valor: valor ? valor : 0,
@@ -120,7 +103,6 @@ export async function updateAgenda(
         usuario_id: payload?.usuario?.id,
       });
     }
-
 
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {
@@ -157,7 +139,7 @@ export async function finalizarAgenda(id: string) {
       procedimentosId: null,
     };
     await http.patch(`/agendas/${id}`, payload);
-    const lancamento = await getLancamentoByAgendaId(id)
+    const lancamento = await getLancamentoByAgendaId(id);
     await deleteLancamento(lancamento.id);
     revalidatePath("/painel/agendas/_components/tabela_agenda");
   } catch (error) {

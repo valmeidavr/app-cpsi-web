@@ -46,7 +46,6 @@ export async function getAlocacaos(
 
 export async function getAlocacaoById(id: string): Promise<Alocacao> {
   const { data } = await http.get(`/alocacoes/${id}`);
-
   return data;
 }
 
@@ -64,5 +63,6 @@ export async function updateAlocacao(id: string, body: UpdateAlocacaoDTO) {
 
 export async function deleteAlocacao(id: string): Promise<void> {
   await http.delete(`/alocacoes/${id}`);
+      revalidatePath("painel/alocacoes");
 }
 

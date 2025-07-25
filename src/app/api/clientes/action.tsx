@@ -30,19 +30,34 @@ export async function createCliente(body: CreateClienteDTO) {
     if (body.telefone2) {
       body.telefone2 = limparTelefone(String(body.telefone2));
     }
+    
     const { convenios, desconto, ...payload } = body;
     const { data } = await http.post("/clientes", payload);
-    for (const convenio of convenios) {
-      const convenioBody = {
-        conveniosId: convenio,
-        clientesId: data.id,
-        desconto: desconto[convenio],
-      };
-      await http.post("/convenios-clientes", convenioBody);
+    
+    // Salvar convênios do cliente com seus respectivos descontos
+    if (convenios && convenios.length > 0) {
+      for (const convenioId of convenios) {
+        const descontoValue = desconto[convenioId];
+        
+        // Garantir que o desconto seja um número válido
+        const descontoFinal = typeof descontoValue === 'number' && !isNaN(descontoValue) 
+          ? descontoValue 
+          : 0; // Valor padrão se não for válido
+        
+        const convenioBody = {
+          conveniosId: convenioId,
+          clientesId: data.id,
+          desconto: descontoFinal,
+        };
+        
+        await http.post("/convenios-clientes", convenioBody);
+      }
     }
+    
     revalidatePath("/painel/clientes");
   } catch (error: any) {
     console.error("Erro ao criar cliente:", error);
+    throw error; // Re-throw para que o frontend possa tratar o erro
   }
 }
 
@@ -89,21 +104,26 @@ export async function updateCliente(id: string, body: UpdateClienteDTO) {
       payload
     );
     if (convenios && convenios.length > 0) {
-      for (const convenio of convenios) {
+      for (const convenioId of convenios) {
+        const descontoValue = desconto?.[convenioId];
+        
+        // Garantir que o desconto seja um número válido
+        const descontoFinal = typeof descontoValue === 'number' && !isNaN(descontoValue) 
+          ? descontoValue 
+          : 0; // Valor padrão se não for válido
+        
         const convenioBody = {
-          conveniosId: convenio,
+          conveniosId: convenioId,
           clientesId: data.id,
-          desconto: desconto?.[convenio] ?? null,
+          desconto: descontoFinal,
         };
-
-
 
         try {
           const res = await http.get(
             "/convenios-clientes",
             {
               params: {
-                conveniosId: convenio,
+                conveniosId: convenioId,
                 clientesId: data.id,
               },
             }
