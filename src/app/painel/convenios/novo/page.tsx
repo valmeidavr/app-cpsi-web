@@ -25,7 +25,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
 import { useRouter } from "next/navigation";
-import { createConvenio } from "@/app/api/convenios/action";
+import { http } from "@/util/http";
 
 import {
   Select,
@@ -34,7 +34,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { http } from "@/util/http";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
@@ -52,14 +51,14 @@ export default function NovoConvenio() {
       nome: "",
       regras: "",
       desconto: undefined,
-      tabelaFaturamentosId: 0,
+      tabela_faturamento_id: 0,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
-      await createConvenio(values);
+      await http.post("/api/convenios", values);
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -203,7 +202,7 @@ export default function NovoConvenio() {
             />
             <FormField
               control={form.control}
-              name="tabelaFaturamentosId"
+                                name="tabela_faturamento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tabela de Faturamento *</FormLabel>
@@ -215,7 +214,7 @@ export default function NovoConvenio() {
                   >
                     <FormControl
                       className={
-                        form.formState.errors.tabelaFaturamentosId
+                        form.formState.errors.tabela_faturamento_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }

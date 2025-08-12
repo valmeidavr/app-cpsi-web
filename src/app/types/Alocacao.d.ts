@@ -3,9 +3,9 @@ import { Unidade } from "./Unidades";
 
 export interface Alocacao {
   id: number;
-  unidadesId: number;
-  especialidadesId: number;
-  prestadoresId: number;
+  unidade_id: number;
+  especialidade_id: number;
+  prestador_id: number;
   especialidade: Especialidade;
   unidade: Unidade;
   prestador: Prestador;

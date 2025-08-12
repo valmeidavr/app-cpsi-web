@@ -32,8 +32,7 @@ import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 //API
-import { updateCliente } from "@/app/api/clientes/action";
-import { getClienteById } from "@/app/api/clientes/action";
+import { http } from "@/util/http";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 //Types
 import { Cliente, TipoCliente } from "@/app/types/Cliente";
@@ -46,7 +45,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Convenio } from "@/app/types/Convenios";
-import { getConvenios } from "@/app/api/convenios/action";
 import {
   Table,
   TableBody,
@@ -156,10 +154,18 @@ export default function EditarCliente() {
       };
       if (!clienteId) throw new Error("ID do cliente não encontrado.");
 
-      const response = await updateCliente(clienteId, payload);
+      const response = await fetch(`/api/clientes/${clienteId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
 
-      if (response && response.error) {
-        throw new Error("Erro ao atualizar cliente.");
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar cliente.");
       }
       const queryParams = new URLSearchParams();
 
@@ -180,8 +186,14 @@ export default function EditarCliente() {
   };
   const fetchConvenios = async () => {
     try {
-      const { data } = await getConvenios();
-      setConvenios(data);
+      const response = await fetch("/api/convenios");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setConvenios(data.data);
+      } else {
+        console.error("Erro ao buscar convênios:", data.error);
+      }
     } catch (error) {
       console.error("Error ao buscar convênios:", error);
     }
@@ -204,32 +216,39 @@ export default function EditarCliente() {
       try {
         await fetchConvenios();
         if (!clienteId) redirect("painel/clientes");
-        const data = await getClienteById(+clienteId);
-        setCliente(data);
-        if (data.Convenio) {
-          const conveniosIds = data.Convenio.map((item) => item.conveniosId);
-          const descontos = data.Convenio.reduce((acc, item) => {
-            acc[item.conveniosId] = item.desconto;
-            return acc;
-          }, {} as Record<number, number>);
+        const response = await fetch(`/api/clientes/${clienteId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setCliente(data);
+          if (data.convenios) {
+            const conveniosIds = data.convenios.map((item: any) => item.convenioId);
+            const descontos = data.convenios.reduce((acc: any, item: any) => {
+              acc[item.convenioId] = item.desconto;
+              return acc;
+            }, {} as Record<number, number>);
 
-          form.reset({
-            nome: data.nome,
-            email: data.email,
-            dtnascimento: data.dtnascimento,
-            sexo: data.sexo,
-            cpf: data.cpf,
-            cep: data.cep,
-            logradouro: data.logradouro,
-            numero: data.numero,
-            bairro: data.bairro,
-            cidade: data.cidade,
-            uf: data.uf,
-            telefone1: data.telefone1,
-            telefone2: data.telefone2,
-            convenios: conveniosIds,
-            desconto: descontos,
-          });
+            form.reset({
+              nome: data.nome,
+              email: data.email,
+              dtnascimento: data.dtnascimento,
+              sexo: data.sexo,
+              cpf: data.cpf,
+              cep: data.cep,
+              logradouro: data.logradouro,
+              numero: data.numero,
+              bairro: data.bairro,
+              cidade: data.cidade,
+              uf: data.uf,
+              telefone1: data.telefone1,
+              telefone2: data.telefone2,
+              convenios: conveniosIds,
+              desconto: descontos,
+            });
+          }
+        } else {
+          console.error("Erro ao carregar cliente:", data.error);
+          toast.error("Erro ao carregar dados do cliente");
         }
       } catch (error) {
         console.error("Erro ao carregar usuário:", error);

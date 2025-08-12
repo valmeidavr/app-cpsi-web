@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 //Types
 import { Prestador } from "@/app/types/Prestador";
@@ -58,17 +58,22 @@ export default function Prestadores() {
   const carregarPrestadores = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/prestadores", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setPrestadores(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalPrestadores(data.total);
+      const response = await fetch(`/api/prestadores?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPrestadores(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalPrestadores(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar prestadores:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar prestadores:", error);
     } finally {
@@ -82,8 +87,14 @@ export default function Prestadores() {
     const novoStatus =
       prestadorSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
-      await http.patch(`/prestadores/${prestadorSelecionado.id}`, {
-        status: novoStatus,
+      const response = await fetch(`/api/prestadores/${prestadorSelecionado.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
       });
       setPrestadores((prestadores) =>
         prestadores.map((prestador) =>

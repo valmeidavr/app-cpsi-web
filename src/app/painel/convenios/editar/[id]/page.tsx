@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import { getConvenioById, updateConvenio } from "@/app/api/convenios/action";
+import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
@@ -37,8 +37,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-import { http } from "@/util/http";
-import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 export default function EditarConvenio() {
   const [loading, setLoading] = useState(false);
@@ -57,7 +55,7 @@ export default function EditarConvenio() {
       nome: "",
       regras: "",
       desconto: undefined,
-      tabelaFaturamentosId: 0,
+      tabela_faturamento_id: 0,
     },
   });
 
@@ -65,10 +63,17 @@ export default function EditarConvenio() {
 
   const fetchTabelaFaturamento = async () => {
     try {
-      const { data } = await http.get("/tabela-faturamentos", {});
-
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/tabela_faturamentos");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTabelaFaturamento(data.data);
+      } else {
+        console.error("Erro ao buscar tabelas de faturamento:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tabelas de faturamento:", error);
+    }
   };
 
   useEffect(() => {
@@ -77,17 +82,23 @@ export default function EditarConvenio() {
       try {
         if (!convenioId) redirect("/painel/convenios");
         await fetchTabelaFaturamento();
-        const data = await getConvenioById(convenioId);
-        setConvenio(data);
-
-        form.reset({
-          nome: data.nome,
-          regras: data.regras,
-          desconto: data.desconto,
-          tabelaFaturamentosId: data.tabelaFaturamentosId,
-        });
+        const response = await fetch(`/api/convenios/${convenioId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setConvenio(data);
+          form.reset({
+            nome: data.nome,
+            regras: data.regras,
+            desconto: data.desconto,
+            tabela_faturamento_id: data.tabela_faturamento_id,
+          });
+        } else {
+          console.error("Erro ao carregar convenio:", data.error);
+          toast.error("Erro ao carregar dados do convênio");
+        }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
+        console.error("Erro ao carregar convenio:", error);
       } finally {
         setCarregando(false);
       }
@@ -100,10 +111,26 @@ export default function EditarConvenio() {
     try {
       if (!convenioId) redirect("/painel/convenios");
 
-      const data = await updateConvenio(convenioId, values);
+      const response = await fetch(`/api/convenios/${convenioId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome: values.nome,
+          regras: values.regras,
+          desconto: values.desconto,
+          tabela_faturamento_id: values.tabela_faturamento_id
+        }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar convênio.");
+      }
 
       const queryParams = new URLSearchParams();
-
       queryParams.set("type", "success");
       queryParams.set("message", "Convênio atualizado com sucesso!");
 
@@ -234,7 +261,7 @@ export default function EditarConvenio() {
               />
               <FormField
                 control={form.control}
-                name="tabelaFaturamentosId"
+                                  name="tabela_faturamento_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tabela *</FormLabel>
@@ -246,7 +273,7 @@ export default function EditarConvenio() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.tabelaFaturamentosId
+                          form.formState.errors.tabela_faturamento_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }

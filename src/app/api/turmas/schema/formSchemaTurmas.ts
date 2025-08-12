@@ -8,11 +8,11 @@ export const createTurmaSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Data de início inválida"),
   limiteVagas: z.number().int().positive(),
-  procedimentosId: z
+  procedimento_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
     .refine((val) => val > 0, { message: "Campo obrigatório" }),
-  prestadoresId: z
+  prestador_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
     .refine((val) => val > 0, { message: "Campo obrigatório" }),

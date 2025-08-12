@@ -24,7 +24,14 @@ export function setCookie(
 }
 
 export function getCookie(key: string) {
-  return Cookies.get(key);
+  // Verificar se estamos no lado do cliente
+  if (typeof window !== "undefined") {
+    return Cookies.get(key);
+  }
+  
+  // No lado do servidor, retornar null
+  // O token será obtido de outras formas no servidor
+  return null;
 }
 
 export function delCookie(): any {

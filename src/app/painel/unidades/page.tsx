@@ -37,10 +37,10 @@ import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 //API
-import { createUnidade } from "@/app/api/unidades/action";
 import { createUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
-//Helpers
 import { http } from "@/util/http";
+//Helpers
+// Removido import http - usando fetch direto
 //Types
 import { Unidade } from "@/app/types/Unidades";
 
@@ -56,17 +56,22 @@ export default function Unidades() {
   const carregarUnidades = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/unidades", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setUnidades(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalUnidades(data.total);
+      const response = await fetch(`/api/unidades?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setUnidades(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalUnidades(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar unidades:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar unidades:", error);
     } finally {
@@ -93,7 +98,7 @@ export default function Unidades() {
   const onSubmit = async (values: z.infer<typeof createUnidadeSchema>) => {
     setLoading(true);
     try {
-      await createUnidade(values);
+      await http.post("/api/unidades", values);
       carregarUnidades();
       toast.success("Unidade criada com sucesso!");
       form.reset();

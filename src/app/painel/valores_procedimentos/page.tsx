@@ -38,15 +38,11 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 //API
 
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
-import {
-  createValorProcedimento,
-  finalizarValorProcedimento,
-  updateValorProcedimento,
-} from "@/app/api/valor-procedimento/action";
+import { http } from "@/util/http";
 import { Procedimento } from "@/app/types/Procedimento";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import {
@@ -76,7 +72,6 @@ export default function ValorProcedimentos() {
   const [valorProcedimentoSelecionado, setValorProcedimentoSelecionado] =
     useState<ValorProcedimento | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [loadingInativar, setLoadingInativar] = useState(false);
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
     TabelaFaturamento[]
@@ -96,25 +91,25 @@ export default function ValorProcedimentos() {
     setCarregando(true);
     try {
       if (!tabelaSelecionado) return;
-      const params: any = {
-        page: paginaAtual + 1,
-        limit: 5,
-        search: termoBusca,
-        tabelaFaturamentosId: tabelaSelecionado.id,
-        procedimentosId: procedimentoSelecionado
-          ? procedimentoSelecionado.id
-          : "",
-      };
-      const { data } = await http.get(
-        "/valores-procedimentos",
-        {
-          params,
-        }
-      );
+      const params = new URLSearchParams();
+      params.append('page', (paginaAtual + 1).toString());
+      params.append('limit', '5');
+      params.append('search', termoBusca);
+      params.append('tabela_faturamento_id', tabelaSelecionado ? tabelaSelecionado.id.toString() : '0');
+      if (procedimentoSelecionado) {
+        params.append('procedimento_id', procedimentoSelecionado ? procedimentoSelecionado.id.toString() : '0');
+      }
 
-      setValorProcedimentos(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalValorProcedimentos(data.total);
+      const response = await fetch(`/api/valor-procedimento?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setValorProcedimentos(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalValorProcedimentos(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar valores de procedimentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar lançamentos:", error);
     } finally {
@@ -126,8 +121,8 @@ export default function ValorProcedimentos() {
     resolver: zodResolver(createValorProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
-      tabelaFaturamentosId: 0,
-      procedimentosId: 0,
+      tabela_faturamento_id: 0,
+      procedimento_id: 0,
       valor: 0,
       tipo: undefined,
     },
@@ -137,8 +132,8 @@ export default function ValorProcedimentos() {
     resolver: zodResolver(updateValorProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
-      tabelaFaturamentosId: 0,
-      procedimentosId: 0,
+      tabela_faturamento_id: 0,
+      procedimento_id: 0,
       valor: 0,
       tipo: undefined,
     },
@@ -151,9 +146,9 @@ export default function ValorProcedimentos() {
         if (!valorProcedimentoSelecionado) return;
 
         formUpdate.reset({
-          tabelaFaturamentosId:
-            valorProcedimentoSelecionado.tabelaFaturamentosId,
-          procedimentosId: valorProcedimentoSelecionado.procedimentosId,
+          tabela_faturamento_id:
+            valorProcedimentoSelecionado.tabela_faturamento_id,
+          procedimento_id: valorProcedimentoSelecionado.procedimento_id,
           valor: +valorProcedimentoSelecionado.valor,
           tipo: valorProcedimentoSelecionado.tipo,
         });
@@ -170,18 +165,31 @@ export default function ValorProcedimentos() {
 
   const fetchProcedimentos = async () => {
     try {
-      const { data } = await http.get("/Procedimentos");
+      const response = await fetch("/api/procedimentos");
+      const data = await response.json();
 
-      setProcedimentos(data.data);
-    } catch (error: any) {}
+      if (response.ok) {
+        setProcedimentos(data.data);
+      } else {
+        console.error("Erro ao buscar procedimentos:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar procedimentos:", error);
+    }
   };
   const fetchTabelaFaturamentos = async () => {
     try {
-      const { data } = await http.get(
-        "/tabela-faturamentos"
-      );
-      setTabelaFaturamentos(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/tabela_faturamentos");
+      const data = await response.json();
+
+      if (response.ok) {
+        setTabelaFaturamentos(data.data);
+      } else {
+        console.error("Erro ao buscar tabela de faturamentos:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar tabela de faturamentos:", error);
+    }
   };
 
   useEffect(() => {
@@ -205,7 +213,7 @@ export default function ValorProcedimentos() {
   ) => {
     setCarregando(true);
     try {
-      await createValorProcedimento(values);
+      await http.post("/api/valor-procedimento", values);
       await carregarValorProcedimentos();
     } catch (error) {
       toast.error("Erro ao salvar valor procedimento");
@@ -217,7 +225,7 @@ export default function ValorProcedimentos() {
   const handleDeleteValor = async (valorId: number) => {
     setCarregando(true);
     try {
-      await finalizarValorProcedimento(valorId);
+      await http.patch(`/api/valor-procedimento/${valorId}`, { status: "Inativo" });
       await carregarValorProcedimentos();
     } catch (error) {
       toast.error("Erro ao deletar valor procedimento");
@@ -232,7 +240,7 @@ export default function ValorProcedimentos() {
     setCarregando(true);
     try {
       if (!valorProcedimentoSelecionado) return;
-      await updateValorProcedimento(valorProcedimentoSelecionado.id, values);
+      await http.patch(`/api/valor-procedimento/${valorProcedimentoSelecionado.id}`, values);
       await carregarValorProcedimentos();
       setIsDialogOpen(false)
     } catch (error) {
@@ -258,7 +266,7 @@ export default function ValorProcedimentos() {
           <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-2 items-end">
             <FormField
               control={form.control}
-              name="tabelaFaturamentosId"
+              name="tabela_faturamento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tabela *</FormLabel>
@@ -267,10 +275,10 @@ export default function ValorProcedimentos() {
                       field.onChange(value);
                       setTabelaSelecionado(
                         tabelaFaturamentos.find((item) => item.id == +value) ??
-                          null
+                        null
                       );
                     }}
-                    value={field.value.toString() || ""}
+                    value={field.value ? field.value.toString() :  ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -287,14 +295,14 @@ export default function ValorProcedimentos() {
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.tabelaFaturamentosId?.message}
+                    {form.formState.errors.tabela_faturamento_id?.message}
                   </FormMessage>
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="procedimentosId"
+              name="procedimento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Procedimentos *</FormLabel>
@@ -305,7 +313,7 @@ export default function ValorProcedimentos() {
                         procedimentos.find((item) => item.id == +value) ?? null
                       );
                     }}
-                    value={field.value.toString() || ""}
+                    value={field.value ? field.value.toString() : ""}
                   >
                     <FormControl>
                       <SelectTrigger>
@@ -322,7 +330,7 @@ export default function ValorProcedimentos() {
                     </SelectContent>
                   </Select>
                   <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.procedimentosId?.message}
+                    {form.formState.errors.procedimento_id?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -558,7 +566,7 @@ export default function ValorProcedimentos() {
               <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-2">
                 <FormField
                   control={formUpdate.control}
-                  name="tabelaFaturamentosId"
+                  name="tabela_faturamento_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tabela *</FormLabel>
@@ -592,7 +600,7 @@ export default function ValorProcedimentos() {
                       </Select>
                       <FormMessage className="text-red-500 text-sm mt-1">
                         {
-                          formUpdate.formState.errors.tabelaFaturamentosId
+                          formUpdate.formState.errors.tabela_faturamento_id
                             ?.message
                         }
                       </FormMessage>
@@ -601,7 +609,7 @@ export default function ValorProcedimentos() {
                 />
                 <FormField
                   control={formUpdate.control}
-                  name="procedimentosId"
+                  name="procedimento_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Procedimentos *</FormLabel>
@@ -610,7 +618,7 @@ export default function ValorProcedimentos() {
                           field.onChange(value);
                           setProcedimentoSelecionado(
                             procedimentos.find((item) => item.id == +value) ??
-                              null
+                            null
                           );
                         }}
                         value={field.value ? field.value.toString() : ""}
@@ -633,7 +641,7 @@ export default function ValorProcedimentos() {
                         </SelectContent>
                       </Select>
                       <FormMessage className="text-red-500 text-sm mt-1">
-                        {formUpdate.formState.errors.procedimentosId?.message}
+                        {formUpdate.formState.errors.procedimento_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}

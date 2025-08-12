@@ -24,12 +24,10 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import { createEspecialidade } from "@/app/api/especialidades/action";
-
+import { createEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 //Helpers
 import { useRouter } from "next/navigation";
-import { createEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 export default function NovaEspecialidade() {
   const [loading, setLoading] = useState(false);
@@ -49,7 +47,19 @@ export default function NovaEspecialidade() {
   ) => {
     setLoading(true);
     try {
-      await createEspecialidade(values);
+      const response = await fetch("/api/especialidades", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao salvar especialidade");
+      }
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -59,15 +69,11 @@ export default function NovaEspecialidade() {
 
       router.push(`/painel/especialidades?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar especialidade";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar especialidade";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

@@ -23,7 +23,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 
 //Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
@@ -44,16 +44,22 @@ export default function Convenios() {
   const carregarConvenios = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/convenios", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
-      setConvenios(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalconvenios(data.total);
+
+      const response = await fetch(`/api/convenios?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setConvenios(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalconvenios(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar convênios:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar convenios:", error);
     } finally {
@@ -63,9 +69,17 @@ export default function Convenios() {
 
   const fetchTabelaFaturamento = async () => {
     try {
-      const { data } = await http.get("/tabela-faturamentos");
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/tabela_faturamentos");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTabelaFaturamento(data.data);
+      } else {
+        console.error("Erro ao buscar tabela de faturamentos:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar tabela de faturamentos:", error);
+    }
   };
 
   useEffect(() => {
@@ -159,7 +173,7 @@ export default function Convenios() {
                     <Badge className="text-[13px]" variant="outline">
                       {tabelaFaturamentos
                         .filter(
-                          (tabela) => tabela.id == convenio.tabelaFaturamentosId
+                          (tabela) => tabela.id == convenio.tabela_faturamento_id
                         )
                         .map((tabela) => (
                           <div key={tabela.id}>{tabela.nome}</div>

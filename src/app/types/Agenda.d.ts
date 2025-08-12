@@ -10,13 +10,13 @@ export interface Agenda {
   id: number;
   dtagenda: DateTime;
   situacao: Situacao;
-  clientesId: number | null;
-  conveniosId: number | null;
-  procedimentosId: number | null;
-  expedientesId: number;
-  prestadoresId: number;
-  unidadesId: number;
-  especialidadesId: number;
+  cliente_id: number | null;
+  convenio_id: number | null;
+  procedimento_id: number | null;
+  expediente_id: number;
+  prestador_id: number;
+  unidade_id: number;
+  especialidade_id: number;
 
   clientes: Cliente;
   convenios: Convenio;

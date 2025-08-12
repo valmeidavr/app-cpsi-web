@@ -33,12 +33,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import {
-  getProcedimentoById,
-  updateProcedimento,
-} from "@/app/api/procedimentos/action";
 import { updateProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
-import { getEspecialidades } from "@/app/api/especialidades/action";
 
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
@@ -61,11 +56,26 @@ export default function EditarProcedimento() {
       nome: "",
       codigo: "",
       tipo: "",
-      especialidadeId: 0,
+      especialidade_id: 0,
     },
   });
 
   const router = useRouter();
+
+  const fetchEspecialidade = async () => {
+    try {
+      const response = await fetch("/api/especialidades");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEspecialidadeOptions(data.data);
+      } else {
+        console.error("Erro ao buscar especialidades:", data.error);
+      }
+    } catch (error) {
+      console.error("Error ao buscar especialidades:", error);
+    }
+  };
 
   useEffect(() => {
     setCarregando(true);
@@ -73,16 +83,23 @@ export default function EditarProcedimento() {
       try {
         if (!procedimentoId) redirect("/painel/procedimentos");
         await fetchEspecialidade();
-        const data = await getProcedimentoById(procedimentoId);
-        setProcedimento(data);
-        form.reset({
-          nome: data.nome,
-          codigo: data.codigo,
-          tipo: data.tipo,
-          especialidadeId: data.especialidadeId
-            ? data.especialidadeId.toString()
-            : 0,
-        });
+        const response = await fetch(`/api/procedimentos/${procedimentoId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setProcedimento(data);
+          form.reset({
+            nome: data.nome,
+            codigo: data.codigo,
+            tipo: data.tipo,
+            especialidade_id: data.especialidade_id
+              ? data.especialidades_id.toString()
+              : 0,
+          });
+        } else {
+          console.error("Erro ao carregar procedimento:", data.error);
+          toast.error("Erro ao carregar dados do procedimento");
+        }
       } catch (error) {
         console.error("Erro ao carregar procedimento:", error);
       } finally {
@@ -97,14 +114,28 @@ export default function EditarProcedimento() {
     try {
       if (!procedimentoId) redirect("/painel/procedimentos");
 
-      const data = await updateProcedimento(procedimentoId, {
-        ...values,
-        especialidadeId: Number(values.especialidadeId),
+      const response = await fetch(`/api/procedimentos/${procedimentoId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nome: values.nome,
+          codigo: values.codigo,
+          tipo: values.tipo,
+          especialidade_id: values.especialidade_id ? parseInt(values.especialidade_id.toString()) : null
+        }),
       });
-      const queryParams = new URLSearchParams();
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar procedimento.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
-      queryParams.set("message", "Procedimento atualizado com sucesso");
+      queryParams.set("message", "Procedimento atualizado com sucesso!");
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error: any) {
@@ -114,12 +145,6 @@ export default function EditarProcedimento() {
     }
   };
 
-  const fetchEspecialidade = async () => {
-    try {
-      const { data } = await getEspecialidades();
-      setEspecialidadeOptions(data);
-    } catch (error: any) {}
-  };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
     { value: "SESSÃO", label: "SESSÃO" },
@@ -225,7 +250,7 @@ export default function EditarProcedimento() {
 
               <FormField
                 control={form.control}
-                name="especialidadeId"
+                                  name="especialidade_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especialidade *</FormLabel>
@@ -237,7 +262,7 @@ export default function EditarProcedimento() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.especialidadeId
+                          form.formState.errors.especialidade_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }

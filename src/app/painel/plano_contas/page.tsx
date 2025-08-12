@@ -23,7 +23,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 
 //Types
 import { PlanoConta } from "@/app/types/PlanoConta";
@@ -40,16 +40,22 @@ export default function PlanoContas() {
   const carregarPlanoContas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/plano-contas", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
-      setPlanoContas(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalplano(data.total);
+
+      const response = await fetch(`/api/plano_contas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPlanoContas(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalplano(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar plano de contas:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar Plano de conta:", error);
     } finally {

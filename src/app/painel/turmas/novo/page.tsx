@@ -32,9 +32,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { createTurma } from "@/app/api/turmas/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getProcedimentos } from "@/app/api/procedimentos/action";
+import { http } from "@/util/http";
 import { createTurmaSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
 
 //Types
@@ -58,23 +56,23 @@ export default function NovoTurma() {
       horarioFim: "",
       dataInicio: "",
       limiteVagas: 0,
-      prestadoresId: 0,
-      procedimentosId: 0,
+      prestador_id: 0,
+      procedimento_id: 0,
     },
   });
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await getPrestadors();
-      setPrestadores(data);
+      const { data } = await http.get("/api/prestadores");
+      setPrestadores(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
   const fetchProcedimentos = async () => {
     try {
-      const { data } = await getProcedimentos();
-      setProcedimentos(data);
+      const { data } = await http.get("/api/procedimentos");
+      setProcedimentos(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }
@@ -88,7 +86,7 @@ export default function NovoTurma() {
   const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
     try {
-      await createTurma(values);
+      await http.post("/api/turmas", values);
        router.push("/painel/turmas?type=success&message=Salvo com sucesso!");
     } catch (error) {
       toast.error("Erro ao salvar turma");
@@ -188,7 +186,7 @@ export default function NovoTurma() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
-              name="prestadoresId"
+                                name="prestador_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Prestador *</FormLabel>
@@ -218,7 +216,7 @@ export default function NovoTurma() {
                     </SelectContent>
                   </Select>
                   <FormMessage>
-                    {form.formState.errors.prestadoresId?.message}
+                    {form.formState.errors.prestador_id?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -226,7 +224,7 @@ export default function NovoTurma() {
 
             <FormField
               control={form.control}
-              name="procedimentosId"
+                                name="procedimento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Procedimento *</FormLabel>
@@ -256,7 +254,7 @@ export default function NovoTurma() {
                     </SelectContent>
                   </Select>
                   <FormMessage>
-                    {form.formState.errors.procedimentosId?.message}
+                    {form.formState.errors.procedimento_id?.message}
                   </FormMessage>
                 </FormItem>
               )}

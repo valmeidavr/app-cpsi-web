@@ -42,10 +42,10 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 //API
-import { finalizarTurma, updateTurma } from "@/app/api/turmas/action";
+import { http } from "@/util/http";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { formatDate } from "date-fns";
 
 //Types
@@ -74,17 +74,22 @@ export default function Turmas() {
   const carregarTurmas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/turmas", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setTurmas(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalTurmas(data.total);
+      const response = await fetch(`/api/turmas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setTurmas(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalTurmas(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar turmas:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar turmas:", error);
     } finally {
@@ -104,7 +109,7 @@ export default function Turmas() {
     if (!turmaSelecionado) return;
     setLoadingInativar(true);
     try {
-      await finalizarTurma(turmaSelecionado.id, values.dataFim);
+      await http.patch(`/api/turmas/${turmaSelecionado.id}`, { dataFim: values.dataFim });
       await carregarTurmas();
       toast.error("Turma finalizada com sucesso!");
       setIsDialogOpen(false);

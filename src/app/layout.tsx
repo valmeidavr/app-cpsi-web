@@ -3,6 +3,7 @@ import { Nunito, Nunito_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const fontSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const fontTitle = Nunito({ subsets: ["latin"], variable: "--font-title" });
@@ -26,9 +27,10 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
-
-        <Toaster richColors />
+        <AuthProvider>
+          {children}
+          <Toaster richColors />
+        </AuthProvider>
       </body>
     </html>
   );

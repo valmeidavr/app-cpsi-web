@@ -31,10 +31,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 //API
-import {
-  getUsuarioById,
-  updateUsuario,
-} from "@/app/api/usuarios/action";
+// Removidas as importações diretas que causavam erro com bcrypt
 
 //Helpers
 import { http } from "@/util/http";
@@ -74,21 +71,23 @@ export default function UsuarioProfilePage() {
         const userId = payload?.usuario.id;
 
         if (userId) {
-          const response = await getUsuarioById(userId);
-          const usuarioDoBanco = response;
+          const response = await fetch(`/api/usuarios/perfil?id=${userId}`);
+          if (response.ok) {
+            const usuarioDoBanco = await response.json();
 
-          if (usuarioDoBanco) {
-            setUsuario(usuarioDoBanco);
-            form.reset({
-              nome: usuarioDoBanco.nome,
-              email: usuarioDoBanco.email,
-              senha: "",
-              confirmedsenha: "",
-            });
-          } else {
-            console.error(
-              "ERRO: 'usuarioDoBanco' está vazio ou indefinido após extração."
-            );
+            if (usuarioDoBanco) {
+              setUsuario(usuarioDoBanco);
+              form.reset({
+                nome: usuarioDoBanco.nome,
+                email: usuarioDoBanco.email,
+                senha: "",
+                confirmedsenha: "",
+              });
+            } else {
+              console.error(
+                "ERRO: 'usuarioDoBanco' está vazio ou indefinido após extração."
+              );
+            }
           }
         }
       }
@@ -116,12 +115,20 @@ export default function UsuarioProfilePage() {
     }
     try {
       if (usuario?.id) {
-        const response = await updateUsuario(usuario.id.toString()!, values);
-        if (response && response.token) {
-          setCookie("accessToken", response.token);
+        const response = await fetch(`/api/usuarios/perfil?id=${usuario.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(values),
+        });
+        
+        if (response.ok) {
+          toast.success("Perfil atualizado com sucesso!");
+          router.refresh(); 
+        } else {
+          throw new Error("Erro ao atualizar perfil");
         }
-        toast.success("Perfil atualizado com sucesso!");
-        router.refresh(); 
       } else {
         throw new Error("Usuário não encontrado");
       }

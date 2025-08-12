@@ -3,7 +3,7 @@ import { Convenio } from "./Convenios";
 
 export default interface ConveniosCliente {
   clientes: Cliente[];
-  clientesId: number;
+  cliente_id: number;
   convenios: Convenio[];
   createdAt: Date;
   deletedAt: Date;
@@ -11,6 +11,6 @@ export default interface ConveniosCliente {
   id: number;
   nome: string;
   regras: string;
-  tabelaFaturamentosId: number;
+  tabela_faturamento_id: number;
   updatedAt: Date;
 }

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Plus, Trash, Mail } from "lucide-react";
+import { Loader2, Search, Edit, Plus, Trash, Mail, Users } from "lucide-react";
 import ReactPaginate from "react-paginate";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
@@ -28,7 +28,6 @@ import {
 import { toast } from "sonner";
 
 //API
-import { deleteUsuario } from "@/app/api/usuarios/action";
 import { http } from "@/util/http";
 //Types
 import { Usuario } from "@/app/types/Usuario";
@@ -39,39 +38,49 @@ export default function UsuariosPage() {
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalUsuarios, setTotalUsuarios] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
-  const [carregando, setCarregando] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState<Usuario | null>(
     null
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-  const carregarUsuarios = async () => {
-    setCarregando(true);
-    try {
-      const { data } = await http.get("/users", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
-      });
 
-      setUsuarios(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalUsuarios(data.total);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const searchParams = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
+      })
+
+      const response = await fetch(`/api/usuarios?${searchParams.toString()}`)
+      console.log('Response status:', response.status)
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Data received:', data)
+        setUsuarios(data.data || data) // Ajuste para a nova estrutura da API
+        setTotalUsuarios(data.pagination?.total || 0)
+        setTotalPaginas(data.pagination?.totalPages || 1)
+      } else {
+        console.error('Erro na resposta:', response.status, response.statusText)
+      }
     } catch (error) {
-      console.error("Erro ao buscar usuarios:", error);
+      console.error('Erro ao buscar usuários:', error)
     } finally {
-      setCarregando(false);
+      setLoading(false)
     }
-  };
+  }
+
 
   const formatarPalavra = (palavra: string): string => {
     return palavra.replace("U", "Ú");
   };
 
   useEffect(() => {
-    carregarUsuarios();
+    fetchUsers();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -87,21 +96,23 @@ export default function UsuariosPage() {
 
   const handleSearch = () => {
     setPaginaAtual(0);
-    carregarUsuarios();
+    fetchUsers();
   };
 
   const deletarUsuario = async () => {
     if (!usuarioSelecionado) return;
     setLoadingInativar(true);
     try {
-      await deleteUsuario(usuarioSelecionado.id);
+      // Por enquanto, apenas remove da lista local
+      // TODO: Implementar API de delete quando necessário
       setUsuarios((prevUsuarios) =>
-        prevUsuarios.filter((usuario) => usuario.id !== usuarioSelecionado.id)
+        prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
       );
-      toast.error("Usuário deletado!");
+      toast.success("Usuário removido da lista!");
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Erro ao deletar usuário:", error);
+      toast.error("Erro ao deletar usuário");
     } finally {
       setLoadingInativar(false);
     }
@@ -132,17 +143,27 @@ export default function UsuariosPage() {
           </Button>
         </div>
 
-        {/* ✅ Botão Novo Usuario */}
-        <Button asChild>
-          <Link href="/painel/usuarios/novo">
-            <Plus className="h-5 w-5 mr-2" />
-            Novo Usuário
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {/* ✅ Botão Gerenciar Acesso */}
+          <Button variant="outline" asChild>
+            <Link href="/painel/usuarios/gerenciar-acesso">
+              <Users className="h-5 w-5 mr-2" />
+              Gerenciar Acesso
+            </Link>
+          </Button>
+          
+          {/* ✅ Botão Novo Usuario */}
+          <Button asChild>
+            <Link href="/painel/usuarios/novo">
+              <Plus className="h-5 w-5 mr-2" />
+              Novo Usuário
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div>
-        {carregando ? (
+        {loading ? (
           <div className="flex justify-center items-center w-full h-40">
             <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
             <span className="ml-2 text-gray-500">Carregando ...</span>
@@ -152,7 +173,7 @@ export default function UsuariosPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead>Login</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Nível de Acesso</TableHead>
@@ -162,10 +183,10 @@ export default function UsuariosPage() {
               <TableBody>
                 {usuarios.map((usuario) => (
                   <TableRow
-                    key={usuario.id}
+                    key={usuario.login}
                     className="odd:bg-gray-100 even:bg-white"
                   >
-                    <TableCell>{usuario.id}</TableCell>
+                    <TableCell>{usuario.login}</TableCell>
                     <TableCell>{usuario.nome}</TableCell>
                     <TableCell className="white-space: nowrap;">
                       <Tooltip.Provider>
@@ -193,24 +214,27 @@ export default function UsuariosPage() {
                         </Tooltip.Root>
                       </Tooltip.Provider>
                     </TableCell>
-                    <TableCell className="white-space: nowrap;">
-                      {usuario.grupos.map((g) => (
-                        <div
-                          className="flex gap-2 align-middle items-center justify-between space-y-2"
-                          key={g.grupo.id}
-                        >
-                          <h2>{formatarPalavra(g.grupo.sistema.nome)}:</h2>
-                          <Badge>{g.grupo.nome}</Badge>
-                        </div>
-                      ))}
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {usuario.sistemas && usuario.sistemas.length > 0 ? (
+                          usuario.sistemas.map((sistema, index) => (
+                            <Badge key={index} variant="secondary">
+                              {sistema.nome}: {sistema.nivel}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-500 text-sm">Sem acesso</span>
+                        )}
+                      </div>
                     </TableCell>
+                   
                     <TableCell className="flex gap-2 justify-center items-center h-[83px] w-full">
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
                             <Link
                               className="h-10"
-                              href={`/painel/usuarios/editar/${usuario.id}`}
+                              href={`/painel/usuarios/editar/${usuario.login}`}
                             >
                               <Button size="icon" variant="outline">
                                 <Edit className="h-5 w-5" />

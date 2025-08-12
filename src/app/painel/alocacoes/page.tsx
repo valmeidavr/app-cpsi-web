@@ -21,7 +21,7 @@ import { toast } from "sonner";
 //API
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import {
   Select,
   SelectContent,
@@ -29,15 +29,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getUnidades } from "@/app/api/unidades/action";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
+import { http } from "@/util/http";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Especialidade } from "@/app/types/Especialidade";
-import {
-  createAlocacao,
-} from "@/app/api/alocacoes/action";
+
 import { Alocacao } from "@/app/types/Alocacao";
 import { Button } from "@/components/ui/button";
 import { SaveIcon } from "lucide-react";
@@ -83,9 +79,9 @@ export default function AlocacaoPage() {
     resolver: zodResolver(createAlocacaoSchema),
     mode: "onChange",
     defaultValues: {
-      prestadoresId: 0,
-      unidadesId: 0,
-      especialidadesId: 0,
+      prestador_id: 0,
+      unidade_id: 0,
+      especialidade_id: 0,
     },
   });
 
@@ -97,14 +93,19 @@ export default function AlocacaoPage() {
       setCarregandoDadosAlocacao;
       true;
       if (!prestador || !unidade) return;
-      const { data } = await http.get("/alocacoes", {
-        params: {
-          prestadorId: prestador ? prestador.id : null,
-          especialidadeId: especialidade ? especialidade.id : null,
-          unidadeId: unidade ? unidade.id : null,
-        },
-      });
-      setAlocacoes(data.data);
+      const params = new URLSearchParams();
+      if (prestador) params.append('prestadorId', prestador.id.toString());
+      if (especialidade) params.append('especialidade_id', especialidade.id.toString());
+      if (unidade) params.append('unidadeId', unidade.id.toString());
+      
+      const response = await fetch(`/api/alocacoes?${params}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setAlocacoes(data.data);
+      } else {
+        console.error("Erro ao carregar alocações:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar dados de alocações: ", error);
     } finally {
@@ -114,24 +115,24 @@ export default function AlocacaoPage() {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await getPrestadors();
-      setPrestadores(data);
+      const { data } = await http.get("/api/prestadores");
+      setPrestadores(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
   const fetchUnidades = async () => {
     try {
-      const { data } = await getUnidades();
-      setUnidades(data);
+      const { data } = await http.get("/api/unidades");
+      setUnidades(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Unidades");
     }
   };
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
+      const { data } = await http.get("/api/especialidades");
+      setEspecialidades(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Especialidades");
     }
@@ -139,7 +140,7 @@ export default function AlocacaoPage() {
   const onSubmit = async (values: z.infer<typeof createAlocacaoSchema>) => {
     try {
       setCarregandoDadosAlocacao(true);
-      await createAlocacao(values);
+      await http.post("/api/alocacoes", values);
       await fetchAlocacoes();
       toast.success("Alocação criada com sucesso!");
     } catch (error) {
@@ -156,7 +157,7 @@ export default function AlocacaoPage() {
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
               <FormField
                 control={form.control}
-                name="prestadoresId"
+                                  name="prestador_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Prestadores *</FormLabel>

@@ -34,10 +34,10 @@ import {
 
 //Helpers
 import { useRouter } from "next/navigation";
-import { createPrestador } from "@/app/api/prestadores/action";
+import { http } from "@/util/http";
 
 import { handleCEPChange } from "@/app/helpers/handleCEP";
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { isValid, parse } from "date-fns";
 import {
   formatCPFInput,
@@ -92,13 +92,17 @@ export default function NovoPrestador() {
 
     setIsCheckingCpf(true);
     try {
-      const { data } = await http.get(
-        `/prestadores/findByCpf/${cpf}`
-      );
-      if (data) {
-        setCpfError("Este cpf já está em uso.");
+      const response = await fetch(`/api/prestadores/findByCpf/${encodeURIComponent(cpf)}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data) {
+          setCpfError("Este cpf já está em uso.");
+        } else {
+          setCpfError(null);
+        }
       } else {
-        setCpfError(null);
+        console.error("Erro ao verificar CPF:", data.error);
       }
     } catch (error) {
       console.error("Erro ao verificar cpf:", error);
@@ -119,7 +123,7 @@ export default function NovoPrestador() {
   const onSubmit = async (values: z.infer<typeof createPrestadorSchema>) => {
     setLoading(true);
     try {
-      await createPrestador(values);
+      await http.post("/api/prestadores", values);
       router.push("/painel/prestadores?type=success&message=salvo com sucesso");
     } catch (error) {
       toast.error("Erro ao salvar prestador");

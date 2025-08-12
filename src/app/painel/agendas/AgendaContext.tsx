@@ -11,11 +11,8 @@ import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Agenda } from "@/app/types/Agenda";
-import { http } from "@/util/http";
 import { format } from "date-fns";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getUnidades } from "@/app/api/unidades/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
+import { http } from "@/util/http";
 import { toast } from "sonner";
 
 interface AgendaContextType {
@@ -38,6 +35,8 @@ interface AgendaContextType {
   prestadores: Prestador[];
   unidades: Unidade[];
   especialidades: Especialidade[];
+  currentMonth: Date;
+  setCurrentMonth: (date: Date) => void;
 }
 
 const AgendaContext = createContext<AgendaContextType | undefined>(undefined);
@@ -64,6 +63,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const [carregarAgenda, setCarregarAgenda] = useState<boolean>(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     
     
     const carregarAgendamentos = async () => {
@@ -72,26 +72,30 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
       if (!unidade || !prestador || !especialidade) return;
       const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
 
-      const { data } = await http.get("/agendas", {
-        params: {
-          date: formattedDate,
-          unidadesId: unidade.id,
-          prestadoresId: prestador.id,
-          especialidadesId: especialidade.id,
-        },
-      });
+      const params = new URLSearchParams();
+      if (formattedDate) params.append('date', formattedDate);
+      params.append('unidadesId', unidade.id.toString());
+      params.append('prestadoresId', prestador.id.toString());
+      params.append('especialidadesId', especialidade.id.toString());
 
-      const novaLista = data.data.map((agenda: Agenda) => {
-        const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
-        return {
-          hora,
-          situacao: agenda.situacao,
-          paciente: agenda.clientes?.nome || null,
-          tipo: "procedimento",
-          dadosAgendamento: agenda,
-        };
-      });
-      setHorariosDia(novaLista);
+      const response = await fetch(`/api/agendas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const novaLista = data.data.map((agenda: Agenda) => {
+          const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
+          return {
+            hora,
+            situacao: agenda.situacao,
+            paciente: agenda.clientes?.nome || null,
+            tipo: "procedimento",
+            dadosAgendamento: agenda,
+          };
+        });
+        setHorariosDia(novaLista);
+      } else {
+        console.error("Erro ao buscar agendamentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     } finally {
@@ -103,14 +107,19 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const carregarAgendamentosGeral = async () => {
     setCarregandoDadosAgenda(true);
     try {
-      const { data } = await http.get("/agendas", {
-        params: {
-          unidadesId: unidade?.id,
-          prestadoresId: prestador?.id,
-          especialidadesId: especialidade?.id,
-        },
-      });
-      setAgendamentosGeral(data.data);
+      const params = new URLSearchParams();
+      if (unidade?.id) params.append('unidadesId', unidade.id.toString());
+      if (prestador?.id) params.append('prestadoresId', prestador.id.toString());
+      if (especialidade?.id) params.append('especialidadesId', especialidade.id.toString());
+
+      const response = await fetch(`/api/agendas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setAgendamentosGeral(data.data);
+      } else {
+        console.error("Erro ao buscar agendamentos gerais:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar agendamentos gerais:", error);
     } finally {
@@ -120,6 +129,12 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (unidade && prestador && especialidade) {
+      carregarAgendamentosGeral();
+    }
+  }, [unidade, prestador, especialidade]);
+
+  useEffect(() => {
+    if (unidade && prestador && especialidade && date) {
       carregarAgendamentos();
     }
   }, [date, unidade, prestador, especialidade]);
@@ -154,24 +169,24 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await getPrestadors();
-      setPrestadores(data);
+      const { data } = await http.get("/api/prestadores");
+      setPrestadores(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
   const fetchUnidades = async () => {
     try {
-      const { data } = await getUnidades();
-      setUnidades(data);
+      const { data } = await http.get("/api/unidades");
+      setUnidades(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Unidades");
     }
   };
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
+      const { data } = await http.get("/api/especialidades");
+      setEspecialidades(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Especialidades");
     }
@@ -198,6 +213,8 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
         prestadores,
         unidades,
         especialidades,
+        currentMonth,
+        setCurrentMonth,
       }}
     >
       {children}

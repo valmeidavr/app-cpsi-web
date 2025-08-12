@@ -18,21 +18,21 @@ export const createAgendaSchema = z.object({
       invalid_type_error: "Situação inválida",
     }
   ),
-  clientesId: z
+  cliente_id: z
     .number()
     .int({ message: "Cliente deve ser um número inteiro" })
     .nullable(),
-  conveniosId: z
+  convenio_id: z
     .number()
     .int({ message: "Convênio deve ser um número inteiro" }),
-  procedimentosId: z
+  procedimento_id: z
     .number()
     .int({ message: "Procedimento deve ser um número inteiro" })
     .nullable(),
-  expedientesId: z.number().optional(),
-  prestadoresId: z.preprocess((val) => Number(val), z.number()),
-  unidadesId: z.preprocess((val) => Number(val), z.number()),
-  especialidadesId: z
+  expediente_id: z.number().optional(),
+  prestador_id: z.preprocess((val) => Number(val), z.number()),
+  unidade_id: z.preprocess((val) => Number(val), z.number()),
+  especialidade_id: z
     .number()
     .int({ message: "Especialidade deve ser um número inteiro" }),
   horario: z.string().optional().nullable(),

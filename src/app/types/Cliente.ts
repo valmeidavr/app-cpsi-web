@@ -1,3 +1,8 @@
+import { Agenda } from "./Agenda";
+import { Convenio } from "./Convenios";
+import ConveniosCliente from "./ConveniosCliente";
+
+
 export enum Status {
   "Ativo",
   "Inativo",
@@ -10,34 +15,33 @@ export enum TipoCliente {
   FUNCIONARIO = "FUNCIONARIO",
 }
 
-type Convenio = {
-  id: number;
-  conveniosId: number;
-  desconto: number;
-  clientesId: number;
-  clientes: Cliente[];
-  convenios: Convenio[];
-};
 export type Cliente = {
-  id: string;
+  id: number;
   nome: string;
-  email: string;
-  dtnascimento?: string;
-  sexo: string;
-  tipo: TipoCliente;
   cpf: string;
-  cep?: string | undefined;
-  logradouro?: string;
-  numero?: string;
-  bairro?: string;
-  cidade?: string;
-  uf?: string;
+  rg: string;
+  sexo: string;
+  email: string;
   telefone1: string;
-  telefone2?: string | undefined;
-  Convenio?: Convenio[];
-  status?: Status | string;
-  created_at: string;
-  updated_at: string;
+  status: string;
+  dtnascimento: string;
+  cep: string;
+  logradouro: string;
+  numero: string;
+  bairro: string;
+  cidade: string;
+  uf: string;
+  telefone: string;
+  celular: string;
+  convenio_id: number;
+  complemento?: string | null;
+  cliente_id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
+  Agenda: Agenda[];
+  Convenio: Convenio;
+  ConveniosCliente: ConveniosCliente[];
 };
 
 export type ClientePaginacao = {

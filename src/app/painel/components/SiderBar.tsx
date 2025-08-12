@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { getCookie } from "@/util/cookies";
+import { useAuth } from "@/hooks/useAuth";
 import menuData from "@/data/menu.json";
 import {
   ChevronRight,
@@ -84,20 +84,8 @@ interface MenuItem {
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
-  const [userGroups, setUserGroups] = useState<string[]>([]);
+  const { hasSystemAccess, userLevel } = useAuth();
   const [menuItems, setMenuItems] = useState<any[]>([]);
-
-  useEffect(() => {
-    const groups = getCookie("userGroups");
-
-    if (groups) {
-      try {
-        setUserGroups(JSON.parse(groups).map((group: any) => group.nome));
-      } catch (e) {
-        console.error("Erro ao parsear grupos do usuário", e);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     // Carrega os itens do menu e converte os ícones para componentes React
@@ -116,8 +104,25 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   }, []);
 
   const hasAccess = (requiredGroups?: string[]) => {
+    // Se não tem acesso ao sistema, não mostra nada
+    if (!hasSystemAccess) return false;
+    
+    // Se não há grupos requeridos, permite acesso
     if (!requiredGroups || requiredGroups.length === 0) return true;
-    return requiredGroups.some((group) => userGroups.includes(group));
+    
+    // Verifica se o nível do usuário está nos grupos permitidos
+    return requiredGroups.some((group) => {
+      switch (group) {
+        case 'ADMIN':
+          return userLevel === 'Administrador';
+        case 'GESTOR':
+          return userLevel === 'Administrador' || userLevel === 'Gestor';
+        case 'USUARIO':
+          return userLevel === 'Administrador' || userLevel === 'Gestor' || userLevel === 'Usuario';
+        default:
+          return false;
+      }
+    });
   };
 
   const renderMenuItem = (item: MenuItem, index: number) => {

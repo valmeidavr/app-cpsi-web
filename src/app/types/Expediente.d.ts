@@ -8,6 +8,6 @@ export type Expediente = {
   hfinal: string;
   intervalo: string;
   semana: string;
-  alocacaoId: number;
+  alocacao_id: number;
   alocacao: Alocacao;
 };

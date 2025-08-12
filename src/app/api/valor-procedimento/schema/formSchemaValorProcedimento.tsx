@@ -17,9 +17,9 @@ export const createValorProcedimentoSchema = z.object({
     .refine((val) => !isNaN(val) && val >= 0.01, {
       message: "O valor deve ser maior que zero",
     }),
-  tipo: z.enum(["SOCIO", "NSOCIO", "FUNCIONARIO", "PARCEIRO"]),
-  tabelaFaturamentosId: z.coerce.number(),
-  procedimentosId: z.coerce.number(),
+  tipo: z.enum(["SOCIO", "NSOCIO", "FUNCIONARIO", "PARCEIRO", "PARTICULAR", "CONVENIO"]),
+  tabela_faturamento_id: z.coerce.number(),
+  procedimento_id: z.coerce.number(),
 });
 
 export const updateValorProcedimentoSchema =

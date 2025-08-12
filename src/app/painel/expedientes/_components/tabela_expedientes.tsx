@@ -50,10 +50,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { updateExpedienteSchema } from "@/app/api/expediente/schema/formSchemaExpedientes";
-import {
-  finalizarExpediente,
-  updateExpediente,
-} from "@/app/api/expediente/action";
+
 import { formatDate } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { http } from "@/util/http";
@@ -93,7 +90,7 @@ const TabelaExpediente = ({
       hfinal: "",
       semana: "",
       intervalo: "",
-      alocacaoId: 0,
+      alocacao_id: 0,
     },
   });
 
@@ -113,7 +110,7 @@ const TabelaExpediente = ({
           throw new Error("Existe agendamentos feitos neste expediente");
       }
 
-      await finalizarExpediente(ExpedienteId.toString());
+      await http.patch(`/api/expediente/${ExpedienteId}`, { status: "Inativo" });
 
       toast.error("Alocação excluida com sucesso");
       await fetchExpedientes();
@@ -137,7 +134,7 @@ const TabelaExpediente = ({
       hfinal: expediente.hfinal,
       semana: expediente.semana.toUpperCase(),
       intervalo: String(expediente.intervalo.split(" ")[0]),
-      alocacaoId: expediente.alocacaoId,
+              alocacao_id: expediente.alocacao_id,
     });
     setIsUpdateModalOpen(true);
   };
@@ -147,7 +144,7 @@ const TabelaExpediente = ({
 
     try {
       setloading(true);
-      await updateExpediente(expedienteSelecionado.id.toString(), values);
+      await http.patch(`/api/expediente/${expedienteSelecionado.id}`, values);
       await fetchExpedientes();
       toast.success("Expediente atualizado com sucesso!");
       setIsUpdateModalOpen(false);

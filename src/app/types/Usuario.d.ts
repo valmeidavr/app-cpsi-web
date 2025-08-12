@@ -9,7 +9,9 @@ export type SistemaComGrupos = {
 };
 
 export type Sistema = {
+  id: number;
   nome: string;
+  nivel?: string;
 };
 
 export type Grupo = {
@@ -19,9 +21,12 @@ export type Grupo = {
 };
 
 export type Usuario = {
-  id: number;
+  id?: number;
+  login: string;
   nome: string;
   email: string;
-  grupos: { grupo: Grupo }[];
+  status?: string;
+  sistemas?: Sistema[];
+  grupos?: { grupo: Grupo }[];
 };
 

@@ -25,15 +25,11 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import {
-  getEspecialidadeById,
-  updateEspecialidade,
-} from "@/app/api/especialidades/action";
+import { updateEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 //Helpers
 import { redirect, useParams } from "next/navigation";
 import { Especialidade } from "@/app/types/Especialidade";
-import { updateEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
 
 export default function EditarEspecialidade() {
   const [loading, setLoading] = useState(false);
@@ -58,15 +54,21 @@ export default function EditarEspecialidade() {
     async function fetchData() {
       try {
         if (!especialidadeId) redirect("/painel/especialidades");
-        const data = await getEspecialidadeById(especialidadeId);
-        setEspecialidade(data);
-
-        form.reset({
-          nome: data.nome,
-          codigo: data.codigo,
-        });
+        const response = await fetch(`/api/especialidades/${especialidadeId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setEspecialidade(data);
+          form.reset({
+            nome: data.nome,
+            codigo: data.codigo,
+          });
+        } else {
+          console.error("Erro ao carregar especialidade:", data.error);
+          toast.error("Erro ao carregar dados da especialidade");
+        }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
+        console.error("Erro ao carregar especialidade:", error);
       } finally {
         setCarregando(false);
       }
@@ -81,9 +83,21 @@ export default function EditarEspecialidade() {
     try {
       if (!especialidadeId) redirect("/painel/especialidades");
 
-      const data = await updateEspecialidade(especialidadeId, values);
-      const queryParams = new URLSearchParams();
+      const response = await fetch(`/api/especialidades/${especialidadeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar especialidade.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Especialidade atualizada com sucesso!");
 

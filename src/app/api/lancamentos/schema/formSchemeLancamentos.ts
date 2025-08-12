@@ -26,23 +26,23 @@ export const createLancamentoSchema = z.object({
 
   tipo: z.enum(["ENTRADA", "SAIDA", "ESTORNO", "TRANSFERENCIA"]),
 
-  clientes_Id: z
+  cliente_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
     .optional()
     .nullable(),
 
-  plano_contas_id: z
+  plano_conta_id: z
     .union([z.string(), z.number()])
     .refine((val) => Number(val))
     .transform((val) => Number(val)).optional(),
 
-  caixas_id: z
+  caixa_id: z
     .union([z.string(), z.number()])
     .refine((val) => Number(val) )
     .transform((val) => Number(val)).optional(),
 
-  lancamentos_original_id: z.number().nullable().optional(),
+  lancamento_original_id: z.number().nullable().optional(),
 
   id_transferencia: z
     .union([z.string(), z.number()])
@@ -64,7 +64,7 @@ export const createLancamentoSchema = z.object({
     invalid_type_error: "Status inválido",
   }),
 
-  agendas_id: z
+  agenda_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
     .nullable()
@@ -72,9 +72,7 @@ export const createLancamentoSchema = z.object({
 
   usuario_id: z
     .union([z.string(), z.number()])
-    .refine((val) => Number(val) > 0, {
-      message: "O campo usuários é obrigatório",
-    })
-    .transform((val) => Number(val)),
+    .transform((val) => Number(val))
+    .optional(),
 });
 export const updateLancamentoSchema = createLancamentoSchema.partial();

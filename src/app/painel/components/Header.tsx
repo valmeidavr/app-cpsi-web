@@ -11,36 +11,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Bell, LogOut, Key, User } from "lucide-react";
-import { useState, useEffect } from "react";
-import { getCookie, delCookie } from "@/util/cookies";
-import { getPayload } from "@/util/auth";
-import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
 import Link from "next/link";
 
 export default function Header() {
-  const [userName, setUserName] = useState<string>("Usuário");
-  const [userEmail, setUserEmail] = useState<string>("usuario@exemplo.com");
-  const router = useRouter();
+  const { session, logout, isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    try {
-      const accessToken = getCookie("accessToken"); 
+  if (!isAuthenticated) {
+    return null;
+  }
 
-      if (accessToken) {
-        const payload = getPayload(accessToken); 
+  const userName = session?.user?.name || "Usuário";
+  const userEmail = session?.user?.email || "usuario@exemplo.com";
 
-        setUserName(payload?.usuario?.nome || "Usuário");
-        setUserEmail(payload?.usuario?.email || "usuario@exemplo.com");
-      }
-    } catch (error) {
-      console.error("Erro ao obter dados do usuário:", error);
-    }
-  }, []);
 
-  // 🔹 Função para Logout
   const handleLogout = () => {
-    delCookie(); // Remove os cookies
-    router.push("/"); // Redireciona para a página de login
+    logout(); 
   };
 
   return (

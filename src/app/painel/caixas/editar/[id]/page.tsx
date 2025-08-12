@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import { getCaixaById, getCaixa, updateCaixa } from "@/app/api/caixa/action";
 import { updateCaixaSchema } from "@/app/api/caixa/schema/formSchemaCaixa";
 
 //Helpers
@@ -59,19 +58,42 @@ export default function EditarCaixa() {
   });
 
   const router = useRouter();
+
+  const fetchCaixas = async () => {
+    try {
+      const response = await fetch("/api/caixa");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCaixaOptions(data.data);
+      } else {
+        console.error("Erro ao carregar caixas:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar caixas:", error);
+    }
+  };
+
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
       try {
         if (!caixaId) redirect("/painel/caixas");
         await fetchCaixas();
-        const data = await getCaixaById(caixaId);
-        setCaixa(data);
-        form.reset({
-          nome: data.nome,
-          saldo: data.saldo,
-          tipo: data.tipo,
-        });
+        const response = await fetch(`/api/caixa/${caixaId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setCaixa(data);
+          form.reset({
+            nome: data.nome,
+            saldo: data.saldo,
+            tipo: data.tipo,
+          });
+        } else {
+          console.error("Erro ao carregar caixa:", data.error);
+          toast.error("Erro ao carregar dados do caixa");
+        }
       } catch (error) {
         console.error("Erro ao carregar caixa:", error);
       } finally {
@@ -86,35 +108,37 @@ export default function EditarCaixa() {
     try {
       if (!caixaId) redirect("/painel/caixas");
 
-      const queryParams = new URLSearchParams();
+      const response = await fetch(`/api/caixa/${caixaId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar caixa.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
-      queryParams.set("message", "Caixa salvo com sucesso!");
+      queryParams.set("message", "Caixa atualizado com sucesso!");
 
       router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar caixa!";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar caixa!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const tipoOptions = [
     { value: "CAIXA", label: "CAIXA" },
     { value: "BANCO", label: "BANCO" },
   ];
-
-  const fetchCaixas = async () => {
-    try {
-      const { data } = await getCaixa();
-      setCaixaOptions(data);
-    } catch (error: any) {}
-  };
 
   return (
     <div className="container mx-auto">

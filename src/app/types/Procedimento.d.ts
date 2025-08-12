@@ -6,7 +6,7 @@ export type Procedimento = {
   nome: string;
   codigo: string;
   tipo: string;
-  especialidadeId: number;
+  especialidade_id: number;
   especialidade: Especialidade; 
   status: string;
   createdAt: Date;

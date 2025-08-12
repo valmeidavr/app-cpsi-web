@@ -1,10 +1,7 @@
 "use client";
-import {
-  deleteAlocacao,
 
-} from "@/app/api/alocacoes/action";
 import { updateAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
-import { getEspecialidades } from "@/app/api/especialidades/action";
+import { http } from "@/util/http";
 import { Alocacao } from "@/app/types/Alocacao";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -84,16 +81,16 @@ const TabelaAlocacoes = ({
       zodResolver<z.infer<typeof updateAlocacaoSchema>>(updateAlocacaoSchema),
     mode: "onChange",
     defaultValues: {
-      prestadoresId: prestador?.id ?? 0,
-      unidadesId: unidade?.id ?? 0,
-      especialidadesId: undefined,
+      prestador_id: prestador?.id ?? 0,
+      unidade_id: unidade?.id ?? 0,
+      especialidade_id: undefined,
     },
   });
 
-  const excluirAlocacao = async (alocacaoId: number) => {
+  const excluirAlocacao = async (alocacao_id: number) => {
     try {
       setloading(true);
-      await deleteAlocacao(alocacaoId.toString());
+      await http.delete(`/api/alocacoes/${alocacao_id}`);
 
       toast.error("Alocação excluida com sucesso");
       await fetchAlocacoes();
@@ -139,8 +136,8 @@ const TabelaAlocacoes = ({
 
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
+      const { data } = await http.get("/api/especialidades");
+      setEspecialidades(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Especialidades");
     }

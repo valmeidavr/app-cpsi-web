@@ -54,12 +54,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 //API
-import {
-  deleteLancamento,
-  updateStatusLancamento,
-} from "@/app/api/lancamentos/action";
+import { http } from "@/util/http";
 //Types
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
@@ -81,36 +78,39 @@ export default function Lancamentos() {
   const carregarLancamentos = async (filters?: any) => {
     setCarregando(true);
     try {
-      const params: any = {
-        page: paginaAtual + 1,
-        limit: 5,
-        search: termoBusca,
-      };
+      const params = new URLSearchParams();
+      params.append('page', (paginaAtual + 1).toString());
+      params.append('limit', '5');
+      params.append('search', termoBusca);
 
-      if (filters?.caixas_id && filters.caixas_id != 0) {
-        params.caixas_id = filters.caixas_id;
+      if (filters?.caixa_id && filters.caixa_id != 0) {
+        params.append('caixa_id', filters.caixa_id.toString());
       }
 
-      if (filters?.plano_contas_id && filters.plano_contas_id != 0) {
-        params.plano_contas_id = filters.plano_contas_id;
+      if (filters?.plano_conta_id && filters.plano_conta_id != 0) {
+        params.append('plano_conta_id', filters.plano_conta_id.toString());
       }
+
       if (
         filters?.data_inicio &&
         filters.data_inicio.trim() !== "" &&
         filters?.data_fim &&
         filters.data_fim.trim() !== ""
       ) {
-        params.data_inicio = filters.data_inicio;
-        params.data_fim = filters.data_fim;
+        params.append('data_inicio', filters.data_inicio);
+        params.append('data_fim', filters.data_fim);
       }
 
-      const { data } = await http.get("/lancamentos", {
-        params,
-      });
+      const response = await fetch(`/api/lancamentos?${params}`);
+      const data = await response.json();
 
-      setLancamentos(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalLancamentos(data.total);
+      if (response.ok) {
+        setLancamentos(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalLancamentos(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar lançamentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar lançamentos:", error);
     } finally {
@@ -120,24 +120,39 @@ export default function Lancamentos() {
   const form = useForm({
     mode: "onChange",
     defaultValues: {
-      plano_contas_id: 0,
-      caixas_id: 0,
+      plano_conta_id: 0,
+      caixa_id: 0,
       data_inicio: "",
       data_fim: "",
     },
   });
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("/caixas");
-
-      setCaixas(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/caixa");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCaixas(data.data);
+      } else {
+        console.error("Erro ao buscar caixas:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar caixas:", error);
+    }
   };
   const fetchPlanoContas = async () => {
     try {
-      const { data } = await http.get("/plano-contas");
-      setPlanoConta(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/plano_contas");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPlanoConta(data.data);
+      } else {
+        console.error("Erro ao buscar plano de contas:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar plano de contas:", error);
+    }
   };
 
   const handleUpdateStatus = async () => {
@@ -148,7 +163,7 @@ export default function Lancamentos() {
       const novoStatus =
         lancamentoSelecionado.status === "ATIVO" ? "INATIVO" : "ATIVO";
       console.log(lancamentoSelecionado.id, novoStatus);
-      await updateStatusLancamento(lancamentoSelecionado.id, novoStatus);
+      await http.patch(`/api/lancamentos/${lancamentoSelecionado.id}`, { status: novoStatus });
 
       toast.success(
         `Lançamento ${
@@ -206,7 +221,7 @@ export default function Lancamentos() {
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
-                  name="caixas_id"
+                  name="caixa_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Caixa</FormLabel>
@@ -239,7 +254,7 @@ export default function Lancamentos() {
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
-                  name="plano_contas_id"
+                  name="plano_conta_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Plano de Conta</FormLabel>

@@ -13,9 +13,9 @@ const expedienteBaseSchema = z.object({
   hfinal: z.string(),
   intervalo: z.string().min(1, "O intervalo é obrigatório."),
   semana: z.string().optional(),
-  alocacaoId: z
+  alocacao_id: z
     .number()
-    .int({ message: "alocacaoId deve ser um número inteiro" }),
+    .int({ message: "alocacao_id deve ser um número inteiro" }),
 });
 
 export const createExpedienteSchema = expedienteBaseSchema.refine(

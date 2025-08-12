@@ -32,8 +32,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { createProcedimento } from "@/app/api/procedimentos/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
+import { http } from "@/util/http";
 import { createProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
@@ -51,16 +50,16 @@ export default function NovoProcedimento() {
       nome: "",
       codigo: "",
       tipo: "",
-      especialidadeId: 0,
+      especialidade_id: 0,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof createProcedimentoSchema>) => {
     setLoading(true);
     try {
-      await createProcedimento({
+      await http.post("/api/procedimentos", {
         ...values,
-        especialidadeId: Number(values.especialidadeId),
+        especialidade_id: Number(values.especialidade_id),
       });
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -83,9 +82,9 @@ export default function NovoProcedimento() {
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await getEspecialidades();
+      const { data } = await http.get("/api/especialidades");
 
-      setEspecialidadeOptions(data);
+      setEspecialidadeOptions(data.data);
     } catch (error: any) {}
   };
   // Mockup de opçoes de Tipo
@@ -189,7 +188,7 @@ export default function NovoProcedimento() {
 
             <FormField
               control={form.control}
-              name="especialidadeId"
+                                name="especialidade_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especialidade *</FormLabel>
@@ -198,7 +197,7 @@ export default function NovoProcedimento() {
                   >
                     <FormControl
                       className={
-                        form.formState.errors.especialidadeId
+                        form.formState.errors.especialidade_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }

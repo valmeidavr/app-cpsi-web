@@ -19,7 +19,7 @@ import { toast } from "sonner";
 //API
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import {
   Select,
   SelectContent,
@@ -34,10 +34,9 @@ import { Expediente } from "@/app/types/Expediente";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, SaveIcon } from "lucide-react";
 import { createExpedienteSchema } from "@/app/api/expediente/schema/formSchemaExpedientes";
-import { createExpediente } from "@/app/api/expediente/action";
+import { http } from "@/util/http";
 import { Input } from "@/components/ui/input";
 import { createAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
-import { getAlocacaos } from "@/app/api/alocacoes/action";
 import { Alocacao } from "@/app/types/Alocacao";
 import TabelaExpediente from "./_components/tabela_expedientes";
 
@@ -51,7 +50,7 @@ export default function ExpedientePage() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [alocacoes, setAlocacoes] = useState<Alocacao[]>([]);
 
-  const [alocacaoId, setAlocacaoId] = useState<number | null>(null);
+  const [alocacao_id, setAlocacaoId] = useState<number | null>(null);
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [prestador, setPrestador] = useState<Prestador | null>(null);
   const [especialidade, setEspecialidade] = useState<Especialidade | null>(
@@ -77,7 +76,7 @@ export default function ExpedientePage() {
 
   const fetchUnidadesByAlocacao = async () => {
     try {
-      const { data } = await getAlocacaos();
+      const { data } = await http.get("/api/alocacoes");
       const unidadesMap = new Map<number, Unidade>();
       data.forEach((item: Alocacao) => {
         if (!unidadesMap.has(item.unidade.id)) {
@@ -96,7 +95,7 @@ export default function ExpedientePage() {
       try {
         if (!unidade) return;
         const listaPrestadores: Prestador[] = alocacoes
-          .filter((item: Alocacao) => item.unidadesId === unidade.id)
+          .filter((item: Alocacao) => item.unidade_id === unidade.id)
           .map((item: Alocacao) => item.prestador);
         setPrestadores(listaPrestadores);
       } catch (error: any) {
@@ -111,7 +110,7 @@ export default function ExpedientePage() {
       try {
         if (!unidade || !prestador) return;
         const listaEspecialidades: Especialidade[] = alocacoes
-          .filter((item: Alocacao) => item.unidadesId == unidade.id)
+          .filter((item: Alocacao) => item.unidade_id == unidade.id)
           .map((item: Alocacao) => item.especialidade);
         setEspecialidades(listaEspecialidades);
       } catch (error: any) {
@@ -131,16 +130,16 @@ export default function ExpedientePage() {
       hinicio: "",
       hfinal: "",
       semana: "",
-      alocacaoId: 0,
+      alocacao_id: 0,
     },
   });
   const formAlocacao = useForm({
     resolver: zodResolver(createAlocacaoSchema),
     mode: "onChange",
     defaultValues: {
-      especialidadesId: 0,
-      unidadesId: 0,
-      prestadoresId: 0,
+      especialidade_id: 0,
+      unidade_id: 0,
+      prestador_id: 0,
     },
   });
 
@@ -155,21 +154,26 @@ export default function ExpedientePage() {
       const alocacaoId = alocacoes
         .filter(
           (item: Alocacao) =>
-            item.unidadesId == unidade.id &&
-            item.prestadoresId == prestador.id &&
-            item.especialidadesId == especialidade.id
+            item.unidade_id == unidade.id &&
+            item.prestador_id == prestador.id &&
+            item.especialidade_id == especialidade.id
         )
         .map((item: Alocacao) => item.id);
       setAlocacaoId(alocacaoId[0]);
 
-      form.setValue("alocacaoId", alocacaoId[0]);
-      const { data } = await http.get("/expedientes", {
-        params: {
-          limit: 50,
-          alocacaoId: alocacaoId[0],
-        },
-      });
-      setExpedientes(data.data);
+      form.setValue("alocacao_id", alocacaoId[0]);
+      const params = new URLSearchParams();
+      params.append('limit', '50');
+      params.append('alocacao_id', alocacaoId[0].toString());
+      
+      const response = await fetch(`/api/expediente?${params}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        setExpedientes(data.data);
+      } else {
+        console.error("Erro ao carregar expedientes:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar dados de alocações: ", error);
     } finally {
@@ -180,10 +184,10 @@ export default function ExpedientePage() {
   const onSubmit = async (values: z.infer<typeof createExpedienteSchema>) => {
     try {
       setCarregandoDadosExpediente(true);
-      if (!alocacaoId)
+      if (!alocacao_id)
         throw new Error("Não foi possivel encontrar a Alocação selecionada");
-      form.setValue("alocacaoId", alocacaoId);
-      await createExpediente(values);
+      form.setValue("alocacao_id", alocacao_id);
+      await http.post("/api/expediente", values);
       await fetchExpedientes();
       toast.success("Alocação criada com sucesso!");
     } catch (error: any) {
@@ -200,7 +204,7 @@ export default function ExpedientePage() {
             <FormProvider {...formAlocacao}>
               <form className="space-y-4">
                 <FormField
-                  name="unidadesId"
+                  name="unidade_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Unidade *</FormLabel>
@@ -240,7 +244,7 @@ export default function ExpedientePage() {
                   )}
                 />
                 <FormField
-                  name="prestadoresId"
+                  name="prestador_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Prestadores *</FormLabel>
@@ -282,7 +286,7 @@ export default function ExpedientePage() {
                 />
 
                 <FormField
-                  name="especialidadesId"
+                  name="especialidade_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Especialidade *</FormLabel>
@@ -464,7 +468,7 @@ export default function ExpedientePage() {
                     <Button
                       type="submit"
                       variant="default"
-                      disabled={loading || !alocacaoId || alocacaoId === 0}
+                      disabled={loading || !alocacao_id || alocacao_id === 0}
                     >
                       <SaveIcon /> Adicionar
                     </Button>

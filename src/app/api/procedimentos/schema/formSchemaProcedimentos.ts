@@ -17,7 +17,7 @@ export const createProcedimentoSchema = z.object({
 
   tipo: z.string().min(1, { message: "Tipo é obrigatório" }).default(""),
 
-  especialidadeId: z
+  especialidade_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val)),
 });

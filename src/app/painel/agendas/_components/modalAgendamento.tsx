@@ -51,12 +51,12 @@ import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { http } from "@/util/http";
-import { updateAgenda } from "@/app/api/agendas/action";
 import { cn } from "@/lib/utils";
 import { useAgenda } from "../AgendaContext";
 import { Convenio } from "@/app/types/Convenios";
 import ConveniosCliente from "@/app/types/ConveniosCliente";
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
+import { Loader2 } from "lucide-react";
 
 interface ModalAgendamentoProps {
   open: boolean;
@@ -81,12 +81,12 @@ const ModalAgendamento = ({
     mode: "onChange",
     defaultValues: {
       situacao: "AGENDADO",
-      clientesId: 0,
-      conveniosId: 0,
-      procedimentosId: 0,
-      prestadoresId: prestador?.id ?? 0,
-      unidadesId: unidade?.id ?? 0,
-      especialidadesId: especialidade?.id ?? 0,
+      cliente_id: 0,
+      convenio_id: 0,
+      procedimento_id: 0,
+      prestador_id: prestador?.id ?? 0,
+      unidade_id: unidade?.id ?? 0,
+      especialidade_id: especialidade?.id ?? 0,
       dtagenda: "",
       horario: "",
       tipo: "PROCEDIMENTO",
@@ -100,17 +100,23 @@ const ModalAgendamento = ({
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
     null
   );
-  const [tipoClienteSelecionado, setTipoClienteSelecionada] =
-    useState<TipoCliente>();
-  const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio>();
-  const [procedimentoSelecionado, setProcedimentoSelecionado] =
-    useState<ValorProcedimento>();
+  const [convenioSelecionado, setConvenioSelecionado] = useState<Convenio | null>(
+    null
+  );
+  const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(
+    null
+  );
+  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoCliente | null>(
+    null
+  );
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
 
   useEffect(() => {
-    fetchClientes();
-  }, [clienteSelecionado]);
+    if (open) {
+      fetchClientes();
+    }
+  }, [open]);
 
   useEffect(() => {
     if (convenioSelecionado && tipoClienteSelecionado) {
@@ -119,7 +125,7 @@ const ModalAgendamento = ({
   }, [tipoClienteSelecionado, convenioSelecionado]);
 
   const fetchClientes = async () => {
-    const { data } = await http.get("/clientes");
+    const { data } = await http.get("/api/clientes");
     setClientes(data.data);
   };
 
@@ -140,11 +146,11 @@ const ModalAgendamento = ({
 
   const fetchProcedimentos = async (
     tipoCliente: TipoCliente,
-    conveniosId: number
+    convenio_id: number
   ) => {
     try {
       const { data } = await http.get(
-        `/valores-procedimentos/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
+        `/valores-procedimentos/findByConvenioId?convenio_id=${convenio_id}&tipoCliente=${tipoCliente}`
       );
       setProcedimentos(data);
     } catch (e) {
@@ -169,9 +175,9 @@ const ModalAgendamento = ({
       form.setValue("horario", horaSelecionada);
     }
 
-    if (prestador) form.setValue("prestadoresId", prestador.id);
-    if (unidade) form.setValue("unidadesId", unidade.id);
-    if (especialidade) form.setValue("especialidadesId", especialidade.id);
+    if (prestador) form.setValue("prestador_id", prestador.id);
+    if (unidade) form.setValue("unidade_id", unidade.id);
+    if (especialidade) form.setValue("especialidade_id", especialidade.id);
   }, [dataSelecionada, horaSelecionada, prestador, unidade, especialidade]);
 
   const onSubmit = async (values: any) => {
@@ -179,10 +185,9 @@ const ModalAgendamento = ({
     try {
       if (!procedimentoSelecionado)
         return toast.error("Selecione um procedimento válido");
-      await updateAgenda(
-        agendamentoSelecionado.dadosAgendamento.id,
-        values,
-        +procedimentoSelecionado.valor
+      await http.patch(
+        `/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`,
+        values
       );
       toast.success("Agendamento criado com sucesso!");
       await carregarAgendamentos();
@@ -192,274 +197,211 @@ const ModalAgendamento = ({
     } finally {
       setLoading(false);
       setClienteSelecionado(null);
-      setConvenioSelecionada(undefined);
-      setConvenioSelecionada(undefined);
-      form.setValue("conveniosId", 0);
+      setConvenioSelecionado(null);
+      form.setValue("convenio_id", 0);
       setProcedimentos([]);
-      form.setValue("procedimentosId", 0);
-      form.setValue("clientesId", 0);
-      setTipoClienteSelecionada(undefined);
+      form.setValue("procedimento_id", 0);
+      form.setValue("cliente_id", 0);
+      setTipoClienteSelecionado(null);
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Atualizar</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-gray-900">
+            Editar Agendamento
+          </DialogTitle>
+          <p className="text-sm text-gray-600 mt-1">
+            Atualize as informações do agendamento selecionado
+          </p>
         </DialogHeader>
         <Form {...form}>
           <div className="flex flex-col">
-            <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-              <FormField
-                control={form.control}
-                name="clientesId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Clientes *</FormLabel>
-                    <Popover
-                      open={openSelectClientes}
-                      onOpenChange={setOpenSelectClientes}
-                    >
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value
-                              ? clientes.find((item) => +item.id == field.value)
-                                  ?.nome
-                              : "Selecione o cliente"}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command className="w-[480px] p-0">
-                          <CommandInput placeholder="Busque cliente..." />
-                          <CommandList>
-                            <CommandEmpty>
-                              Nenhum cliente encontrado.
-                            </CommandEmpty>
-                            <CommandGroup className="w-full p-0">
-                              {clientes.map((item) => (
-                                <CommandItem
-                                  value={item.nome.toString()}
-                                  key={item.id}
-                                  onSelect={() => {
-                                    form.setValue("clientesId", +item.id);
-                                    setClienteSelecionado(item);
-                                    fetchConvenios(+item.id);
-                                    setOpenSelectClientes(false);
-                                  }}
-                                >
-                                  {item.nome}
-                                  <Check
-                                    className={cn(
-                                      "ml-auto",
-                                      +item.id == field.value
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {form.formState.errors.clientesId?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="conveniosId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Convênios *</FormLabel>
-                    <Select
-                      disabled={!clienteSelecionado}
-                      onValueChange={(value) => {
-                        field.onChange(Number(value));
-                        const selectedConvenio = convenios.find(
-                          (item) => String(item.id) === value
-                        );
-                        if (selectedConvenio) {
-                          setConvenioSelecionada(selectedConvenio);
-                        }
-                      }}
-                      value={String(field.value)}
-                    >
-                      <FormControl
-                        className={
-                          form.formState.errors.situacao
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="0" disabled>
-                          Selecione
-                        </SelectItem>
-
-                        {convenios.map((item) => {
-                          return (
-                            <SelectItem key={item.id} value={String(item.id)}>
-                              {item.nome}
-                            </SelectItem>
+            <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="cliente_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Cliente</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          const numValue = Number(value);
+                          field.onChange(numValue);
+                          setClienteSelecionado(
+                            clientes.find((cliente) => +cliente.id === numValue) ?? null
                           );
-                        })}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage>
-                      {form.formState.errors.conveniosId?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-
-              <FormItem>
-                <FormLabel>Tipo de Cliente *</FormLabel>
-                <Select
-                  disabled={!clienteSelecionado}
-                  onValueChange={(value) => {
-                    setTipoClienteSelecionada(value as TipoCliente);
-                  }}
-                  value={String(tipoClienteSelecionado)}
-                >
-                  <FormControl className={"border-gray-300"}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="0" disabled>
-                      Selecione
-                    </SelectItem>
-
-                    {Object.values(TipoCliente).map((item) => {
-                      return (
-                        <SelectItem key={item} value={String(item)}>
-                          {item}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-              </FormItem>
-              <input type="hidden" {...form.register("dtagenda")} />
-
-              <FormField
-                control={form.control}
-                name="procedimentosId"
-                render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Procedimentos *</FormLabel>
-                    <Popover
-                      open={openSelectProcedimentos}
-                      onOpenChange={setOpenSelectProcedimentos}
-                    >
-                      <PopoverTrigger asChild>
+                          fetchConvenios(numValue);
+                        }}
+                        value={field.value ? String(field.value) : ""}
+                      >
                         <FormControl>
-                          <Button
-                            variant="outline"
-                            role="combobox"
-                            className={cn(
-                              "w-full justify-between",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {(() => {
-                              if (field.value) {
-                                const selectedItem = procedimentos.find(
-                                  (p) => p.procedimento.id == field.value
-                                );
-                                if (selectedItem) {
-                                  return `${
-                                    selectedItem.procedimento.nome
-                                  } -  R$${Number(
-                                    selectedItem.valor
-                                  ).toFixed(2)}`;
-                                }
-                              } else {
-                                return "Selecione procedimento";
-                              }
-                            })()}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
+                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                            <SelectValue placeholder="Selecione um cliente" />
+                          </SelectTrigger>
                         </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-full p-0">
-                        <Command className="w-[480px] p-0">
-                          <CommandInput placeholder="Busque procedimento..." />
-                          <CommandList>
-                            <CommandEmpty>
-                              Nenhum procedimento encontrado.
-                            </CommandEmpty>
-                            <CommandGroup className="w-full p-0">
-                              {procedimentos.map((item) => (
-                                <CommandItem
-                                  value={item.procedimento.nome}
-                                  key={item.procedimento.id}
-                                  className="flex items-center justify-between"
-                                  onSelect={() => {
-                                    form.setValue(
-                                      "procedimentosId",
-                                      item.procedimento.id
-                                    );
-                                    setProcedimentoSelecionado(item);
+                        <SelectContent>
+                          <SelectItem value="0" disabled>
+                            Selecione
+                          </SelectItem>
+                          {clientes.map((cliente) => {
+                            return (
+                              <SelectItem
+                                key={cliente.id}
+                                value={String(cliente.id)}
+                              >
+                                {cliente.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                                    setOpenSelectProcedimentos(false);
-                                  }}
-                                >
-                                  <span>{item.procedimento.nome}</span>
-                                  <span className="mx-6">
-                                    R${Number(item.valor).toFixed(2)}
-                                  </span>
-                                  <Check
-                                    className={cn(
-                                      "ml-auto h-4 w-4",
-                                      item.procedimento.id == field.value
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    )}
-                                  />
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                    <FormMessage>
-                      {form.formState.errors.procedimentosId?.message}
-                    </FormMessage>
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
+                <FormField
+                  control={form.control}
+                  name="convenio_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Convênio</FormLabel>
+                      <Select
+                        disabled={!clienteSelecionado}
+                        onValueChange={(value) => {
+                          const numValue = Number(value);
+                          field.onChange(numValue);
+                          setConvenioSelecionado(
+                            convenios.find((convenio) => convenio.id === numValue) ?? null
+                          );
+                        }}
+                        value={field.value ? String(field.value) : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                            <SelectValue placeholder="Selecione um convênio" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0" disabled>
+                            Selecione
+                          </SelectItem>
+                          {convenios.map((convenio) => {
+                            return (
+                              <SelectItem
+                                key={convenio.id}
+                                value={String(convenio.id)}
+                              >
+                                {convenio.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <FormField
+                  control={form.control}
+                  name="procedimento_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Procedimento</FormLabel>
+                      <Select
+                        disabled={!convenioSelecionado}
+                        onValueChange={(value) => {
+                          field.onChange(Number(value));
+                          setProcedimentoSelecionado(
+                            procedimentos.find((procedimento) => procedimento.procedimento.id === Number(value)) ?? null
+                          );
+                        }}
+                        value={String(field.value)}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                            <SelectValue placeholder="Selecione um procedimento" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0" disabled>
+                            Selecione
+                          </SelectItem>
+                          {procedimentos.map((procedimento) => {
+                            return (
+                              <SelectItem
+                                key={procedimento.procedimento.id}
+                                value={String(procedimento.procedimento.id)}
+                              >
+                                {procedimento.procedimento.nome}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="situacao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Situação</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                            <SelectValue placeholder="Selecione a situação" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="AGENDADO">Agendado</SelectItem>
+                          <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
+                          <SelectItem value="FINALIZADO">Finalizado</SelectItem>
+                          <SelectItem value="FALTA">Falta</SelectItem>
+                          <SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <DialogFooter className="pt-6 border-t border-gray-200">
                 <Button
-                  variant="secondary"
+                  type="button"
+                  variant="outline"
                   onClick={() => setOpen(false)}
-                  disabled={loading}
+                  className="px-6 py-2 border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Cancelar
                 </Button>
-                <Button variant="default" type="submit" disabled={loading}>
-                  Salvar Agendamento
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 font-medium"
+                >
+                  {loading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Salvando...</span>
+                    </div>
+                  ) : (
+                    "Salvar Alterações"
+                  )}
                 </Button>
               </DialogFooter>
             </form>

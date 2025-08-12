@@ -9,7 +9,7 @@ export const createConvenioSchema = z.object({
 ,
   desconto: z.number().min(0, {message: "O campo é obrigatório"}),
   regras: z.string().min(1, { message: "O campo é obrigatório" }),
-  tabelaFaturamentosId: z
+  tabela_faturamento_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
     .refine((val) => !isNaN(val) && val > 0, {
