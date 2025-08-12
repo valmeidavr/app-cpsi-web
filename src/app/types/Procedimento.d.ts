@@ -1,5 +1,6 @@
 import { Agenda } from "./Agenda";
 import { Turma } from "./Turma";
+import { Especialidade } from "./Especialidade";
 
 export type Procedimento = {
   id: number;

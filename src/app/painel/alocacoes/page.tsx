@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { http } from "@/util/http";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Especialidade } from "@/app/types/Especialidade";
@@ -90,8 +89,7 @@ export default function AlocacaoPage() {
   }, [prestador, unidade, especialidade]);
   const fetchAlocacoes = async () => {
     try {
-      setCarregandoDadosAlocacao;
-      true;
+      setCarregandoDadosAlocacao(true);
       if (!prestador || !unidade) return;
       const params = new URLSearchParams();
       if (prestador) params.append('prestadorId', prestador.id.toString());
@@ -115,36 +113,76 @@ export default function AlocacaoPage() {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await http.get("/api/prestadores");
-      setPrestadores(data.data);
+      const response = await fetch("/api/prestadores");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPrestadores(data.data);
+      } else {
+        console.error("Erro ao carregar prestadores:", data.error);
+        toast.error("Erro ao carregar dados dos Prestadores");
+      }
     } catch (error: any) {
+      console.error("Erro ao carregar prestadores:", error);
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
+  
   const fetchUnidades = async () => {
     try {
-      const { data } = await http.get("/api/unidades");
-      setUnidades(data.data);
+      const response = await fetch("/api/unidades");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUnidades(data.data);
+      } else {
+        console.error("Erro ao carregar unidades:", data.error);
+        toast.error("Erro ao carregar dados das Unidades");
+      }
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Unidades");
+      console.error("Erro ao carregar unidades:", error);
+      toast.error("Erro ao carregar dados das Unidades");
     }
   };
+  
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await http.get("/api/especialidades");
-      setEspecialidades(data.data);
+      const response = await fetch("/api/especialidades");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setEspecialidades(data.data);
+      } else {
+        console.error("Erro ao carregar especialidades:", data.error);
+        toast.error("Erro ao carregar dados das Especialidades");
+      }
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Especialidades");
+      console.error("Erro ao carregar especialidades:", error);
+      toast.error("Erro ao carregar dados das Especialidades");
     }
   };
   const onSubmit = async (values: z.infer<typeof createAlocacaoSchema>) => {
     try {
       setCarregandoDadosAlocacao(true);
-      await http.post("/api/alocacoes", values);
+      
+      const response = await fetch("/api/alocacoes", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao criar alocação");
+      }
+
       await fetchAlocacoes();
       toast.success("Alocação criada com sucesso!");
-    } catch (error) {
-      toast.error("Não foi possivel criar a Alocação!");
+    } catch (error: any) {
+      console.error("Erro ao criar alocação:", error);
+      toast.error(error.message || "Não foi possível criar a Alocação!");
     } finally {
       setCarregandoDadosAlocacao(false);
     }
@@ -157,7 +195,7 @@ export default function AlocacaoPage() {
             <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
               <FormField
                 control={form.control}
-                                  name="prestador_id"
+                name="prestador_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Prestadores *</FormLabel>
@@ -174,7 +212,7 @@ export default function AlocacaoPage() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.prestadoresId
+                          form.formState.errors.prestador_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }
@@ -200,14 +238,14 @@ export default function AlocacaoPage() {
                       </SelectContent>
                     </Select>
                     <FormMessage>
-                      {form.formState.errors.prestadoresId?.message}
+                      {form.formState.errors.prestador_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="unidadesId"
+                name="unidade_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Unidade *</FormLabel>
@@ -224,7 +262,7 @@ export default function AlocacaoPage() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.unidadesId
+                          form.formState.errors.unidade_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }
@@ -250,14 +288,14 @@ export default function AlocacaoPage() {
                       </SelectContent>
                     </Select>
                     <FormMessage>
-                      {form.formState.errors.unidadesId?.message}
+                      {form.formState.errors.unidade_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="especialidadesId"
+                name="especialidade_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Especialidade *</FormLabel>
@@ -275,7 +313,7 @@ export default function AlocacaoPage() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.especialidadesId
+                          form.formState.errors.especialidade_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }
@@ -285,7 +323,9 @@ export default function AlocacaoPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="0">Selecione</SelectItem>
+                        <SelectItem value="0" disabled>
+                          Selecione
+                        </SelectItem>
                         {especialidades.map((especialidade) => {
                           return (
                             <SelectItem
@@ -299,7 +339,7 @@ export default function AlocacaoPage() {
                       </SelectContent>
                     </Select>
                     <FormMessage>
-                      {form.formState.errors.especialidadesId?.message}
+                      {form.formState.errors.especialidade_id?.message}
                     </FormMessage>
                   </FormItem>
                 )}

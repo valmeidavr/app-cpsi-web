@@ -12,7 +12,6 @@ import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Agenda } from "@/app/types/Agenda";
 import { format } from "date-fns";
-import { http } from "@/util/http";
 import { toast } from "sonner";
 
 interface AgendaContextType {
@@ -74,9 +73,9 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
       const params = new URLSearchParams();
       if (formattedDate) params.append('date', formattedDate);
-      params.append('unidadesId', unidade.id.toString());
-      params.append('prestadoresId', prestador.id.toString());
-      params.append('especialidadesId', especialidade.id.toString());
+      params.append('unidadeId', unidade.id.toString());
+      params.append('prestadorId', prestador.id.toString());
+      params.append('especialidadeId', especialidade.id.toString());
 
       const response = await fetch(`/api/agendas?${params}`);
       const data = await response.json();
@@ -87,7 +86,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
           return {
             hora,
             situacao: agenda.situacao,
-            paciente: agenda.clientes?.nome || null,
+            paciente: agenda.cliente_nome || null,
             tipo: "procedimento",
             dadosAgendamento: agenda,
           };
@@ -108,9 +107,9 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
     setCarregandoDadosAgenda(true);
     try {
       const params = new URLSearchParams();
-      if (unidade?.id) params.append('unidadesId', unidade.id.toString());
-      if (prestador?.id) params.append('prestadoresId', prestador.id.toString());
-      if (especialidade?.id) params.append('especialidadesId', especialidade.id.toString());
+      if (unidade?.id) params.append('unidadeId', unidade.id.toString());
+      if (prestador?.id) params.append('prestadorId', prestador.id.toString());
+      if (especialidade?.id) params.append('especialidadeId', especialidade.id.toString());
 
       const response = await fetch(`/api/agendas?${params}`);
       const data = await response.json();
@@ -169,26 +168,46 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await http.get("/api/prestadores");
+      const response = await fetch("/api/prestadores");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar prestadores");
+      }
+      
+      const data = await response.json();
       setPrestadores(data.data);
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
+  
   const fetchUnidades = async () => {
     try {
-      const { data } = await http.get("/api/unidades");
+      const response = await fetch("/api/unidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar unidades");
+      }
+      
+      const data = await response.json();
       setUnidades(data.data);
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Unidades");
+      toast.error("Erro ao carregar dados das Unidades");
     }
   };
+  
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await http.get("/api/especialidades");
+      const response = await fetch("/api/especialidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
       setEspecialidades(data.data);
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Especialidades");
+      toast.error("Erro ao carregar dados das Especialidades");
     }
   };
   return (

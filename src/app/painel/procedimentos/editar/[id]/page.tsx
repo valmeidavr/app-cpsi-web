@@ -92,9 +92,7 @@ export default function EditarProcedimento() {
             nome: data.nome,
             codigo: data.codigo,
             tipo: data.tipo,
-            especialidade_id: data.especialidade_id
-              ? data.especialidades_id.toString()
-              : 0,
+            especialidade_id: data.especialidade_id || 0,
           });
         } else {
           console.error("Erro ao carregar procedimento:", data.error);

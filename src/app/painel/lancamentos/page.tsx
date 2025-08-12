@@ -56,7 +56,6 @@ import { toast } from "sonner";
 //Helpers
 // Removido import http - usando fetch direto
 //API
-import { http } from "@/util/http";
 //Types
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
@@ -163,7 +162,13 @@ export default function Lancamentos() {
       const novoStatus =
         lancamentoSelecionado.status === "ATIVO" ? "INATIVO" : "ATIVO";
       console.log(lancamentoSelecionado.id, novoStatus);
-      await http.patch(`/api/lancamentos/${lancamentoSelecionado.id}`, { status: novoStatus });
+      await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: novoStatus }),
+      });
 
       toast.success(
         `Lançamento ${

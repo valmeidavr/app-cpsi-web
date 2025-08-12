@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM tabela_faturamentos ';
+    let query = 'SELECT * FROM tabela_faturamentos';
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (nome LIKE ? OR descricao LIKE ?)';
+      query += ' WHERE (nome LIKE ? OR descricao LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     const [tabelaRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM tabela_faturamentos ';
+    let countQuery = 'SELECT COUNT(*) as total FROM tabela_faturamentos';
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR descricao LIKE ?)';
+      countQuery += ' WHERE (nome LIKE ? OR descricao LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 

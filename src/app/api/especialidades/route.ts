@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createEspecialidadeSchema, updateEspecialidadeSchema } from "./schema/formSchemaEspecialidade";
 
@@ -14,32 +14,29 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM especialidades ';
-    const params: (string | number)[] = [];
+    // 1. Construir a cláusula WHERE dinamicamente
+    let whereClause = '';
+    const queryParams: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (nome LIKE ? OR descricao LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      whereClause = ' WHERE nome LIKE ?';
+      queryParams.push(`%${search}%`);
     }
 
-    // Adicionar paginação
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
-
-    const [especialidadeRows] = await gestorPool.execute(query, params);
-
-    // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM especialidades ';
-    const countParams: (string)[] = [];
-
-    if (search) {
-      countQuery += ' AND (nome LIKE ? OR descricao LIKE ?)';
-      countParams.push(`%${search}%`, `%${search}%`);
-    }
-
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    // 2. Query para contar o total de registros
+    const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
+    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
     const total = (countRows as any[])[0]?.total || 0;
+
+    // 3. Query para buscar os dados com paginação
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const dataQuery = `
+      SELECT * FROM especialidades${whereClause}
+      ORDER BY nome ASC
+      LIMIT ? OFFSET ?
+    `;
+    const dataParams = [...queryParams, parseInt(limit), offset];
+    const especialidadeRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: especialidadeRows,

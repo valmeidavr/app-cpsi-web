@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 
 // GET - Buscar alocacao por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const id = params.id;
 
-    const [rows] = await gestorPool.execute(
+    const rows = await executeWithRetry(gestorPool,
       'SELECT * FROM alocacoes WHERE id = ?',
       [id]
     );
@@ -43,16 +43,40 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar alocacao
-    await gestorPool.execute(
+    await executeWithRetry(gestorPool,
       `UPDATE alocacoes SET 
-        especialidades_id = ?, unidades_id = ?, prestadores_id = ?
+        unidade_id = ?, especialidade_id = ?, prestador_id = ?
        WHERE id = ?`,
-      [body.especialidades_id, body.unidades_id, body.prestadores_id, id]
+      [body.unidade_id, body.especialidade_id, body.prestador_id, id]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar alocacao:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE - Excluir alocacao
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const id = params.id;
+
+    // Excluir alocacao
+    await executeWithRetry(gestorPool,
+      'DELETE FROM alocacoes WHERE id = ?',
+      [id]
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao excluir alocacao:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

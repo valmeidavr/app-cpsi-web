@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAgendaSchema, updateAgendaSchema } from "./schema/formSchemaAgendas";
 
@@ -13,32 +13,62 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
-    const unidadesId = searchParams.get('unidadesId');
-    const prestadoresId = searchParams.get('prestadoresId');
-    const especialidadesId = searchParams.get('especialidadesId');
+    
+    // Aceitar ambos os formatos de parâmetros para compatibilidade
+    const unidadeId = searchParams.get('unidadeId') || searchParams.get('unidade_id');
+    const prestadorId = searchParams.get('prestadorId') || searchParams.get('prestador_id');
+    const especialidadeId = searchParams.get('especialidadeId') || searchParams.get('especialidade_id');
     const date = searchParams.get('date');
 
-    let query = 'SELECT a.* FROM agendas a WHERE 1=1';
+    // Debug: log dos parâmetros recebidos
+    console.log("Parâmetros recebidos na API de agendas:", {
+      unidadeId,
+      prestadorId,
+      especialidadeId,
+      date,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
+
+    let query = `
+      SELECT 
+        a.*,
+        c.nome as cliente_nome,
+        cv.nome as convenio_nome,
+        p.nome as procedimento_nome,
+        e.nome as expediente_nome,
+        pr.nome as prestador_nome,
+        u.nome as unidade_nome,
+        esp.nome as especialidade_nome
+      FROM agendas a
+      LEFT JOIN clientes c ON a.cliente_id = c.id
+      LEFT JOIN convenios cv ON a.convenio_id = cv.id
+      LEFT JOIN procedimentos p ON a.procedimento_id = p.id
+      LEFT JOIN expedientes e ON a.expediente_id = e.id
+      LEFT JOIN prestadores pr ON a.prestador_id = pr.id
+      LEFT JOIN unidades u ON a.unidade_id = u.id
+      LEFT JOIN especialidades esp ON a.especialidade_id = esp.id
+      WHERE 1=1
+    `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (a.dtagenda LIKE ? OR a.situacao LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      query += ' AND (a.situacao LIKE ? OR c.nome LIKE ? OR pr.nome LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    if (unidadesId) {
-      query += ' AND a.unidadesId = ?';
-      params.push(parseInt(unidadesId));
+    if (unidadeId) {
+      query += ' AND a.unidade_id = ?';
+      params.push(parseInt(unidadeId));
     }
 
-    if (prestadoresId) {
-      query += ' AND a.prestadoresId = ?';
-      params.push(parseInt(prestadoresId));
+    if (prestadorId) {
+      query += ' AND a.prestador_id = ?';
+      params.push(parseInt(prestadorId));
     }
 
-    if (especialidadesId) {
-      query += ' AND a.especialidadesId = ?';
-      params.push(parseInt(especialidadesId));
+    if (especialidadeId) {
+      query += ' AND a.especialidade_id = ?';
+      params.push(parseInt(especialidadeId));
     }
 
     if (date) {
@@ -46,35 +76,45 @@ export async function GET(request: NextRequest) {
       params.push(date);
     }
 
+    // Debug: log da query construída
+    console.log("Query construída:", query);
+    console.log("Parâmetros:", params);
+
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ' ORDER BY a.dtagenda DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
-    const [agendaRows] = await gestorPool.execute(query, params);
+    const agendaRows = await executeWithRetry(gestorPool, query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM agendas a WHERE 1=1';
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM agendas a
+      LEFT JOIN clientes c ON a.cliente_id = c.id
+      LEFT JOIN prestadores pr ON a.prestador_id = pr.id
+      WHERE 1=1
+    `;
     const countParams: (string | number)[] = [];
 
     if (search) {
-      countQuery += ' AND (a.dtagenda LIKE ? OR a.situacao LIKE ?)';
-      countParams.push(`%${search}%`, `%${search}%`);
+      countQuery += ' AND (a.situacao LIKE ? OR c.nome LIKE ? OR pr.nome LIKE ?)';
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    if (unidadesId) {
-      countQuery += ' AND a.unidadesId = ?';
-      countParams.push(parseInt(unidadesId));
+    if (unidadeId) {
+      countQuery += ' AND a.unidade_id = ?';
+      countParams.push(parseInt(unidadeId));
     }
 
-    if (prestadoresId) {
-      countQuery += ' AND a.prestadoresId = ?';
-      countParams.push(parseInt(prestadoresId));
+    if (prestadorId) {
+      countQuery += ' AND a.prestador_id = ?';
+      countParams.push(parseInt(prestadorId));
     }
 
-    if (especialidadesId) {
-      countQuery += ' AND a.especialidadesId = ?';
-      countParams.push(parseInt(especialidadesId));
+    if (especialidadeId) {
+      countQuery += ' AND a.especialidade_id = ?';
+      countParams.push(parseInt(especialidadeId));
     }
 
     if (date) {
@@ -82,7 +122,11 @@ export async function GET(request: NextRequest) {
       countParams.push(date);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    // Debug: log da query de contagem
+    console.log("Query de contagem:", countQuery);
+    console.log("Parâmetros de contagem:", countParams);
+
+    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
 
     return NextResponse.json({
@@ -109,16 +153,15 @@ export async function POST(request: NextRequest) {
     const body: CreateAgendaDTO = await request.json();
 
     // Inserir agenda
-    const [result] = await gestorPool.execute(
+    const result = await executeWithRetry(gestorPool,
       `INSERT INTO agendas (
-        dtagenda, situacao, clientesId, conveniosId, procedimentosId,
-        expedientesId, prestadoresId, unidadesId, especialidadesId,
-        horario, tipo
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        dtagenda, situacao, cliente_id, convenio_id, procedimento_id,
+        expediente_id, prestador_id, unidade_id, especialidade_id, tipo
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.dtagenda, body.situacao, body.clientesId, body.conveniosId,
-        body.procedimentosId, body.expedientesId, body.prestadoresId,
-        body.unidadesId, body.especialidadesId, body.horario, body.tipo
+        body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
+        body.procedimento_id, body.expediente_id, body.prestador_id,
+        body.unidade_id, body.especialidade_id, body.tipo
       ]
     );
 
@@ -151,16 +194,16 @@ export async function PUT(request: NextRequest) {
     const body: UpdateAgendaDTO = await request.json();
 
     // Atualizar agenda
-    await gestorPool.execute(
+    await executeWithRetry(gestorPool,
       `UPDATE agendas SET 
-        dtagenda = ?, situacao = ?, clientesId = ?, conveniosId = ?,
-        procedimentosId = ?, expedientesId = ?, prestadoresId = ?,
-        unidadesId = ?, especialidadesId = ?, horario = ?, tipo = ?
+        dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?,
+        procedimento_id = ?, expediente_id = ?, prestador_id = ?,
+        unidade_id = ?, especialidade_id = ?, tipo = ?
        WHERE id = ?`,
       [
-        body.dtagenda, body.situacao, body.clientesId, body.conveniosId,
-        body.procedimentosId, body.expedientesId, body.prestadoresId,
-        body.unidadesId, body.especialidadesId, body.horario, body.tipo, id
+        body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
+        body.procedimento_id, body.expediente_id, body.prestador_id,
+        body.unidade_id, body.especialidade_id, body.tipo, id
       ]
     );
 
@@ -188,7 +231,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // DELETE - remover registro
-    await gestorPool.execute(
+    await executeWithRetry(gestorPool,
       'DELETE FROM agendas WHERE id = ?',
       [id]
     );

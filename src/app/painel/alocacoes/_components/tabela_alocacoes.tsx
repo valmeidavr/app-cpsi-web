@@ -1,7 +1,6 @@
 "use client";
 
 import { updateAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
-import { http } from "@/util/http";
 import { Alocacao } from "@/app/types/Alocacao";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -54,7 +53,7 @@ import { z } from "zod";
 interface TabelaAlocacoesProps {
   alocacoes: Alocacao[];
   CarregandoDadosAlocacao: boolean;
-  fetchAlocacoes: () => {};
+  fetchAlocacoes: () => Promise<void>;
   setCarregandoDadosAlocacao: Dispatch<SetStateAction<boolean>>;
   prestador: Prestador | null;
   unidade: Unidade | null;
@@ -89,15 +88,29 @@ const TabelaAlocacoes = ({
 
   const excluirAlocacao = async (alocacao_id: number) => {
     try {
+      console.log('Iniciando exclusão da alocação:', alocacao_id);
       setloading(true);
-      await http.delete(`/api/alocacoes/${alocacao_id}`);
+      
+      const response = await fetch(`/api/alocacoes/${alocacao_id}`, {
+        method: 'DELETE'
+      });
 
-      toast.error("Alocação excluida com sucesso");
-      await fetchAlocacoes();
+      console.log('Resposta da API:', response.status, response.statusText);
+
+      if (response.ok) {
+        toast.success("Alocação excluída com sucesso");
+        setIsDeleteModalOpen(false);
+        console.log('Chamando fetchAlocacoes para atualizar a lista');
+        await fetchAlocacoes();
+      } else {
+        const errorData = await response.json();
+        console.error('Erro da API:', errorData);
+        toast.error(errorData.error || "Não foi possível excluir a alocação");
+      }
     } catch (error: any) {
-      toast.error("Não foi posssivel deletar a alocação", error);
+      console.error("Erro ao excluir alocação:", error);
+      toast.error("Erro ao excluir a alocação. Tente novamente.");
     } finally {
-      setIsDeleteModalOpen(false);
       setloading(false);
     }
   };
@@ -136,10 +149,15 @@ const TabelaAlocacoes = ({
 
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await http.get("/api/especialidades");
-      setEspecialidades(data.data);
+      const response = await fetch("/api/especialidades");
+      if (response.ok) {
+        const data = await response.json();
+        setEspecialidades(data.data);
+      } else {
+        toast.error("Erro ao carregar dados das Especialidades");
+      }
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Especialidades");
+      toast.error("Erro ao carregar dados das Especialidades");
     }
   };
 
@@ -152,12 +170,14 @@ const TabelaAlocacoes = ({
         <TableHeader className="bg-gray-100 sticky top-0 z-10">
           <TableRow>
             <TableHead className="text-center">Especialidade</TableHead>
+            <TableHead className="text-center">Unidade</TableHead>
+            <TableHead className="text-center">Prestador</TableHead>
             <TableHead className="text-center">Opções</TableHead>
           </TableRow>
         </TableHeader>
         {CarregandoDadosAlocacao ? (
           <TableRow>
-            <TableCell colSpan={5}>
+            <TableCell colSpan={4}>
               <div className="flex justify-center items-center h-20">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
                 <span className="ml-2 text-gray-500">Carregando ...</span>
@@ -169,7 +189,9 @@ const TabelaAlocacoes = ({
             {alocacoes.length > 0 ? (
               alocacoes.map((row, index) => (
                 <TableRow key={index}>
-                  <TableCell>{row.especialidade.nome}</TableCell>
+                  <TableCell>{row.especialidade_nome || 'Não definido'}</TableCell>
+                  <TableCell>{row.unidade_nome || 'Não definido'}</TableCell>
+                  <TableCell>{row.prestador_nome || 'Não definido'}</TableCell>
 
                   <TableCell className="flex justify-center">
                     <DropdownMenu>
@@ -205,7 +227,7 @@ const TabelaAlocacoes = ({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={4}>
                   <div className="flex justify-center items-center h-20">
                     <span className="ml-2 text-gray-500">
                       Nenhuma Alocação encontrada ...
@@ -221,20 +243,39 @@ const TabelaAlocacoes = ({
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Excluir Alocação </DialogTitle>
+            <DialogTitle>Excluir Alocação</DialogTitle>
           </DialogHeader>
-          Tem certeza que deseja excluir a alocação do dia{" "}
+          <div className="py-4">
+            <p>Tem certeza que deseja excluir esta alocação?</p>
+            {alocacaoSelecionada && (
+              <div className="mt-2 text-sm text-gray-600">
+                <p><strong>Especialidade:</strong> {alocacaoSelecionada.especialidade_nome}</p>
+                <p><strong>Unidade:</strong> {alocacaoSelecionada.unidade_nome}</p>
+                <p><strong>Prestador:</strong> {alocacaoSelecionada.prestador_nome}</p>
+              </div>
+            )}
+          </div>
           <DialogFooter>
-            <Button variant="secondary" disabled={loading}>
+            <Button 
+              variant="secondary" 
+              onClick={() => setIsDeleteModalOpen(false)}
+              disabled={loading}
+            >
               Cancelar
             </Button>
             <Button
               variant="destructive"
-              type="submit"
               onClick={() => excluirAlocacao(alocacaoSelecionada!.id)}
               disabled={loading}
             >
-              Excluir
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -19,10 +19,18 @@ export type Lancamento = {
   status_pagamento: "PENDENTE" | "PAGO";
   agenda_id?: number | null;
   usuario_id: number;
-  plano_conta: PlanoConta;
-  caixa: Caixa;
-  usuario: Usuario;
   status?: string;
   created_at: string;
   updated_at: string;
+  
+  // Campos de JOIN para exibição
+  caixa_nome?: string;
+  plano_conta_nome?: string;
+  usuario_nome?: string;
+  cliente_nome?: string;
+  
+  // Relacionamentos (opcionais)
+  plano_conta?: PlanoConta;
+  caixa?: Caixa;
+  usuario?: Usuario;
 };

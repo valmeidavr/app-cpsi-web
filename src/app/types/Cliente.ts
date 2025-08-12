@@ -36,6 +36,7 @@ export type Cliente = {
   convenio_id: number;
   complemento?: string | null;
   cliente_id: number;
+  tipoCliente: TipoCliente;
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;

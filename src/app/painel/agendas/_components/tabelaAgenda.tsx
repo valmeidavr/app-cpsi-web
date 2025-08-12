@@ -34,7 +34,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { http } from "@/util/http";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
 import { Loader2, MenuIcon, PencilIcon, TrashIcon } from "lucide-react";
@@ -76,14 +75,13 @@ const TabelaAgenda = () => {
     mode: "onChange",
     defaultValues: {
       situacao: "AGENDADO",
-      clientesId: 0,
-      conveniosId: 0,
-      procedimentosId: 0,
-      prestadoresId: prestador?.id ?? 0,
-      unidadesId: unidade?.id ?? 0,
-      especialidadesId: especialidade?.id ?? 0,
+      cliente_id: 0,
+      convenio_id: 0,
+      procedimento_id: 0,
+      prestador_id: prestador?.id ?? 0,
+      unidade_id: unidade?.id ?? 0,
+      especialidade_id: especialidade?.id ?? 0,
       dtagenda: "",
-      horario: "",
       tipo: "PROCEDIMENTO",
     },
   });
@@ -94,13 +92,15 @@ const TabelaAgenda = () => {
     try {
       if (!agendamentoSelecionado)
         throw new Error("agendamento não selecionado");
-      const { data } = await http.get(`/api/agendas/`,
-        agendamentoSelecionado.dadosAgendamento.id.toString()
-      );
+      const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
+      if (!response.ok) {
+        throw new Error("Erro ao carregar dados do agendamento");
+      }
+      const data = await response.json();
       form.reset({
-        conveniosId: data.conveniosId,
-        clientesId: data.clientesId,
-        procedimentosId: data.procedimentosId,
+        convenio_id: data.convenio_id,
+        cliente_id: data.cliente_id,
+        procedimento_id: data.procedimento_id,
         situacao: "AGENDADO",
       });
     } catch (error) {
@@ -134,13 +134,13 @@ const TabelaAgenda = () => {
   //Setando valores de prestadores, unidades e especialidades no form, pelos dados selecionados dentro do useState
   useEffect(() => {
     if (prestador) {
-      form.setValue("prestadoresId", prestador.id);
+      form.setValue("prestador_id", prestador.id);
     }
     if (unidade) {
-      form.setValue("unidadesId", unidade.id);
+      form.setValue("unidade_id", unidade.id);
     }
     if (especialidade) {
-      form.setValue("especialidadesId", especialidade.id);
+      form.setValue("especialidade_id", especialidade.id);
     }
   }, [prestador, unidade, especialidade]);
 
@@ -148,15 +148,27 @@ const TabelaAgenda = () => {
   const excluirAgendamento = async (agendaId: number) => {
     try {
       setLoading(true);
-      await http.patch(`/api/agendas/${agendaId}`, { situacao: "CANCELADO" });
-      toast.error(
+      const response = await fetch(`/api/agendas/${agendaId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ situacao: "CANCELADO" }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao cancelar agendamento");
+      }
+
+      toast.success(
         `Agendamento do dia ${
           dataSelecionada && format(dataSelecionada, "dd/MM/yyyy")
-        } às ${horaSelecionada} foi deletado com sucesso!`
+        } às ${horaSelecionada} foi cancelado com sucesso!`
       );
       await carregarAgendamentos();
     } catch (error: any) {
-      toast.error("Não foi posssivel deletar o agendamento", error);
+      toast.error("Não foi possível cancelar o agendamento");
+      console.error("Erro ao cancelar agendamento:", error);
     } finally {
       setLoading(false);
       setIsDeleteModalOpen(false);
@@ -165,13 +177,25 @@ const TabelaAgenda = () => {
 
   const handleStatusAgenda = async (agendaId: number, situacao: string) => {
     try {
-      await http.patch(`/api/agendas/${agendaId}`, { situacao });
+      const response = await fetch(`/api/agendas/${agendaId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ situacao }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao alterar situação do agendamento");
+      }
+
       toast.success(
-        `Situação do agendamento foi alterado para ${situacao} com sucesso!`
+        `Situação do agendamento foi alterada para ${situacao} com sucesso!`
       );
       await carregarAgendamentos();
-    } catch (error: any) {
-      console.error("Não foi possivel alterar situação do agendamento", error);
+    } catch (error) {
+      console.error("Não foi possível alterar situação do agendamento", error);
+      toast.error("Erro ao alterar situação do agendamento");
     }
   };
   //Lista de

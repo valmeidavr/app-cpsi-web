@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import {
   createClienteSchema,
@@ -15,45 +15,47 @@ export type UpdateClienteDTO = z.infer<typeof updateClienteSchema>;
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = searchParams.get("page") || "1";
-    const limit = searchParams.get("limit") || "10";
-    const search = searchParams.get("search") || "";
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
+    const search = searchParams.get('search') || '';
 
-    let whereClause = "";
+    // 1. Construir a cláusula WHERE dinamicamente
+    let whereClause = '';
     const queryParams: (string | number)[] = [];
 
-    // 1. Monta a cláusula WHERE e seus parâmetros uma única vez
     if (search) {
-      whereClause = " WHERE (nome LIKE ? OR email LIKE ? OR cpf LIKE ?)";
+      whereClause = ' WHERE (nome LIKE ? OR email LIKE ? OR cpf LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     // 2. Query para contar o total de registros (usando a cláusula WHERE)
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
-    const [countRows] = await gestorPool.execute(countQuery, queryParams);
+    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
     const total = (countRows as any[])[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
-    const dataQueryParams = [...queryParams]; // Copia os parâmetros da busca
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    dataQueryParams.push(parseInt(limit), offset);
-
-    const dataQuery = `SELECT * FROM clientes${whereClause} ORDER BY nome ASC LIMIT ? OFFSET ?`;
-    const [clientRows] = await gestorPool.execute(dataQuery, dataQueryParams);
+    const dataQuery = `
+      SELECT * FROM clientes${whereClause}
+      ORDER BY nome ASC
+      LIMIT ? OFFSET ?
+    `;
+    const dataParams = [...queryParams, parseInt(limit), offset];
+    const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     return NextResponse.json({
-      data: clientRows,
+      data: clienteRows,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-      },
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
   } catch (error) {
-    console.error("Erro ao buscar clientes:", error);
+    console.error('Erro ao buscar clientes:', error);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
@@ -13,32 +13,83 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const caixa_id = searchParams.get('caixa_id');
+    const plano_conta_id = searchParams.get('plano_conta_id');
+    const data_inicio = searchParams.get('data_inicio');
+    const data_fim = searchParams.get('data_fim');
 
-    let query = 'SELECT * FROM lancamentos ';
+    let query = `
+      SELECT 
+        l.*,
+        c.nome as caixa_nome,
+        pc.nome as plano_conta_nome,
+        u.nome as usuario_nome,
+        cl.nome as cliente_nome
+      FROM lancamentos l
+      LEFT JOIN caixas c ON l.caixa_id = c.id
+      LEFT JOIN plano_contas pc ON l.plano_conta_id = pc.id
+      LEFT JOIN usuarios u ON l.usuario_id = u.id
+      LEFT JOIN clientes cl ON l.cliente_id = cl.id
+      WHERE 1=1
+    `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (descricao LIKE ? OR tipo LIKE ?)';
+      query += ' AND (l.descricao LIKE ? OR l.tipo LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (caixa_id) {
+      query += ' AND l.caixa_id = ?';
+      params.push(parseInt(caixa_id));
+    }
+
+    if (plano_conta_id) {
+      query += ' AND l.plano_conta_id = ?';
+      params.push(parseInt(plano_conta_id));
+    }
+
+    if (data_inicio && data_fim) {
+      query += ' AND DATE(l.data_lancamento) BETWEEN ? AND ?';
+      params.push(data_inicio, data_fim);
     }
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY data_lancamento DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY l.data_lancamento DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
-    const [lancamentoRows] = await gestorPool.execute(query, params);
+    const lancamentoRows = await executeWithRetry(gestorPool, query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM lancamentos ';
-    const countParams: (string)[] = [];
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM lancamentos l
+      WHERE 1=1
+    `;
+    const countParams: (string | number)[] = [];
 
     if (search) {
-      countQuery += ' AND (descricao LIKE ? OR tipo LIKE ?)';
+      countQuery += ' AND (l.descricao LIKE ? OR l.tipo LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    if (caixa_id) {
+      countQuery += ' AND l.caixa_id = ?';
+      countParams.push(parseInt(caixa_id));
+    }
+
+    if (plano_conta_id) {
+      countQuery += ' AND l.plano_conta_id = ?';
+      countParams.push(parseInt(plano_conta_id));
+    }
+
+    if (data_inicio && data_fim) {
+      countQuery += ' AND DATE(l.data_lancamento) BETWEEN ? AND ?';
+      countParams.push(data_inicio, data_fim);
+    }
+
+    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
 
     return NextResponse.json({
@@ -64,17 +115,21 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateLancamentoDTO = await request.json();
 
-    // Inserir lançamento
-    const [result] = await gestorPool.execute(
+    // Inserir lançamento com campos corretos
+    const result = await executeWithRetry(gestorPool,
       `INSERT INTO lancamentos (
-        descricao, valor, tipo, data_lancamento, forma_pagamento, 
-        status_pagamento, clientes_id, plano_contas_id, caixas_id, 
-        usuario_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        valor, descricao, data_lancamento, tipo, forma_pagamento,
+        status_pagamento, cliente_id, plano_conta_id, caixa_id,
+        usuario_id, motivo_estorno, motivo_transferencia,
+        lancamento_original_id, transferencia_id, agenda_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.descricao, body.valor, body.tipo, body.data_lancamento,
-        body.forma_pagamento, body.status_pagamento, body.clientes_Id,
-        body.plano_contas_id, body.caixas_id, body.usuario_id
+        body.valor, body.descricao, body.data_lancamento, body.tipo,
+        body.forma_pagamento, body.status_pagamento, body.cliente_id,
+        body.plano_conta_id, body.caixa_id, body.usuario_id,
+        body.motivo_estorno, body.motivo_transferencia,
+        body.lancamento_original_id, body.id_transferencia,
+        body.agenda_id, 'Ativo'
       ]
     );
 
@@ -106,17 +161,23 @@ export async function PUT(request: NextRequest) {
 
     const body: UpdateLancamentoDTO = await request.json();
 
-    // Atualizar lançamento
-    await gestorPool.execute(
+    // Atualizar lançamento com campos corretos
+    await executeWithRetry(gestorPool,
       `UPDATE lancamentos SET 
-        descricao = ?, valor = ?, tipo = ?, data_lancamento = ?,
-        forma_pagamento = ?, status_pagamento = ?, clientes_id = ?,
-        plano_contas_id = ?, caixas_id = ?, usuario_id = ?
+        valor = ?, descricao = ?, tipo = ?, data_lancamento = ?,
+        forma_pagamento = ?, status_pagamento = ?, cliente_id = ?,
+        plano_conta_id = ?, caixa_id = ?, usuario_id = ?,
+        motivo_estorno = ?, motivo_transferencia = ?,
+        lancamento_original_id = ?, transferencia_id = ?,
+        agenda_id = ?
        WHERE id = ?`,
       [
-        body.descricao, body.valor, body.tipo, body.data_lancamento,
-        body.forma_pagamento, body.status_pagamento, body.clientes_Id,
-        body.plano_contas_id, body.caixas_id, body.usuario_id, id
+        body.valor, body.descricao, body.tipo, body.data_lancamento,
+        body.forma_pagamento, body.status_pagamento, body.cliente_id,
+        body.plano_conta_id, body.caixa_id, body.usuario_id,
+        body.motivo_estorno, body.motivo_transferencia,
+        body.lancamento_original_id, body.id_transferencia,
+        body.agenda_id, id
       ]
     );
 
@@ -144,7 +205,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // DELETE - remover registro
-    await gestorPool.execute(
+    await executeWithRetry(gestorPool,
       'DELETE FROM lancamentos WHERE id = ?',
       [id]
     );

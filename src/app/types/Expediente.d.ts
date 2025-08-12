@@ -10,4 +10,11 @@ export type Expediente = {
   semana: string;
   alocacao_id: number;
   alocacao: Alocacao;
+  // Campos adicionais retornados pela API com JOINs
+  unidade_id?: number;
+  especialidade_id?: number;
+  prestador_id?: number;
+  unidade_nome?: string;
+  especialidade_nome?: string;
+  prestador_nome?: string;
 };

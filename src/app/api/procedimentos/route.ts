@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
     // Inserir procedimento
     const [result] = await gestorPool.execute(
       `INSERT INTO procedimentos (
-        nome, codigo, tipo, especialidades_id, status
+        nome, codigo, tipo, especialidade_id, status
       ) VALUES (?, ?, ?, ?, ?)`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidadeId, 'Ativo'
+        body.nome, body.codigo, body.tipo, body.especialidade_id, 'Ativo'
       ]
     );
 
@@ -105,10 +105,10 @@ export async function PUT(request: NextRequest) {
     // Atualizar procedimento
     await gestorPool.execute(
       `UPDATE procedimentos SET 
-        nome = ?, codigo = ?, tipo = ?, especialidades_id = ?
+        nome = ?, codigo = ?, tipo = ?, especialidade_id = ?
        WHERE id = ?`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidadeId, id
+        body.nome, body.codigo, body.tipo, body.especialidade_id, id
       ]
     );
 

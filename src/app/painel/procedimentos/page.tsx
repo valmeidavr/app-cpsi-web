@@ -30,8 +30,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 //API
-import { http } from "@/util/http";
-//Helpers
 // Removido import http - usando fetch direto
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
@@ -77,9 +75,18 @@ export default function Procedimentos() {
 
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await http.get("/api/especialidades");
+      const response = await fetch("/api/especialidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
       setEspecialidades(data.data);
-    } catch (error: any) {}
+    } catch (error: any) {
+      console.error("Erro ao carregar especialidades:", error);
+      toast.error("Erro ao carregar lista de especialidades");
+    }
   };
 
   const alterarStatusProcedimento = async () => {

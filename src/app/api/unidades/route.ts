@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createUnidadeSchema, updateUnidadeSchema } from "./schema/formSchemaUnidades";
 
@@ -14,32 +14,29 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM unidades';
-    const params: (string | number)[] = [];
+    // 1. Construir a cláusula WHERE dinamicamente
+    let whereClause = '';
+    const queryParams: (string | number)[] = [];
 
     if (search) {
-      query += ' WHERE (nome LIKE ?)';
-      params.push(`%${search}%`);
+      whereClause = ' WHERE nome LIKE ?';
+      queryParams.push(`%${search}%`);
     }
 
-    // Adicionar paginação
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
-
-    const [unidadeRows] = await gestorPool.execute(query, params);
-
-    // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM unidades';
-    const countParams: (string)[] = [];
-
-    if (search) {
-      countQuery += ' WHERE (nome LIKE ?)';
-      countParams.push(`%${search}%`);
-    }
-
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    // 2. Query para contar o total de registros
+    const countQuery = `SELECT COUNT(*) as total FROM unidades${whereClause}`;
+    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
     const total = (countRows as any[])[0]?.total || 0;
+
+    // 3. Query para buscar os dados com paginação
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const dataQuery = `
+      SELECT * FROM unidades${whereClause}
+      ORDER BY nome ASC
+      LIMIT ? OFFSET ?
+    `;
+    const dataParams = [...queryParams, parseInt(limit), offset];
+    const unidadeRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: unidadeRows,

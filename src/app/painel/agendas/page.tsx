@@ -60,9 +60,9 @@ export default function Agendas() {
     resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
     defaultValues: {
-      prestadoresId: 0,
-      unidadesId: 0,
-      especialidadesId: 0,
+      prestador_id: 0,
+      unidade_id: 0,
+      especialidade_id: 0,
     },
   });
 
@@ -109,7 +109,7 @@ export default function Agendas() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-12xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Agenda de Consultas</h1>
@@ -126,9 +126,10 @@ export default function Agendas() {
                 <div className="space-y-6">
                   {/* Filtros */}
                   <div className="space-y-4">
+                    {/* Filtros */}
                     <FormField
                       control={form.control}
-                      name="unidadesId"
+                      name="unidade_id"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Unidade *</FormLabel>
@@ -143,7 +144,7 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
                                 <SelectValue placeholder="Selecione uma unidade" />
                               </SelectTrigger>
                             </FormControl>
@@ -170,7 +171,7 @@ export default function Agendas() {
 
                     <FormField
                       control={form.control}
-                      name="especialidadesId"
+                      name="especialidade_id"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Especialidade *</FormLabel>
@@ -187,7 +188,7 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
                                 <SelectValue placeholder="Selecione uma especialidade" />
                               </SelectTrigger>
                             </FormControl>
@@ -214,7 +215,7 @@ export default function Agendas() {
 
                     <FormField
                       control={form.control}
-                      name="prestadoresId"
+                      name="prestador_id"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Prestador *</FormLabel>
@@ -231,7 +232,7 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
+                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
                                 <SelectValue placeholder="Selecione um prestador" />
                               </SelectTrigger>
                             </FormControl>

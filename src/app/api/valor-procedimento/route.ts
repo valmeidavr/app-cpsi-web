@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createValorProcedimentoSchema, updateValorProcedimentoSchema } from "./schema/formSchemaValorProcedimento";
 
@@ -15,6 +15,24 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const convenio_id = searchParams.get("convenio_id");
     const tipoCliente = searchParams.get("tipoCliente");
+    const conveniosId = searchParams.get("conveniosId"); // Para compatibilidade
+    const convenioId = convenio_id || conveniosId;
+
+    // Se for busca específica por convênio e tipo de cliente
+    if (convenioId && tipoCliente) {
+      const query = `
+        SELECT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
+        FROM valor_procedimentos vp
+        INNER JOIN procedimentos p ON vp.procedimentos_id = p.id
+        INNER JOIN tabela_faturamentos tf ON vp.tabela_faturamentos_id = tf.id
+        INNER JOIN convenios c ON tf.id = c.tabela_faturamentos_id
+        WHERE c.id = ? AND vp.tipo = ?
+        ORDER BY p.nome ASC
+      `;
+      
+      const valorRows = await executeWithRetry(gestorPool, query, [convenioId, tipoCliente]);
+      return NextResponse.json(valorRows);
+    }
 
     // 1. Defina a base da query com o JOIN para que sempre busque o nome do procedimento.
     const baseQuery = `
@@ -27,20 +45,12 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [];
 
     // 2. Adicione as condições WHERE dinamicamente.
-    if (convenio_id && tipoCliente) {
-      // Adiciona o JOIN com convênios apenas quando necessário
-      const queryPart = `
-        INNER JOIN convenios c ON tf.id = c.tabela_faturamentos_id
-        WHERE c.id = ? AND vp.tipo = ?
-      `;
-      whereClauses.push(queryPart);
-      params.push(convenio_id, tipoCliente);
-    } else if (search) {
+    if (search) {
       whereClauses.push("WHERE p.nome LIKE ? OR vp.tipo LIKE ?");
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    const whereString = whereClauses.join(" ");
+    const whereString = whereClauses.length > 0 ? whereClauses.join(" ") : "";
 
     // 3. Monte a query para buscar os dados.
     const dataQuery = `
@@ -55,17 +65,12 @@ export async function GET(request: NextRequest) {
       parseInt(limit),
       (parseInt(page) - 1) * parseInt(limit),
     ];
-    const [valorRows] = await gestorPool.execute(dataQuery, dataParams);
+    const valorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     // 4. Monte a query para contar o total de registros (sem repetir código).
     const countQuery = `SELECT COUNT(vp.id) as total ${baseQuery} ${whereString}`;
-    const [countRows] = await gestorPool.execute(countQuery, params);
+    const countRows = await executeWithRetry(gestorPool, countQuery, params);
     const total = (countRows as any[])[0]?.total || 0;
-
-    // Se for busca por convênio, o comportamento antigo de retornar só os dados pode ser mantido
-    if (convenio_id && tipoCliente) {
-      return NextResponse.json(valorRows);
-    }
 
     return NextResponse.json({
       data: valorRows,

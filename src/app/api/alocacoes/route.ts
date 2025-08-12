@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAlocacaoSchema, updateAlocacaoSchema } from "./shema/formSchemaAlocacao";
 
@@ -14,31 +14,47 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM alocacoes ';
+    let query = `
+      SELECT 
+        a.*,
+        e.nome as especialidade_nome,
+        u.nome as unidade_nome,
+        p.nome as prestador_nome
+      FROM alocacoes a
+      LEFT JOIN especialidades e ON a.especialidade_id = e.id
+      LEFT JOIN unidades u ON a.unidade_id = u.id
+      LEFT JOIN prestadores p ON a.prestador_id = p.id
+    `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (especialidades_id LIKE ? OR unidades_id LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      query += ' WHERE (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
+    query += ' ORDER BY a.id ASC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
-    const [alocacaoRows] = await gestorPool.execute(query, params);
+    const alocacaoRows = await executeWithRetry(gestorPool, query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM alocacoes ';
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM alocacoes a
+      LEFT JOIN especialidades e ON a.especialidade_id = e.id
+      LEFT JOIN unidades u ON a.unidade_id = u.id
+      LEFT JOIN prestadores p ON a.prestador_id = p.id
+    `;
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' AND (especialidades_id LIKE ? OR unidades_id LIKE ?)';
-      countParams.push(`%${search}%`, `%${search}%`);
+      countQuery += ' WHERE (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
 
     return NextResponse.json({
@@ -65,12 +81,12 @@ export async function POST(request: NextRequest) {
     const body: CreateAlocacaoDTO = await request.json();
 
     // Inserir alocação
-    const [result] = await gestorPool.execute(
+    const result = await executeWithRetry(gestorPool,
       `INSERT INTO alocacoes (
-        especialidades_id, unidades_id, prestadores_id, status
-      ) VALUES (?, ?, ?, ?)`,
+        unidade_id, especialidade_id, prestador_id
+      ) VALUES (?, ?, ?)`,
       [
-        body.especialidadesId, body.unidadesId, body.prestadoresId, 'Ativo'
+        body.unidade_id, body.especialidade_id, body.prestador_id
       ]
     );
 

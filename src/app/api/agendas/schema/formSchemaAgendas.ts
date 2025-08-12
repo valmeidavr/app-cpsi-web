@@ -35,7 +35,7 @@ export const createAgendaSchema = z.object({
   especialidade_id: z
     .number()
     .int({ message: "Especialidade deve ser um número inteiro" }),
-  horario: z.string().optional().nullable(),
   tipo: z.enum(["PROCEDIMENTO", "ENCAIXE"]),
 });
+
 export const updateAgendaSchema = createAgendaSchema.partial();

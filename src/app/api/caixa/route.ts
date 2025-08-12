@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createCaixaSchema, updateCaixaSchema } from "./schema/formSchemaCaixa";
 
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM caixas ';
+    let query = 'SELECT * FROM caixas WHERE 1=1';
     const params: (string | number)[] = [];
 
     if (search) {
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
     query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
-    const [caixaRows] = await gestorPool.execute(query, params);
+    const caixaRows = await executeWithRetry(gestorPool, query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM caixas ';
+    let countQuery = 'SELECT COUNT(*) as total FROM caixas WHERE 1=1';
     const countParams: (string)[] = [];
 
     if (search) {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
 
     return NextResponse.json({
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const body: CreateCaixaDTO = await request.json();
 
     // Inserir caixa
-    const [result] = await gestorPool.execute(
+    const result = await executeWithRetry(gestorPool,
       `INSERT INTO caixas (
         nome, tipo, saldo, status
       ) VALUES (?, ?, ?, ?)`,

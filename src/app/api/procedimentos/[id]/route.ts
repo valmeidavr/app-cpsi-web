@@ -45,48 +45,16 @@ export async function PUT(
     // Atualizar procedimento
     await gestorPool.execute(
       `UPDATE procedimentos SET 
-        nome = ?, codigo = ?, tipo = ?, especialidades_id = ?
+        nome = ?, codigo = ?, tipo = ?, especialidade_id = ?
        WHERE id = ?`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidades_id, id
+        body.nome, body.codigo, body.tipo, body.especialidade_id, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar procedimento:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
-  }
-} 
-
-// PATCH - Alterar status do procedimento
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const id = params.id;
-    const body = await request.json();
-
-    if (!body.status) {
-      return NextResponse.json(
-        { error: 'Status é obrigatório' },
-        { status: 400 }
-      );
-    }
-
-    // Atualizar status do procedimento
-    await gestorPool.execute(
-      'UPDATE procedimentos SET status = ? WHERE id = ?',
-      [body.status, id]
-    );
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Erro ao alterar status do procedimento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

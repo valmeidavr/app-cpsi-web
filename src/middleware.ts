@@ -1,5 +1,6 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 // Mapeamento de roles do menu.json para níveis do banco
 const ROLE_MAPPING = {
@@ -24,6 +25,34 @@ function hasRoutePermission(userLevel: string, requiredGroups: string[]): boolea
   }
   
   return false
+}
+
+export function middleware(request: NextRequest) {
+  // Adicionar headers para controle de cache e conexões
+  const response = NextResponse.next()
+  
+  // Headers para evitar cache desnecessário
+  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
+  
+  // Header para controle de conexões
+  response.headers.set('Connection', 'keep-alive')
+  
+  return response
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 }
 
 export default withAuth(
@@ -86,10 +115,3 @@ export default withAuth(
     },
   }
 )
-
-export const config = {
-  matcher: [
-    '/painel/:path*',
-    '/api/protected/:path*',
-  ]
-}

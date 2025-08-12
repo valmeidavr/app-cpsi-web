@@ -207,14 +207,18 @@ export default function Turmas() {
                   <TableCell>{turma.nome}</TableCell>
                   <TableCell>
                     <Badge className="text-[13px]" variant="outline">
-                      {turma.procedimento.nome}
+                      {turma.procedimento_nome || (
+                        <span className="text-gray-400 italic">
+                          Procedimento não definido
+                        </span>
+                      )}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge className="text-[13px]" variant="outline">
-                      {turma.prestador ? (
+                      {turma.prestador_nome ? (
                         (() => {
-                          const nomeArray = turma.prestador.nome.split(" ");
+                          const nomeArray = turma.prestador_nome.split(" ");
                           const primeiroUltimoNome = `${nomeArray[0]} ${
                             nomeArray[nomeArray.length - 1]
                           }`;

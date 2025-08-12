@@ -34,13 +34,13 @@ export const createLancamentoSchema = z.object({
 
   plano_conta_id: z
     .union([z.string(), z.number()])
-    .refine((val) => Number(val))
-    .transform((val) => Number(val)).optional(),
+    .transform((val) => Number(val))
+    .refine((val) => val > 0, { message: "Plano de conta é obrigatório" }),
 
   caixa_id: z
     .union([z.string(), z.number()])
-    .refine((val) => Number(val) )
-    .transform((val) => Number(val)).optional(),
+    .transform((val) => Number(val))
+    .refine((val) => val > 0, { message: "Caixa é obrigatório" }),
 
   lancamento_original_id: z.number().nullable().optional(),
 
@@ -55,8 +55,8 @@ export const createLancamentoSchema = z.object({
   motivo_transferencia: z.string().nullable().optional(),
 
   forma_pagamento: z.enum(["DINHEIRO", "CARTAO", "CHEQUE", "BOLETO", "PIX"], {
-    required_error: "A forma de pagamento é obrigatório",
-    invalid_type_error: "Forma de pagamento inválido",
+    required_error: "A forma de pagamento é obrigatória",
+    invalid_type_error: "Forma de pagamento inválida",
   }),
 
   status_pagamento: z.enum(["PENDENTE", "PAGO"], {
@@ -73,6 +73,7 @@ export const createLancamentoSchema = z.object({
   usuario_id: z
     .union([z.string(), z.number()])
     .transform((val) => Number(val))
-    .optional(),
+    .refine((val) => val > 0, { message: "Usuário é obrigatório" }),
 });
+
 export const updateLancamentoSchema = createLancamentoSchema.partial();

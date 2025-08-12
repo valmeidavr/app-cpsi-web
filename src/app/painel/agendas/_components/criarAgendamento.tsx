@@ -45,7 +45,6 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAgenda } from "../AgendaContext";
-import { http } from "@/util/http";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import ConveniosCliente from "@/app/types/ConveniosCliente";
@@ -70,14 +69,13 @@ const CriarAgendamento = ({
     mode: "onChange",
     defaultValues: {
       situacao: "AGENDADO",
-      clientesId: 0,
-      conveniosId: 0,
-      procedimentosId: 0,
-      prestadoresId: 0,
-      unidadesId: 0,
-      especialidadesId: 0,
+      cliente_id: 0,
+      convenio_id: 0,
+      procedimento_id: 0,
+      prestador_id: 0,
+      unidade_id: 0,
+      especialidade_id: 0,
       dtagenda: "",
-      horario: "",
       tipo: "PROCEDIMENTO",
     },
   });
@@ -104,9 +102,9 @@ const CriarAgendamento = ({
   useEffect(() => {
     form.reset({
       ...form.getValues(),
-      prestadoresId: prestador?.id || 0,
-      unidadesId: unidade?.id || 0,
-      especialidadesId: especialidade?.id || 0,
+      prestador_id: prestador?.id || 0,
+      unidade_id: unidade?.id || 0,
+      especialidade_id: especialidade?.id || 0,
       dtagenda: dataSelecionada
         ? new Date(
             dataSelecionada.getTime() -
@@ -125,21 +123,34 @@ const CriarAgendamento = ({
       fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
     } else {
       setProcedimentos([]);
-      form.setValue("procedimentosId", 0);
+      form.setValue("procedimento_id", 0);
     }
   }, [tipoClienteSelecionado, convenioSelecionado]);
 
   const fetchClientes = async () => {
-    const { data } = await http.get("/api/clientes");
-    setClientes(data.data);
+    try {
+      const response = await fetch("/api/clientes");
+      if (!response.ok) {
+        throw new Error("Erro ao carregar clientes");
+      }
+      const data = await response.json();
+      setClientes(data.data);
+    } catch (error) {
+      toast.error("Erro ao carregar clientes");
+      console.error("Erro ao carregar clientes:", error);
+    }
   };
 
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
-      const { data } = await http.get(
+      const response = await fetch(
         `/api/convenios-clientes?clienteId=${clienteId}`
       );
+      if (!response.ok) {
+        throw new Error("Erro ao carregar convênios");
+      }
+      const data = await response.json();
       const conveniosListRaw = data.data.map(
         (item: ConveniosCliente) => item.convenios
       );
@@ -149,16 +160,16 @@ const CriarAgendamento = ({
 
       setConvenios(conveniosList);
       setConvenioSelecionada(undefined);
-      form.setValue("conveniosId", 0);
+      form.setValue("convenio_id", 0);
       setProcedimentos([]);
-      form.setValue("procedimentosId", 0);
+      form.setValue("procedimento_id", 0);
     } catch (error) {
       toast.error("Erro ao carregar convênios para este cliente.");
       setConvenios([]);
       setConvenioSelecionada(undefined);
-      form.setValue("conveniosId", 0);
+      form.setValue("convenio_id", 0);
       setProcedimentos([]);
-      form.setValue("procedimentosId", 0);
+      form.setValue("procedimento_id", 0);
     }
   };
 
@@ -167,9 +178,13 @@ const CriarAgendamento = ({
     conveniosId: number
   ) => {
     try {
-      const { data } = await http.get(
-        `/api/valor-procedimento/findByConvenioId?conveniosId=${conveniosId}&tipoCliente=${tipoCliente}`
+      const response = await fetch(
+        `/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${tipoCliente}`
       );
+      if (!response.ok) {
+        throw new Error("Erro ao carregar procedimentos");
+      }
+      const data = await response.json();
       setProcedimentos(data);
     } catch (e) {
       toast.error(
@@ -199,17 +214,17 @@ const CriarAgendamento = ({
         return;
       }
 
-      if (!values.clientesId || values.clientesId === 0) {
+      if (!values.cliente_id || values.cliente_id === 0) {
         toast.error("O Cliente é obrigatório.");
         setLoading(false);
         return;
       }
-      if (!values.conveniosId || values.conveniosId === 0) {
+      if (!values.convenio_id || values.convenio_id === 0) {
         toast.error("O Convênio é obrigatório.");
         setLoading(false);
         return;
       }
-      if (!values.procedimentosId || values.procedimentosId === 0) {
+      if (!values.procedimento_id || values.procedimento_id === 0) {
         toast.error("O Procedimento é obrigatório.");
         setLoading(false);
         return;
@@ -224,12 +239,25 @@ const CriarAgendamento = ({
       values.dtagenda = `${ano}-${mes}-${dia}T${horasFormatadas}:${minutosFormatados}:00.000Z`;
   
 
-      values.prestadoresId = prestador?.id;
-      values.unidadesId = unidade?.id;
-      values.especialidadesId = especialidade?.id;
+      values.prestador_id = prestador?.id;
+      values.unidade_id = unidade?.id;
+      values.especialidade_id = especialidade?.id;
       delete values.horario;
 
-      await http.post("/api/agendas", values);
+      const response = await fetch("/api/agendas", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao criar agendamento");
+      }
+
+      const result = await response.json();
       toast.success("Agendamento criado com sucesso!");
       await carregarAgendamentos(); 
     } catch (e: any) {
@@ -269,7 +297,7 @@ const CriarAgendamento = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
-                  name="clientesId"
+                  name="cliente_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Cliente *</FormLabel>
@@ -308,7 +336,7 @@ const CriarAgendamento = ({
                                     value={item.nome.toString()}
                                     key={item.id}
                                     onSelect={() => {
-                                      form.setValue("clientesId", +item.id);
+                                      form.setValue("cliente_id", +item.id);
                                       setClienteSelecionado(item);
                                       fetchConvenios(+item.id);
                                       setOpenSelectClientes(false);
@@ -331,7 +359,7 @@ const CriarAgendamento = ({
                         </PopoverContent>
                       </Popover>
                       <FormMessage>
-                        {form.formState.errors.clientesId?.message}
+                        {form.formState.errors.cliente_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}
@@ -339,7 +367,7 @@ const CriarAgendamento = ({
 
                 <FormField
                   control={form.control}
-                  name="conveniosId"
+                  name="convenio_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Convênio *</FormLabel>
@@ -376,7 +404,7 @@ const CriarAgendamento = ({
                         </SelectContent>
                       </Select>
                       <FormMessage>
-                        {form.formState.errors.conveniosId?.message}
+                        {form.formState.errors.convenio_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}
@@ -392,7 +420,7 @@ const CriarAgendamento = ({
 
                 <FormField
                   control={form.control}
-                  name="procedimentosId"
+                  name="procedimento_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Procedimentos *</FormLabel>
@@ -445,7 +473,7 @@ const CriarAgendamento = ({
                                     className="flex items-center justify-between"
                                     onSelect={() => {
                                       form.setValue(
-                                        "procedimentosId",
+                                        "procedimento_id",
                                         item.procedimento.id
                                       );
                                       setProcedimentoSelecionado(item);
@@ -473,7 +501,7 @@ const CriarAgendamento = ({
                         </PopoverContent>
                       </Popover>
                       <FormMessage>
-                        {form.formState.errors.procedimentosId?.message}
+                        {form.formState.errors.procedimento_id?.message}
                       </FormMessage>
                     </FormItem>
                   )}

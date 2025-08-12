@@ -34,7 +34,6 @@ import { Expediente } from "@/app/types/Expediente";
 import { Button } from "@/components/ui/button";
 import { Loader2, Save, SaveIcon } from "lucide-react";
 import { createExpedienteSchema } from "@/app/api/expediente/schema/formSchemaExpedientes";
-import { http } from "@/util/http";
 import { Input } from "@/components/ui/input";
 import { createAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
 import { Alocacao } from "@/app/types/Alocacao";
@@ -76,18 +75,26 @@ export default function ExpedientePage() {
 
   const fetchUnidadesByAlocacao = async () => {
     try {
-      const { data } = await http.get("/api/alocacoes");
+      const response = await fetch("/api/alocacoes?limit=100");
+      if (!response.ok) {
+        throw new Error("Erro ao carregar alocações");
+      }
+      const data = await response.json();
+      
+      // Criar mapa de unidades únicas
       const unidadesMap = new Map<number, Unidade>();
-      data.forEach((item: Alocacao) => {
-        if (!unidadesMap.has(item.unidade.id)) {
+      data.data.forEach((item: Alocacao) => {
+        if (item.unidade && !unidadesMap.has(item.unidade.id)) {
           unidadesMap.set(item.unidade.id, item.unidade);
         }
       });
+      
       const listaUnidades: Unidade[] = Array.from(unidadesMap.values());
-      setAlocacoes(data);
+      setAlocacoes(data.data);
       setUnidades(listaUnidades);
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Alocacoes");
+      toast.error("Erro ao carregar dados das Alocações");
+      console.error("Erro ao carregar alocações:", error);
     }
   };
   useEffect(() => {
@@ -96,29 +103,40 @@ export default function ExpedientePage() {
         if (!unidade) return;
         const listaPrestadores: Prestador[] = alocacoes
           .filter((item: Alocacao) => item.unidade_id === unidade.id)
-          .map((item: Alocacao) => item.prestador);
+          .map((item: Alocacao) => item.prestador)
+          .filter((prestador, index, array) => 
+            array.findIndex(p => p.id === prestador.id) === index
+          ); // Remove duplicatas
         setPrestadores(listaPrestadores);
       } catch (error: any) {
-        toast.error("Erro ao carregar dados dos Alocacoes");
+        toast.error("Erro ao carregar dados dos Prestadores");
+        console.error("Erro ao carregar prestadores:", error);
       }
     };
     fetchPrestadoresByAlocacao();
-  }, [unidade]);
+  }, [unidade, alocacoes]);
 
   useEffect(() => {
     const fetchEspecialidadesByPrestadores = async () => {
       try {
         if (!unidade || !prestador) return;
         const listaEspecialidades: Especialidade[] = alocacoes
-          .filter((item: Alocacao) => item.unidade_id == unidade.id)
-          .map((item: Alocacao) => item.especialidade);
+          .filter((item: Alocacao) => 
+            item.unidade_id === unidade.id && 
+            item.prestador_id === prestador.id
+          )
+          .map((item: Alocacao) => item.especialidade)
+          .filter((especialidade, index, array) => 
+            array.findIndex(e => e.id === especialidade.id) === index
+          ); // Remove duplicatas
         setEspecialidades(listaEspecialidades);
       } catch (error: any) {
-        toast.error("Erro ao carregar dados dos Alocacoes");
+        toast.error("Erro ao carregar dados das Especialidades");
+        console.error("Erro ao carregar especialidades:", error);
       }
     };
     fetchEspecialidadesByPrestadores();
-  }, [prestador]);
+  }, [prestador, unidade, alocacoes]);
 
   //Validação dos campos do formulário
   const form = useForm({
@@ -151,31 +169,41 @@ export default function ExpedientePage() {
     try {
       setCarregandoDadosExpediente(true);
       if (!unidade || !prestador || !especialidade) return;
-      const alocacaoId = alocacoes
-        .filter(
-          (item: Alocacao) =>
-            item.unidade_id == unidade.id &&
-            item.prestador_id == prestador.id &&
-            item.especialidade_id == especialidade.id
-        )
-        .map((item: Alocacao) => item.id);
-      setAlocacaoId(alocacaoId[0]);
+      
+      // Buscar alocação baseada nos filtros selecionados
+      const alocacaoEncontrada = alocacoes.find(
+        (item: Alocacao) =>
+          item.unidade_id === unidade.id &&
+          item.prestador_id === prestador.id &&
+          item.especialidade_id === especialidade.id
+      );
 
-      form.setValue("alocacao_id", alocacaoId[0]);
+      if (!alocacaoEncontrada) {
+        console.log("Nenhuma alocação encontrada para os filtros selecionados");
+        setExpedientes([]);
+        return;
+      }
+
+      setAlocacaoId(alocacaoEncontrada.id);
+      form.setValue("alocacao_id", alocacaoEncontrada.id);
+
       const params = new URLSearchParams();
       params.append('limit', '50');
-      params.append('alocacao_id', alocacaoId[0].toString());
+      params.append('alocacao_id', alocacaoEncontrada.id.toString());
       
       const response = await fetch(`/api/expediente?${params}`);
       const data = await response.json();
       
       if (response.ok) {
+        console.log("Dados retornados pela API de expedientes:", data.data);
         setExpedientes(data.data);
       } else {
         console.error("Erro ao carregar expedientes:", data.error);
+        setExpedientes([]);
       }
     } catch (error) {
-      console.error("Erro ao buscar dados de alocações: ", error);
+      console.error("Erro ao buscar dados de expedientes: ", error);
+      setExpedientes([]);
     } finally {
       setCarregandoDadosExpediente(false);
     }
@@ -185,13 +213,30 @@ export default function ExpedientePage() {
     try {
       setCarregandoDadosExpediente(true);
       if (!alocacao_id)
-        throw new Error("Não foi possivel encontrar a Alocação selecionada");
+        throw new Error("Não foi possível encontrar a Alocação selecionada");
+      
       form.setValue("alocacao_id", alocacao_id);
-      await http.post("/api/expediente", values);
+      
+      const response = await fetch("/api/expediente", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao criar expediente");
+      }
+
       await fetchExpedientes();
-      toast.success("Alocação criada com sucesso!");
+      toast.success("Expediente criado com sucesso!");
+      
+      // Limpar formulário
+      form.reset();
     } catch (error: any) {
-      toast.error(`Não foi possivel criar a Alocação: ${error.message}`);
+      toast.error(`Não foi possível criar o Expediente: ${error.message}`);
     } finally {
       setCarregandoDadosExpediente(false);
     }

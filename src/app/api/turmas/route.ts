@@ -14,27 +14,35 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM turmas ';
+    let query = `
+      SELECT 
+        t.*,
+        p.nome as procedimento_nome,
+        pr.nome as prestador_nome
+      FROM turmas t
+      LEFT JOIN procedimentos p ON t.procedimentos_id = p.id
+      LEFT JOIN prestadores pr ON t.prestadores_id = pr.id
+    `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (nome LIKE ? OR descricao LIKE ?)';
+      query += ' WHERE (t.nome LIKE ? OR t.descricao LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
+    query += ' ORDER BY t.nome ASC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
     const [turmaRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM turmas ';
+    let countQuery = 'SELECT COUNT(*) as total FROM turmas t';
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR descricao LIKE ?)';
+      countQuery += ' WHERE (t.nome LIKE ? OR t.descricao LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
@@ -72,7 +80,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         body.nome, body.horarioInicio, body.horarioFim, body.dataInicio,
-        body.limiteVagas, body.procedimentosId, body.prestadoresId
+        body.limiteVagas, body.procedimento_id, body.prestador_id 
       ]
     );
 
@@ -112,7 +120,7 @@ export async function PUT(request: NextRequest) {
        WHERE id = ?`,
       [
         body.nome, body.horarioInicio, body.horarioFim, body.dataInicio,
-        body.limiteVagas, body.procedimentosId, body.prestadoresId, id
+        body.limiteVagas, body.procedimento_id , body.prestador_id, id
       ]
     );
 

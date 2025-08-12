@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM convenios ';
+    let query = 'SELECT * FROM convenios';
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (nome LIKE ? OR regras LIKE ?)';
+      query += ' WHERE (nome LIKE ? OR regras LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     const [convenioRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM convenios ';
+    let countQuery = 'SELECT COUNT(*) as total FROM convenios';
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR regras LIKE ?)';
+      countQuery += ' WHERE (nome LIKE ? OR regras LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
@@ -64,13 +64,24 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateConvenioDTO = await request.json();
 
+    // Validar campos obrigatórios
+    if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
+      return NextResponse.json(
+        { error: 'Campos obrigatórios não preenchidos' },
+        { status: 400 }
+      );
+    }
+
+    // Garantir que desconto seja um número válido
+    const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+
     // Inserir convênio
     const [result] = await gestorPool.execute(
       `INSERT INTO convenios (
-        nome, desconto, regras, tabela_faturamentos_id
+        nome, desconto, regras, tabelaFaturamentosId
       ) VALUES (?, ?, ?, ?)`,
       [
-        body.nome, body.desconto, body.regras, body.tabelaFaturamentosId
+        body.nome, desconto, body.regras, body.tabela_faturamento_id
       ]
     );
 
@@ -102,13 +113,24 @@ export async function PUT(request: NextRequest) {
 
     const body: UpdateConvenioDTO = await request.json();
 
+    // Validar campos obrigatórios
+    if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
+      return NextResponse.json(
+        { error: 'Campos obrigatórios não preenchidos' },
+        { status: 400 }
+      );
+    }
+
+    // Garantir que desconto seja um número válido
+    const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+
     // Atualizar convênio
     await gestorPool.execute(
       `UPDATE convenios SET 
-        nome = ?, desconto = ?, regras = ?, tabela_faturamentos_id = ?
+        nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
        WHERE id = ?`,
       [
-        body.nome, body.desconto, body.regras, body.tabelaFaturamentosId, id
+        body.nome, desconto, body.regras, body.tabela_faturamento_id, id
       ]
     );
 

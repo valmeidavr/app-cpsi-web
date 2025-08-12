@@ -42,12 +42,23 @@ export async function PUT(
     const id = params.id;
     const body = await request.json();
 
+    // Validar campos obrigatórios
+    if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
+      return NextResponse.json(
+        { error: 'Campos obrigatórios não preenchidos' },
+        { status: 400 }
+      );
+    }
+
+    // Garantir que desconto seja um número válido
+    const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+
     // Atualizar convenio
     await gestorPool.execute(
       `UPDATE convenios SET 
-        nome = ?, desconto = ?, regras = ?, tabela_faturamentos_id = ?
+        nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
        WHERE id = ?`,
-      [body.nome, body.desconto, body.regras, body.tabela_faturamentos_id, id]
+      [body.nome, desconto, body.regras, body.tabela_faturamento_id, id]
     );
 
     return NextResponse.json({ success: true });

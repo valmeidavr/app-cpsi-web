@@ -25,7 +25,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
 import { useRouter } from "next/navigation";
-import { http } from "@/util/http";
 
 import {
   Select,
@@ -50,7 +49,7 @@ export default function NovoConvenio() {
     defaultValues: {
       nome: "",
       regras: "",
-      desconto: undefined,
+      desconto: 0,
       tabela_faturamento_id: 0,
     },
   });
@@ -58,7 +57,18 @@ export default function NovoConvenio() {
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
-      await http.post("/api/convenios", values);
+      const response = await fetch("/api/convenios", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao salvar convênio');
+      }
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -68,23 +78,26 @@ export default function NovoConvenio() {
 
       router.push(`/painel/convenios?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar convênio";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar convênio";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchTabelaFaturamento = async () => {
     try {
-      const { data } = await http.get("/tabela-faturamentos", {});
-
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/tabela_faturamentos");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTabelaFaturamento(data.data);
+      } else {
+        console.error("Erro ao buscar tabelas de faturamento:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tabelas de faturamento:", error);
+    }
   };
 
   useEffect(() => {

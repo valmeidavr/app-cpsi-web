@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { createProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
@@ -57,10 +57,22 @@ export default function NovoProcedimento() {
   const onSubmit = async (values: z.infer<typeof createProcedimentoSchema>) => {
     setLoading(true);
     try {
-      await http.post("/api/procedimentos", {
-        ...values,
-        especialidade_id: Number(values.especialidade_id),
+      const response = await fetch("/api/procedimentos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          especialidade_id: Number(values.especialidade_id),
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao salvar procedimento");
+      }
+
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
 
@@ -69,23 +81,27 @@ export default function NovoProcedimento() {
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar procedimento";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar procedimento";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await http.get("/api/especialidades");
-
+      const response = await fetch("/api/especialidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
       setEspecialidadeOptions(data.data);
-    } catch (error: any) {}
+    } catch (error: any) {
+      console.error("Erro ao carregar especialidades:", error);
+      toast.error("Erro ao carregar lista de especialidades");
+    }
   };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
