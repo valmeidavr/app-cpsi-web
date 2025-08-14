@@ -5,7 +5,7 @@ import {
   createClienteSchema,
   updateClienteSchema,
 } from "./shema/formSchemaCliente";
-import { format } from "date-fns";
+import { getCurrentUTCISO, getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
 export type CreateClienteDTO = z.infer<typeof createClienteSchema>;
@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
+    console.log('🔍 API Debug - Parâmetros recebidos:', { page, limit, search });
+
     // 1. Construir a cláusula WHERE dinamicamente
     let whereClause = '';
     const queryParams: (string | number)[] = [];
@@ -26,25 +28,44 @@ export async function GET(request: NextRequest) {
     if (search) {
       whereClause = ' WHERE (nome LIKE ? OR email LIKE ? OR cpf LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    } else {
+      // Se não há busca, retornar apenas clientes ativos
+      whereClause = ' WHERE status = "Ativo"';
     }
 
     // 2. Query para contar o total de registros (usando a cláusula WHERE)
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
+    console.log('🔍 API Debug - Query de contagem:', countQuery);
+    console.log('🔍 API Debug - Parâmetros de contagem:', queryParams);
+    
     const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
     const total = (countRows as any[])[0]?.total || 0;
+
+    console.log('🔍 API Debug - Total de clientes:', total);
 
     // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
-      SELECT * FROM clientes${whereClause}
-      ORDER BY nome ASC
+      SELECT DISTINCT id, nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
+                     uf, telefone1, telefone2, status, tipo, createdAt, updatedAt
+      FROM clientes${whereClause}
+      ORDER BY nome ASC, id ASC
       LIMIT ? OFFSET ?
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
-    const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
+    
+    // Debug logs removidos para evitar spam
+    
+    const clienteRows = await gestorPool.execute(dataQuery, dataParams);
+
+    // Debug: verificar dados retornados
+    console.log('🔍 API Debug - Clientes encontrados:', (clienteRows as any[])[0]?.length || 0);
+    console.log('🔍 API Debug - Primeiro cliente:', (clienteRows as any[])[0]?.[0]);
+    console.log('🔍 API Debug - Query executada:', dataQuery);
+    console.log('🔍 API Debug - Parâmetros:', dataParams);
 
     return NextResponse.json({
-      data: clienteRows,
+      data: (clienteRows as any[])[0],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -69,7 +90,7 @@ export async function POST(request: NextRequest) {
     // Formatar dados
     if (body.dtnascimento) {
       const parsedDate = new Date(body.dtnascimento);
-      body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
+      body.dtnascimento = getDateOnlyUTCISO(parsedDate);
     }
     body.cpf = limparCPF(String(body.cpf));
     if (body.cep) {
@@ -153,7 +174,7 @@ export async function PUT(request: NextRequest) {
     // Formatar dados
     if (body.dtnascimento) {
       const parsedDate = new Date(body.dtnascimento);
-      body.dtnascimento = format(parsedDate, "yyyy-MM-dd");
+      body.dtnascimento = getDateOnlyUTCISO(parsedDate);
     }
     body.cpf = limparCPF(String(body.cpf));
     if (body.cep) {

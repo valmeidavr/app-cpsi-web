@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool, accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAgendaSchema, updateAgendaSchema } from "./schema/formSchemaAgendas";
+import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
 
 export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
 export type UpdateAgendaDTO = z.infer<typeof updateAgendaSchema>;
@@ -20,14 +21,7 @@ export async function GET(request: NextRequest) {
     const especialidadeId = searchParams.get('especialidadeId') || searchParams.get('especialidade_id');
     const date = searchParams.get('date');
 
-    // Debug: log dos parâmetros recebidos
-    console.log("Parâmetros recebidos na API de agendas:", {
-      unidadeId,
-      prestadorId,
-      especialidadeId,
-      date,
-      searchParams: Object.fromEntries(searchParams.entries())
-    });
+    // Debug logs removidos para evitar spam
 
     let query = `
       SELECT 
@@ -35,7 +29,6 @@ export async function GET(request: NextRequest) {
         c.nome as cliente_nome,
         cv.nome as convenio_nome,
         p.nome as procedimento_nome,
-        e.nome as expediente_nome,
         pr.nome as prestador_nome,
         u.nome as unidade_nome,
         esp.nome as especialidade_nome
@@ -43,7 +36,6 @@ export async function GET(request: NextRequest) {
       LEFT JOIN clientes c ON a.cliente_id = c.id
       LEFT JOIN convenios cv ON a.convenio_id = cv.id
       LEFT JOIN procedimentos p ON a.procedimento_id = p.id
-      LEFT JOIN expedientes e ON a.expediente_id = e.id
       LEFT JOIN prestadores pr ON a.prestador_id = pr.id
       LEFT JOIN unidades u ON a.unidade_id = u.id
       LEFT JOIN especialidades esp ON a.especialidade_id = esp.id
@@ -76,9 +68,7 @@ export async function GET(request: NextRequest) {
       params.push(date);
     }
 
-    // Debug: log da query construída
-    console.log("Query construída:", query);
-    console.log("Parâmetros:", params);
+    // Debug logs removidos para evitar spam
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -123,12 +113,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug: log da query de contagem
-    console.log("Query de contagem:", countQuery);
-    console.log("Parâmetros de contagem:", countParams);
+    console.log("Query de contagem agendas:", countQuery);
+    console.log("Parâmetros de contagem agendas:", countParams);
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
-
+    console.log("agendaRows", agendaRows);
     return NextResponse.json({
       data: agendaRows,
       pagination: {
@@ -156,18 +146,112 @@ export async function POST(request: NextRequest) {
     const result = await executeWithRetry(gestorPool,
       `INSERT INTO agendas (
         dtagenda, situacao, cliente_id, convenio_id, procedimento_id,
-        expediente_id, prestador_id, unidade_id, especialidade_id, tipo
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
         body.procedimento_id, body.expediente_id, body.prestador_id,
-        body.unidade_id, body.especialidade_id, body.tipo
+        body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente
       ]
     );
 
+    const agendaId = (result as any).insertId;
+
+    // Criar automaticamente um lançamento de caixa para o agendamento
+    try {
+      // Buscar informações do cliente para a descrição
+      let clienteNome = 'Cliente não informado';
+      if (body.cliente_id) {
+        const [clienteRows] = await gestorPool.execute(
+          'SELECT nome FROM clientes WHERE id = ?',
+          [body.cliente_id]
+        );
+        if ((clienteRows as any[]).length > 0) {
+          clienteNome = (clienteRows as any[])[0].nome;
+        }
+      }
+
+      // Buscar informações do procedimento para a descrição
+      let procedimentoNome = 'Procedimento não informado';
+      if (body.procedimento_id) {
+        const [procedimentoRows] = await gestorPool.execute(
+          'SELECT nome FROM procedimentos WHERE id = ?',
+          [body.procedimento_id]
+        );
+        if ((procedimentoRows as any[]).length > 0) {
+          procedimentoNome = (procedimentoRows as any[])[0].nome;
+        }
+      }
+
+      // Buscar o primeiro caixa ativo disponível
+      const [caixaRows] = await gestorPool.execute(
+        'SELECT id FROM caixas WHERE status = "Ativo" LIMIT 1'
+      );
+      
+      let caixaId = 1; // Caixa padrão se não houver nenhum
+      if ((caixaRows as any[]).length > 0) {
+        caixaId = (caixaRows as any[])[0].id;
+      }
+
+      // Buscar o primeiro plano de conta ativo disponível
+      const [planoContaRows] = await gestorPool.execute(
+        'SELECT id FROM plano_contas WHERE status = "Ativo" LIMIT 1'
+      );
+      
+      let planoContaId = 1; // Plano de conta padrão se não houver nenhum
+      if ((planoContaRows as any[]).length > 0) {
+        planoContaId = (planoContaRows as any[])[0].id;
+      }
+
+      // Buscar o primeiro usuário ativo disponível (usuário da sessão)
+      let usuarioId = 'admin'; // Usuário padrão se não houver nenhum
+      try {
+        const [usuarioRows] = await accessPool.execute(
+          'SELECT login FROM usuarios WHERE status = "Ativo" LIMIT 1'
+        );
+        if ((usuarioRows as any[]).length > 0) {
+          usuarioId = (usuarioRows as any[])[0].login;
+        }
+      } catch (usuarioError) {
+        console.log('⚠️ Usando usuário padrão:', usuarioId);
+      }
+
+      // Criar o lançamento
+      const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
+      const dataAtual = getCurrentUTCISO();
+
+      await executeWithRetry(gestorPool,
+        `INSERT INTO lancamentos (
+          valor, descricao, data_lancamento, tipo, forma_pagamento,
+          status_pagamento, cliente_id, plano_conta_id, caixa_id,
+          agenda_id, usuario_id, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          null, // valor como null
+          descricao,
+          dataAtual, // data atual em UTC ISO
+          'ENTRADA', // tipo ENTRADA
+          null, // forma_pagamento como null
+          'PENDENTE', // status_pagamento PENDENTE
+          body.cliente_id,
+          planoContaId,
+          caixaId,
+          agendaId, // agenda_id da agenda criada
+          usuarioId, // usuario_id da sessão
+          'Ativo'
+        ]
+      );
+
+      console.log(`✅ Lançamento criado automaticamente para agenda ID: ${agendaId}`);
+    } catch (lancamentoError) {
+      console.error('⚠️ Erro ao criar lançamento automático:', lancamentoError);
+      // Não falhar a criação da agenda por causa do lançamento
+      // O agendamento foi criado com sucesso
+    }
+
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: agendaId 
     });
   } catch (error) {
     console.error('Erro ao criar agenda:', error);

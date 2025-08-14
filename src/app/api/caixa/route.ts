@@ -18,8 +18,8 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (nome LIKE ? OR descricao LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      query += ' AND nome LIKE ?';
+      params.push(`%${search}%`);
     }
 
     // Adicionar paginação
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR descricao LIKE ?)';
-      countParams.push(`%${search}%`, `%${search}%`);
+      countQuery += ' AND nome LIKE ?';
+      countParams.push(`%${search}%`);
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
@@ -67,10 +67,10 @@ export async function POST(request: NextRequest) {
     // Inserir caixa
     const result = await executeWithRetry(gestorPool,
       `INSERT INTO caixas (
-        nome, tipo, saldo, status
-      ) VALUES (?, ?, ?, ?)`,
+        nome, tipo, saldo
+      ) VALUES (?, ?, ?)`,
       [
-        body.nome, body.tipo, body.saldo, 'Ativo'
+        body.nome, body.tipo, body.saldo
       ]
     );
 

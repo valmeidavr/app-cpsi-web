@@ -4,13 +4,13 @@ import { gestorPool } from "@/lib/mysql";
 // GET - Buscar caixa por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     const [rows] = await gestorPool.execute(
-      'SELECT * FROM caixa WHERE id = ?',
+      'SELECT * FROM caixas WHERE id = ?',
       [id]
     );
 
@@ -36,15 +36,15 @@ export async function GET(
 // PUT - Atualizar caixa
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Atualizar caixa
     await gestorPool.execute(
-      `UPDATE caixa SET 
+      `UPDATE caixas SET 
         nome = ?, tipo = ?, saldo = ?
        WHERE id = ?`,
       [body.nome, body.tipo, body.saldo, id]

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool, accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
@@ -18,17 +18,16 @@ export async function GET(request: NextRequest) {
     const data_inicio = searchParams.get('data_inicio');
     const data_fim = searchParams.get('data_fim');
 
+    // Primeiro, buscar os lançamentos do banco gestor
     let query = `
       SELECT 
         l.*,
         c.nome as caixa_nome,
         pc.nome as plano_conta_nome,
-        u.nome as usuario_nome,
         cl.nome as cliente_nome
       FROM lancamentos l
       LEFT JOIN caixas c ON l.caixa_id = c.id
       LEFT JOIN plano_contas pc ON l.plano_conta_id = pc.id
-      LEFT JOIN usuarios u ON l.usuario_id = u.id
       LEFT JOIN clientes cl ON l.cliente_id = cl.id
       WHERE 1=1
     `;
@@ -60,6 +59,35 @@ export async function GET(request: NextRequest) {
     params.push(parseInt(limit), offset);
 
     const lancamentoRows = await executeWithRetry(gestorPool, query, params);
+
+    // Agora buscar os nomes dos usuários do banco cpsi_acesso
+    const lancamentosComUsuarios = await Promise.all(
+      (lancamentoRows as any[]).map(async (lancamento) => {
+        try {
+          if (lancamento.usuario_id) {
+            const [userRows] = await accessPool.execute(
+              'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
+              [lancamento.usuario_id]
+            );
+            const usuario = (userRows as any[])[0];
+            return {
+              ...lancamento,
+              usuario_nome: usuario ? usuario.nome : 'Usuário não encontrado'
+            };
+          }
+          return {
+            ...lancamento,
+            usuario_nome: 'Usuário não informado'
+          };
+        } catch (error) {
+          console.error('Erro ao buscar usuário:', error);
+          return {
+            ...lancamento,
+            usuario_nome: 'Erro ao buscar usuário'
+          };
+        }
+      })
+    );
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -93,7 +121,7 @@ export async function GET(request: NextRequest) {
     const total = (countRows as any[])[0]?.total || 0;
 
     return NextResponse.json({
-      data: lancamentoRows,
+      data: lancamentosComUsuarios,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -115,21 +143,43 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateLancamentoDTO = await request.json();
 
+    // Debug logs removidos para evitar spam
+
+    // Debug logs removidos para evitar spam
+
+    // Verificar se o usuário existe no banco cpsi_acesso
+    try {
+      const [userRows] = await accessPool.execute(
+        'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
+        [body.usuario_id]
+      );
+      console.log('🔍 Debug - Usuário encontrado:', userRows);
+      
+      if ((userRows as any[]).length === 0) {
+        return NextResponse.json(
+          { error: 'Usuário não encontrado ou inativo' },
+          { status: 400 }
+        );
+      }
+    } catch (error) {
+      console.error('🔍 Debug - Erro ao verificar usuário:', error);
+      return NextResponse.json(
+        { error: 'Erro ao verificar usuário' },
+        { status: 500 }
+      );
+    }
+
     // Inserir lançamento com campos corretos
     const result = await executeWithRetry(gestorPool,
       `INSERT INTO lancamentos (
         valor, descricao, data_lancamento, tipo, forma_pagamento,
         status_pagamento, cliente_id, plano_conta_id, caixa_id,
-        usuario_id, motivo_estorno, motivo_transferencia,
-        lancamento_original_id, transferencia_id, agenda_id, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        usuario_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.valor, body.descricao, body.data_lancamento, body.tipo,
         body.forma_pagamento, body.status_pagamento, body.cliente_id,
-        body.plano_conta_id, body.caixa_id, body.usuario_id,
-        body.motivo_estorno, body.motivo_transferencia,
-        body.lancamento_original_id, body.id_transferencia,
-        body.agenda_id, 'Ativo'
+        body.plano_conta_id, body.caixa_id, body.usuario_id, 'Ativo'
       ]
     );
 
@@ -166,18 +216,12 @@ export async function PUT(request: NextRequest) {
       `UPDATE lancamentos SET 
         valor = ?, descricao = ?, tipo = ?, data_lancamento = ?,
         forma_pagamento = ?, status_pagamento = ?, cliente_id = ?,
-        plano_conta_id = ?, caixa_id = ?, usuario_id = ?,
-        motivo_estorno = ?, motivo_transferencia = ?,
-        lancamento_original_id = ?, transferencia_id = ?,
-        agenda_id = ?
+        plano_conta_id = ?, caixa_id = ?, usuario_id = ?
        WHERE id = ?`,
       [
         body.valor, body.descricao, body.tipo, body.data_lancamento,
         body.forma_pagamento, body.status_pagamento, body.cliente_id,
-        body.plano_conta_id, body.caixa_id, body.usuario_id,
-        body.motivo_estorno, body.motivo_transferencia,
-        body.lancamento_original_id, body.id_transferencia,
-        body.agenda_id, id
+        body.plano_conta_id, body.caixa_id, body.usuario_id, id
       ]
     );
 

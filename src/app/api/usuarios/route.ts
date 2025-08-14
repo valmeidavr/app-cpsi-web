@@ -16,108 +16,85 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const all = searchParams.get('all') || ''
 
-    console.log('API GET /api/usuarios chamada com:', { page, limit, search, all })
+    console.log('🔍 API Debug - GET /api/usuarios chamada com:', { page, limit, search, all })
 
-    // Se o parâmetro 'all' estiver presente, retorna todos os usuários sem paginação
-    if (all === 'true') {
-      const [rows] = await accessPool.execute(
-        'SELECT login, nome, email, status FROM usuarios  ORDER BY nome ASC'
-      );
-      const usuarios = rows as any[];
-      return NextResponse.json({
-        data: usuarios,
-        pagination: {
-          page: 1,
-          limit: usuarios.length,
-          total: usuarios.length,
-          totalPages: 1
-        }
-      });
+    // Para o cadastro de lançamentos, sempre retornar todos os usuários
+    if ((limit === '1000' || all === 'true') && !search) {
+      console.log('🔍 API Debug - Retornando todos os usuários...');
+      
+      try {
+        // Primeiro, vamos ver a estrutura real da tabela
+        const [structureRows] = await accessPool.execute('DESCRIBE usuarios');
+        console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
+        
+        // Buscar usuários com a estrutura correta
+        const [rows] = await accessPool.execute(
+          'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
+        );
+        const usuarios = rows as any[];
+        
+        console.log('🔍 API Debug - Usuários encontrados no banco:', usuarios.length);
+        console.log('🔍 API Debug - Primeiro usuário:', usuarios[0]);
+        
+        return NextResponse.json({
+          data: usuarios,
+          pagination: {
+            page: 1,
+            limit: usuarios.length,
+            total: usuarios.length,
+            totalPages: 1
+          }
+        });
+      } catch (dbError) {
+        console.error('🔍 API Debug - Erro ao consultar banco:', dbError);
+        throw dbError;
+      }
     }
 
-    // Se não há busca e é uma busca sem limite, retorna vazio
-    if (!search && limit === '1000') {
-      console.log('Retornando lista vazia - sem busca e limit=1000')
-      return NextResponse.json({
-        data: [],
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: 0,
-          totalPages: 1
-        }
-      })
-    }
-
-    let query = 'SELECT login, nome, email, status FROM usuarios '
+    // Lógica para busca com paginação
+    let query = 'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo"'
     const params: (string | number)[] = []
 
     if (search) {
       query += ' AND (nome LIKE ? OR email LIKE ?)'
       params.push(`%${search}%`, `%${search}%`)
-      console.log('Query com busca:', query, 'Params:', params)
+      console.log('🔍 API Debug - Query com busca:', query, 'Params:', params)
     }
 
-    // Adicionar paginação apenas se não for busca sem limite
-    if (limit !== '1000') {
-      const offset = (parseInt(page) - 1) * parseInt(limit)
-      query += ' ORDER BY nome ASC LIMIT ? OFFSET ?'
-      params.push(parseInt(limit), offset)
-    } else {
-      query += ' ORDER BY nome ASC'
-    }
+    const offset = (parseInt(page) - 1) * parseInt(limit)
+    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?'
+    params.push(parseInt(limit), offset)
+
+    // Debug logs removidos para evitar spam
 
     const [userRows] = await accessPool.execute(query, params)
     const usuarios = userRows as any[]
-    console.log('Usuários encontrados:', usuarios.length)
+    // Debug logs removidos para evitar spam
 
-    // Buscar sistemas de cada usuário
-    const usuariosComSistemas = await Promise.all(
-      usuarios.map(async (usuario) => {
-        const [sistemaRows] = await accessPool.execute(
-          `SELECT s.id, s.nome, us.nivel 
-           FROM sistemas s 
-           INNER JOIN usuario_sistema us ON s.id = us.sistemas_id 
-           WHERE us.usuarios_login = ?`,
-          [usuario.login]
-        )
-        
-        return {
-          ...usuario,
-          sistemas: sistemaRows
-        }
-      })
-    )
+    // Buscar total de registros para paginação
+    let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE status = "Ativo"'
+    const countParams: (string)[] = []
 
-    // Buscar total de registros para paginação apenas se não for busca sem limite
-    let total = usuariosComSistemas.length
-    let totalPages = 1
-    
-    if (limit !== '1000') {
-      let countQuery = 'SELECT COUNT(*) as total FROM usuarios '
-      const countParams: (string)[] = []
-
-      if (search) {
-        countQuery += ' AND (nome LIKE ? OR email LIKE ?)'
-        countParams.push(`%${search}%`, `%${search}%`)
-      }
-
-      const [countRows] = await accessPool.execute(countQuery, countParams)
-      total = (countRows as any[])[0]?.total || 0
-      totalPages = Math.ceil(total / parseInt(limit))
+    if (search) {
+      countQuery += ' AND (nome LIKE ? OR email LIKE ?)'
+      countParams.push(`%${search}%`, `%${search}%`)
     }
 
+    const [countRows] = await accessPool.execute(countQuery, countParams)
+    const total = (countRows as any[])[0]?.total || 0
+    const totalPages = Math.ceil(total / parseInt(limit))
+
     return NextResponse.json({
-      data: usuariosComSistemas,
+      data: usuarios,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        totalPages
+        totalPages: totalPages
       }
     })
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error)
+    console.error('🔍 API Debug - Erro ao buscar usuários:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -131,13 +108,13 @@ export async function createUsuario(data: CreateUsuarioDTO) {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(data.senha, 10);
     
-    // Inserir usuário
+    // Inserir usuário - usando email como login já que o schema não tem campo login
     const [result] = await accessPool.execute(
-      'INSERT INTO usuarios (nome, email, senha, status) VALUES (?, ?, ?, ?)',
-      [data.nome, data.email, hashedPassword, 'Ativo']
+      'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
+      [data.email, data.nome, data.email, hashedPassword, 'Ativo']
     );
     
-    return NextResponse.json({ success: true, id: (result as any).insertId });
+    return NextResponse.json({ success: true, login: data.email });
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
     throw new Error('Erro ao criar usuário');
@@ -145,11 +122,11 @@ export async function createUsuario(data: CreateUsuarioDTO) {
 }
 
 // Função para buscar usuário por ID
-export async function getUsuarioById(id: string) {
+export async function getUsuarioById(login: string) {
   try {
     const [rows] = await accessPool.execute(
-      'SELECT * FROM usuarios WHERE id = ? AND status = "Ativo"',
-      [id]
+      'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
+      [login]
     );
     
     const usuarios = rows as any[];
@@ -161,7 +138,7 @@ export async function getUsuarioById(id: string) {
 }
 
 // Função para atualizar usuário
-export async function updateUsuario(id: string, data: UpdateUsuarioDTO) {
+export async function updateUsuario(login: string, data: UpdateUsuarioDTO) {
   try {
     let query = 'UPDATE usuarios SET ';
     const params: any[] = [];
@@ -183,8 +160,8 @@ export async function updateUsuario(id: string, data: UpdateUsuarioDTO) {
     }
     
     // Remove a vírgula extra e adiciona WHERE
-    query = query.slice(0, -2) + ' WHERE id = ?';
-    params.push(id);
+    query = query.slice(0, -2) + ' WHERE login = ?';
+    params.push(login);
     
     await accessPool.execute(query, params);
     

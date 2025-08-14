@@ -40,12 +40,21 @@ export const createPrestadorSchema = z.object({
     .min(2, { message: "O campo data de nascimento é obrigatório" })
     .refine(
       (value) => {
-        if (value) {
-          return /^\d{2}\/\d{2}\/\d{4}$/.test(value);
+        if (!value) return true;
+        
+        // Aceitar formato DD/MM/AAAA
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+          return true;
         }
-        return true;
+        
+        // Aceitar formato YYYY-MM-AA (formato MySQL)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+          return true;
+        }
+        
+        return false;
       },
-      { message: "Formato de data inválido (DD/MM/AAAA)" }
+      { message: "Formato de data inválido. Use DD/MM/AAAA ou YYYY-MM-AA" }
     ),
 
   cep: z

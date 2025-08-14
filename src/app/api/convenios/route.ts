@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM convenios';
+    let query = 'SELECT id, nome, desconto, regras, tabelaFaturamentosId as tabela_faturamento_id FROM convenios';
     const params: (string | number)[] = [];
 
     if (search) {
@@ -63,9 +63,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateConvenioDTO = await request.json();
+    
+    console.log("🔍 Dados recebidos para criar convênio:", body);
+    console.log("🔍 Tipo do tabela_faturamento_id:", typeof body.tabela_faturamento_id);
+    console.log("🔍 Valor do tabela_faturamento_id:", body.tabela_faturamento_id);
 
     // Validar campos obrigatórios
     if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
+      console.log("❌ Validação falhou:", {
+        nome: !!body.nome,
+        regras: !!body.regras,
+        tabela_faturamento_id: body.tabela_faturamento_id
+      });
       return NextResponse.json(
         { error: 'Campos obrigatórios não preenchidos' },
         { status: 400 }
@@ -74,6 +83,13 @@ export async function POST(request: NextRequest) {
 
     // Garantir que desconto seja um número válido
     const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+
+    console.log("🔍 Dados para inserção:", {
+      nome: body.nome,
+      desconto,
+      regras: body.regras,
+      tabelaFaturamentosId: body.tabela_faturamento_id
+    });
 
     // Inserir convênio
     const [result] = await gestorPool.execute(
@@ -85,12 +101,14 @@ export async function POST(request: NextRequest) {
       ]
     );
 
+    console.log("✅ Convênio criado com sucesso:", result);
+
     return NextResponse.json({ 
       success: true, 
       id: (result as any).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar convênio:', error);
+    console.error('❌ Erro ao criar convênio:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -42,7 +42,6 @@ import { toast } from "sonner";
 //API
 
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
-import { http } from "@/util/http";
 import { Procedimento } from "@/app/types/Procedimento";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import {
@@ -64,6 +63,9 @@ export default function ValorProcedimentos() {
   const [valorProcedimentos, setValorProcedimentos] = useState<
     ValorProcedimento[]
   >([]);
+  
+  // Garantir que valorProcedimentos seja sempre um array
+  const valorProcedimentosSeguro = Array.isArray(valorProcedimentos) ? valorProcedimentos : [];
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalValorProcedimentos, setTotalValorProcedimentos] = useState(0);
@@ -83,32 +85,68 @@ export default function ValorProcedimentos() {
   const [tabelaSelecionado, setTabelaSelecionado] =
     useState<TabelaFaturamento | null>();
 
+  const [convenios, setConvenios] = useState<any[]>([]);
+  const [convenioSelecionado, setConvenioSelecionado] = useState<any>(null);
+  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("SOCIO");
+
   useEffect(() => {
-    carregarValorProcedimentos();
-  }, [tabelaSelecionado, procedimentoSelecionado]);
+    if (tabelaSelecionado && convenioSelecionado) {
+      carregarValorProcedimentos();
+    } else {
+      // Limpar dados quando não há tabela ou convênio selecionado
+      setValorProcedimentos([]);
+      setTotalPaginas(0);
+      setTotalValorProcedimentos(0);
+    }
+  }, [tabelaSelecionado, convenioSelecionado, procedimentoSelecionado]);
 
   const carregarValorProcedimentos = async (filters?: any) => {
     setCarregando(true);
     try {
-      if (!tabelaSelecionado) return;
+      if (!tabelaSelecionado || !convenioSelecionado) {
+        console.log('🔍 Debug - Tabela ou convênio não selecionado, retornando...');
+        setValorProcedimentos([]);
+        setTotalPaginas(0);
+        setTotalValorProcedimentos(0);
+        return;
+      }
+      
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
       params.append('limit', '5');
       params.append('search', termoBusca);
-      params.append('tabela_faturamento_id', tabelaSelecionado ? tabelaSelecionado.id.toString() : '0');
+      params.append('tabela_faturamento_id', tabelaSelecionado.id.toString());
       if (procedimentoSelecionado) {
-        params.append('procedimento_id', procedimentoSelecionado ? procedimentoSelecionado.id.toString() : '0');
+        params.append('procedimento_id', procedimentoSelecionado.id.toString());
       }
 
+      // Debug logs removidos para evitar spam
       const response = await fetch(`/api/valor-procedimento?${params}`);
       const data = await response.json();
 
-      if (response.ok) {
-        setValorProcedimentos(data.data);
-        setTotalPaginas(data.pagination.totalPages);
-        setTotalValorProcedimentos(data.pagination.total);
+              if (response.ok) {
+          if (data.data && Array.isArray(data.data)) {
+            // Debug logs removidos para evitar spam
+            
+            // Verificar se os dados têm a estrutura correta
+            const dadosValidos = data.data.filter((item: any) => 
+              item && item.id && item.procedimento && item.procedimento.nome
+            );
+          
+          setValorProcedimentos(dadosValidos);
+          setTotalPaginas(data.pagination?.totalPages || 1);
+          setTotalValorProcedimentos(data.pagination?.total || 0);
+        } else {
+          console.error("🔍 Debug - Formato de dados inesperado:", data);
+          setValorProcedimentos([]);
+          setTotalPaginas(0);
+          setTotalValorProcedimentos(0);
+        }
       } else {
         console.error("Erro ao buscar valores de procedimentos:", data.error);
+        setValorProcedimentos([]);
+        setTotalPaginas(0);
+        setTotalValorProcedimentos(0);
       }
     } catch (error) {
       console.error("Erro ao buscar lançamentos:", error);
@@ -121,10 +159,11 @@ export default function ValorProcedimentos() {
     resolver: zodResolver(createValorProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
+      convenio_id: 0,
+      tipo_cliente: "SOCIO",
       tabela_faturamento_id: 0,
       procedimento_id: 0,
       valor: 0,
-      tipo: undefined,
     },
   });
 
@@ -132,10 +171,11 @@ export default function ValorProcedimentos() {
     resolver: zodResolver(updateValorProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
+      convenio_id: 0,
+      tipo_cliente: "SOCIO",
       tabela_faturamento_id: 0,
       procedimento_id: 0,
       valor: 0,
-      tipo: undefined,
     },
   });
 
@@ -146,6 +186,8 @@ export default function ValorProcedimentos() {
         if (!valorProcedimentoSelecionado) return;
 
         formUpdate.reset({
+          convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
+          tipo_cliente: valorProcedimentoSelecionado.tipo,
           tabela_faturamento_id:
             valorProcedimentoSelecionado.tabela_faturamento_id,
           procedimento_id: valorProcedimentoSelecionado.procedimento_id,
@@ -161,20 +203,25 @@ export default function ValorProcedimentos() {
     fetchData();
   }, [valorProcedimentoSelecionado]);
 
-  const tipos = ["SOCIO", "NSOCIO", "PARCEIRO", "FUNCIONARIO"];
+
 
   const fetchProcedimentos = async () => {
     try {
+      // Para criação de novos valores, sempre buscar todos os procedimentos disponíveis
+      // O filtro por convênio será aplicado na validação do backend
       const response = await fetch("/api/procedimentos");
       const data = await response.json();
 
       if (response.ok) {
         setProcedimentos(data.data);
+        console.log("✅ Todos os procedimentos carregados:", data.data);
       } else {
         console.error("Erro ao buscar procedimentos:", data.error);
+        setProcedimentos([]);
       }
     } catch (error: any) {
       console.error("Erro ao buscar procedimentos:", error);
+      setProcedimentos([]);
     }
   };
   const fetchTabelaFaturamentos = async () => {
@@ -192,9 +239,25 @@ export default function ValorProcedimentos() {
     }
   };
 
+  const fetchConvenios = async () => {
+    try {
+      const response = await fetch("/api/convenios");
+      const data = await response.json();
+
+      if (response.ok) {
+        setConvenios(data.data);
+      } else {
+        console.error("Erro ao buscar convênios:", data.error);
+      }
+    } catch (error: any) {
+      console.error("Erro ao buscar convênios:", error);
+    }
+  };
+
   useEffect(() => {
     fetchProcedimentos();
     fetchTabelaFaturamentos();
+    fetchConvenios();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
@@ -206,6 +269,13 @@ export default function ValorProcedimentos() {
     }
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
+  }, []); // Removido paginaAtual para carregar apenas uma vez
+
+  // Recarregar dados quando a página mudar
+  useEffect(() => {
+    if (tabelaSelecionado && convenioSelecionado) {
+      carregarValorProcedimentos();
+    }
   }, [paginaAtual]);
 
   const onSubmit = async (
@@ -213,22 +283,77 @@ export default function ValorProcedimentos() {
   ) => {
     setCarregando(true);
     try {
-      await http.post("/api/valor-procedimento", values);
-      await carregarValorProcedimentos();
+      // Usar o tipo do campo tipo_cliente para o campo tipo
+      const dadosParaEnviar = {
+        ...values,
+        tipo: values.tipo_cliente,
+        // Remover campos que não são enviados para a API
+        convenio_id: undefined,
+        tipo_cliente: undefined
+      };
+      
+      const response = await fetch("/api/valor-procedimento", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dadosParaEnviar),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success("Valor de procedimento criado com sucesso");
+        await carregarValorProcedimentos();
+        // Limpar o formulário
+        form.reset({
+          convenio_id: 0,
+          tipo_cliente: "SOCIO",
+          tabela_faturamento_id: 0,
+          procedimento_id: 0,
+          valor: 0,
+        });
+        // Limpar estados
+        setConvenioSelecionado(null);
+        setProcedimentoSelecionado(null);
+        setTabelaSelecionado(null);
+      } else {
+        toast.error(data.error || "Erro ao criar valor de procedimento");
+      }
     } catch (error) {
-      toast.error("Erro ao salvar valor procedimento");
+      console.error("Erro ao criar:", error);
+      toast.error("Erro ao criar valor de procedimento");
     } finally {
       setCarregando(false);
     }
   };
 
   const handleDeleteValor = async (valorId: number) => {
+    if (!confirm("Tem certeza que deseja deletar este valor de procedimento?")) {
+      return;
+    }
+    
     setCarregando(true);
     try {
-      await http.patch(`/api/valor-procedimento/${valorId}`, { status: "Inativo" });
-      await carregarValorProcedimentos();
+      const response = await fetch(`/api/valor-procedimento?id=${valorId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: "Inativo" }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success(data.message || "Valor de procedimento deletado com sucesso");
+        await carregarValorProcedimentos();
+      } else {
+        toast.error(data.error || "Erro ao deletar valor de procedimento");
+      }
     } catch (error) {
-      toast.error("Erro ao deletar valor procedimento");
+      console.error("Erro ao deletar:", error);
+      toast.error("Erro ao deletar valor de procedimento");
     } finally {
       setCarregando(false);
     }
@@ -240,11 +365,34 @@ export default function ValorProcedimentos() {
     setCarregando(true);
     try {
       if (!valorProcedimentoSelecionado) return;
-      await http.patch(`/api/valor-procedimento/${valorProcedimentoSelecionado.id}`, values);
-      await carregarValorProcedimentos();
-      setIsDialogOpen(false)
+      
+      // Preparar dados para atualização
+      const updateData: any = {};
+      if (values.valor !== undefined) updateData.valor = values.valor;
+      if (values.tipo_cliente !== undefined) updateData.tipo = values.tipo_cliente;
+      if (values.tabela_faturamento_id !== undefined) updateData.tabela_faturamento_id = values.tabela_faturamento_id;
+      if (values.procedimento_id !== undefined) updateData.procedimento_id = values.procedimento_id;
+      
+      const response = await fetch(`/api/valor-procedimento?id=${valorProcedimentoSelecionado.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast.success(data.message || "Valor de procedimento atualizado com sucesso");
+        await carregarValorProcedimentos();
+        setIsDialogOpen(false);
+      } else {
+        toast.error(data.error || "Erro ao atualizar valor de procedimento");
+      }
     } catch (error) {
-      toast.error("Erro ao atualizar valor procedimento");
+      console.error("Erro ao atualizar:", error);
+      toast.error("Erro ao atualizar valor de procedimento");
     } finally {
       setCarregando(false);
     }
@@ -263,7 +411,78 @@ export default function ValorProcedimentos() {
 
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-2 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-2 items-end">
+            <FormField
+              control={form.control}
+              name="convenio_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Convênio *</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      const convenio = convenios.find((item) => item.id == +value);
+                      setConvenioSelecionado(convenio || null);
+                      // Limpar procedimento selecionado quando convênio mudar
+                      setProcedimentoSelecionado(null);
+                      form.setValue("procedimento_id", 0);
+                    }}
+                    value={field.value ? field.value.toString() : ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="0">Selecione</SelectItem>
+                      {convenios.map((item) => (
+                        <SelectItem key={item.id} value={item.id.toString()}>
+                          {item.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1">
+                    {form.formState.errors.convenio_id?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="tipo_cliente"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo Cliente *</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setTipoClienteSelecionado(value);
+                      // Limpar procedimento selecionado quando tipo mudar
+                      setProcedimentoSelecionado(null);
+                      form.setValue("procedimento_id", 0);
+                    }}
+                    value={field.value || ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="SOCIO">SOCIO</SelectItem>
+                      <SelectItem value="NSOCIO">NSOCIO</SelectItem>
+                      <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
+                      <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1">
+                    {form.formState.errors.tipo_cliente?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="tabela_faturamento_id"
@@ -335,38 +554,7 @@ export default function ValorProcedimentos() {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="tipo"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Tipo Cliente *</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                    }}
-                    value={field.value || ""}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
-                      {tipos.map((item) => (
-                        <SelectItem key={item} value={item}>
-                          {item}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage className="text-red-500 text-sm mt-1">
-                    {form.formState.errors.tipo?.message}
-                  </FormMessage>
-                </FormItem>
-              )}
-            />
+
             <FormField
               control={form.control}
               name="valor"
@@ -408,13 +596,22 @@ export default function ValorProcedimentos() {
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
           <span className="ml-2 text-gray-500">Carregando ...</span>
         </div>
+      ) : !tabelaSelecionado || !convenioSelecionado ? (
+        <div className="flex justify-center items-center w-full h-40">
+          <span className="text-gray-500">
+            Selecione um convênio e uma tabela de faturamento para ver os valores de procedimentos
+          </span>
+        </div>
       ) : (
         <>
-          {valorProcedimentos.length === 0 ? (
+          {valorProcedimentosSeguro.length === 0 ? (
             <div className="flex justify-center items-center w-full h-40">
-              <span className="ml-2 text-gray-500">
-                Nenhuma valor encontrado ...
-              </span>
+                          <span className="ml-2 text-gray-500">
+              {!tabelaSelecionado || !convenioSelecionado ? 
+                'Selecione um convênio e uma tabela de faturamento para ver os valores de procedimentos' : 
+                'Nenhum valor de procedimento encontrado'
+              }
+            </span>
             </div>
           ) : (
             <Table className="mt-8">
@@ -428,7 +625,7 @@ export default function ValorProcedimentos() {
                 </TableRow>
               </TableHeader>
               <TableBody className="text-center">
-                {valorProcedimentos.map((valorProcedimento) => (
+                {valorProcedimentosSeguro.map((valorProcedimento) => (
                   <TableRow
                     key={valorProcedimento.id}
                     className={"odd:bg-gray-100 even:bg-white"}
@@ -436,7 +633,7 @@ export default function ValorProcedimentos() {
                     <TableCell>{valorProcedimento.id}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {valorProcedimento.procedimento.nome}
+                        {valorProcedimento.procedimento?.nome || 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatValor(valorProcedimento.valor)}</TableCell>
@@ -506,7 +703,7 @@ export default function ValorProcedimentos() {
             <div className="text-sm text-gray-600">
               Mostrando{" "}
               {Math.min((paginaAtual + 1) * 5, totalValorProcedimentos)} de{" "}
-              {totalValorProcedimentos} lançamentos
+              {totalValorProcedimentos} valores de procedimentos
             </div>
           </div>
 
@@ -557,13 +754,87 @@ export default function ValorProcedimentos() {
         <FormProvider {...formUpdate}>
           <DialogContent className="w-full max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Confirmar Ação</DialogTitle>
+              <DialogTitle>Editar Valor de Procedimento</DialogTitle>
             </DialogHeader>
             <form
               className="space-y-4"
               onSubmit={formUpdate.handleSubmit(onSubmitUpdate)}
             >
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-6 mb-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-2">
+                <FormField
+                  control={formUpdate.control}
+                  name="convenio_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Convênio *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          const convenio = convenios.find((item) => item.id == +value);
+                          setConvenioSelecionado(convenio || null);
+                        }}
+                        value={field.value ? field.value.toString() : ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="0">Selecione</SelectItem>
+                          {convenios.map((item) => (
+                            <SelectItem
+                              key={item.id}
+                              value={item.id.toString()}
+                            >
+                              {item.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-red-500 text-sm mt-1">
+                        {
+                          formUpdate.formState.errors.convenio_id
+                            ?.message
+                        }
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={formUpdate.control}
+                  name="tipo_cliente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo Cliente *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setTipoClienteSelecionado(value);
+                        }}
+                        value={field.value || ""}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SOCIO">SOCIO</SelectItem>
+                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
+                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
+                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage className="text-red-500 text-sm mt-1">
+                        {
+                          formUpdate.formState.errors.tipo_cliente
+                            ?.message
+                        }
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
                 <FormField
                   control={formUpdate.control}
                   name="tabela_faturamento_id"
@@ -646,38 +917,7 @@ export default function ValorProcedimentos() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={formUpdate.control}
-                  name="tipo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo Cliente *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                        }}
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0">Selecione</SelectItem>
-                          {tipos.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-red-500 text-sm mt-1">
-                        {formUpdate.formState.errors.tipo?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
+
                 <FormField
                   control={formUpdate.control}
                   name="valor"

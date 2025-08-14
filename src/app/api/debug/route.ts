@@ -1,22 +1,17 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { NextRequest, NextResponse } from "next/server";
+import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
     return NextResponse.json({
-      session,
-      env: {
-        NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT_SET',
-        NODE_ENV: process.env.NODE_ENV,
-      },
-      timestamp: new Date().toISOString()
-    })
+      message: "API funcionando",
+      timestamp: getCurrentUTCISO(),
+      status: "success"
+    });
   } catch (error) {
-    console.error('Debug error:', error)
-    return NextResponse.json({ error: 'Debug error' }, { status: 500 })
+    return NextResponse.json(
+      { error: "Erro interno do servidor" },
+      { status: 500 }
+    );
   }
 } 

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,12 +9,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
-import { Cliente } from "@/app/types/Cliente";
-import { http } from "@/util/http";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { FC } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+import { Cliente } from "@/app/types/Cliente";
 import {
   Table,
   TableBody,
@@ -42,8 +52,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Turma } from "@/app/types/Turma";
-import { toast } from "sonner";
+import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
 import AlunoDetalhesModal from "./detalhesAlunoModal";
+import { http } from "@/util/http";
 
 interface Props {
   isOpen: boolean;
@@ -68,7 +79,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   const carregarClientes = async () => {
     try {
       setLoading(true);
-      const { data } = await http.get("/clientes", {
+      const { data } = await http.get("/api/clientes", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
@@ -99,13 +110,13 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     try {
       setLoadingAluno(true);
       const { data: turma } = await http.get(`/api/turmas/${turmaId}`);
-      if (alunos.length == turma.limiteVagas) {
+      if (alunos.length == turma.limite_vagas) {
         throw new Error("Turma está lotada");
       }
       const payload = {
         cliente_id,
         turma_id,
-        data_inscricao: new Date().toISOString().split("T")[0],
+        data_inscricao: getDateOnlyUTCISO(),
       };
       await http.post("/api/alunos_turmas", payload);
       await carregarAlunos();
@@ -152,6 +163,13 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   useEffect(() => {
     carregarAlunos();
   }, [paginaAtual]);
+
+  // Adicionar useEffect para carregar clientes quando o modal abre
+  useEffect(() => {
+    if (isOpen) {
+      carregarClientes();
+    }
+  }, [isOpen]);
 
   const handleSearch = () => {
     setPaginaAtual(0);

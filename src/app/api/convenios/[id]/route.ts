@@ -10,7 +10,7 @@ export async function GET(
     const id = params.id;
 
     const [rows] = await gestorPool.execute(
-      'SELECT * FROM convenios WHERE id = ?',
+      'SELECT id, nome, desconto, regras, tabelaFaturamentosId as tabela_faturamento_id FROM convenios WHERE id = ?',
       [id]
     );
 

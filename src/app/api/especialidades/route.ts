@@ -13,13 +13,32 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const all = searchParams.get('all') || '';
+
+    // Se for para retornar todas as especialidades (sem paginação)
+    if (all === 'true' || limit === '1000') {
+      console.log('🔍 Debug - Buscando todas as especialidades ativas');
+      const [rows] = await gestorPool.execute(
+        'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
+      );
+      console.log('🔍 Debug - Especialidades encontradas:', (rows as any[]).length);
+      return NextResponse.json({
+        data: rows,
+        pagination: {
+          page: 1,
+          limit: (rows as any[]).length,
+          total: (rows as any[]).length,
+          totalPages: 1
+        }
+      });
+    }
 
     // 1. Construir a cláusula WHERE dinamicamente
-    let whereClause = '';
+    let whereClause = ' WHERE status = "Ativo"';
     const queryParams: (string | number)[] = [];
 
     if (search) {
-      whereClause = ' WHERE nome LIKE ?';
+      whereClause += ' AND nome LIKE ?';
       queryParams.push(`%${search}%`);
     }
 

@@ -96,23 +96,46 @@ export default function EditarPrestador() {
         }
 
         // 2. PREPARE UM OBJETO COM TODOS OS DADOS JÁ FORMATADOS
-        const birthDate = data.dtnascimento
-          ? new Date(data.dtnascimento)
-          : null;
+        let formattedBirthDate = "";
+        
+        if (data.dtnascimento) {
+          // Tentar diferentes formatos de data
+          let birthDate = null;
+          
+          // Se for string no formato YYYY-MM-DD
+          if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('-')) {
+            birthDate = new Date(data.dtnascimento);
+          }
+          // Se for string no formato DD/MM/YYYY
+          else if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('/')) {
+            birthDate = parse(data.dtnascimento, 'dd/MM/yyyy', new Date());
+          }
+          // Se for Date object
+          else if (data.dtnascimento instanceof Date) {
+            birthDate = data.dtnascimento;
+          }
+          
+          console.log('🔍 Debug - Data original:', data.dtnascimento);
+          console.log('🔍 Debug - Data parseada:', birthDate);
+          console.log('🔍 Debug - Data válida?', isValid(birthDate));
+          
+          if (birthDate && isValid(birthDate)) {
+            formattedBirthDate = format(birthDate, "dd/MM/yyyy");
+          }
+        }
 
         const formattedData = {
           ...data,
-          // 2. Verifique se a data é válida ANTES de formatar. Se não for, use uma string vazia.
-          dtnascimento:
-            birthDate && isValid(birthDate)
-              ? format(birthDate, "dd/MM/yyyy")
-              : "",
+          // 3. CORREÇÃO: Formatar a data corretamente do formato YYYY-MM-DD para DD/MM/YYYY
+          dtnascimento: formattedBirthDate,
           cpf: formatCPFInput(data.cpf || ""),
           rg: formatRGInput(data.rg || ""),
           celular: formatTelefoneInput(data.celular || ""),
           telefone: formatTelefoneInput(data.telefone || ""),
           cep: data.cep ? data.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2") : "",
         };
+
+        console.log('🔍 Debug - Data formatada:', formattedData.dtnascimento);
         // 3. CHAME O form.reset() UMA ÚNICA VEZ com os dados prontos
         form.reset(formattedData);
       } catch (error: any) {
@@ -207,74 +230,54 @@ export default function EditarPrestador() {
                 <FormField
                   control={form.control}
                   name="dtnascimento"
-                  render={({ field }) => {
-                    useEffect(() => {
-                      if (field.value) {
-                        const parsedDate = parse(
-                          field.value,
-                          "yyyy-MM-dd",
-                          new Date()
-                        );
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Nascimento *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          maxLength={10}
+                          value={field.value || ""}
+                          className={`border ${
+                            form.formState.errors.dtnascimento
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                          onChange={(e) => {
+                            let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
+                            let formatted = inputDate
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .slice(0, 10); // Garante que não haja mais de 10 caracteres
 
-                        if (isValid(parsedDate)) {
-                          const formattedDate = format(
-                            parsedDate,
-                            "dd/MM/yyyy"
-                          );
-                          field.onChange(formattedDate);
-                        }
-                      }
-                    }, [field.value]);
+                            field.onChange(formatted);
+                          }}
+                          onBlur={() => {
+                            const parsedDate = parse(
+                              field.value as string,
+                              "dd/MM/yyyy",
+                              new Date()
+                            );
+                            const currentDate = new Date();
+                            const minYear = 1920;
 
-                    return (
-                      <FormItem>
-                        <FormLabel>Data de Nascimento *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="DD/MM/AAAA"
-                            maxLength={10}
-                            value={field.value || ""}
-                            className={`border ${
-                              form.formState.errors.dtnascimento
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            } focus:ring-2 focus:ring-primary`}
-                            onChange={(e) => {
-                              let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
-                              let formatted = inputDate
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .slice(0, 10); // Garante que não haja mais de 10 caracteres
+                            const year = parseInt(
+                              field.value ? field.value.split("/")[2] : ""
+                            );
 
-                              field.onChange(formatted);
-                            }}
-                            onBlur={() => {
-                              const parsedDate = parse(
-                                field.value as string,
-                                "dd/MM/yyyy",
-                                new Date()
-                              );
-                              const currentDate = new Date();
-                              const minYear = 1920;
-
-                              const year = parseInt(
-                                field.value ? field.value.split("/")[2] : ""
-                              );
-
-                              if (
-                                !isValid(parsedDate) ||
-                                parsedDate > currentDate ||
-                                year < minYear
-                              ) {
-                                field.onChange("");
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500 mt-1 font-light" />
-                      </FormItem>
-                    );
-                  }}
+                            if (
+                              !isValid(parsedDate) ||
+                              parsedDate > currentDate ||
+                              year < minYear
+                            ) {
+                              field.onChange("");
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={form.control}

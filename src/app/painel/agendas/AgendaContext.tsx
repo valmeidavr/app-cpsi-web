@@ -1,18 +1,12 @@
 // context/AgendaContext.tsx
 "use client";
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { Agenda } from "@/app/types/Agenda";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
-import { Agenda } from "@/app/types/Agenda";
-import { format } from "date-fns";
 import { toast } from "sonner";
+import { extractTimeFromUTCISO } from "@/app/helpers/dateUtils";
 
 interface AgendaContextType {
   prestador: Prestador | null;
@@ -47,7 +41,7 @@ export const useAgenda = () => {
   return context;
 };
 
-export const AgendaProvider = ({ children }: { children: ReactNode }) => {
+export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   const [prestador, setPrestador] = useState<Prestador | null>(null);
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [especialidade, setEspecialidade] = useState<Especialidade | null>(
@@ -69,7 +63,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
     setCarregandoDadosAgenda(true);
     try {
       if (!unidade || !prestador || !especialidade) return;
-      const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
+      const formattedDate = date ? date.toISOString().slice(0, 10) : undefined;
 
       const params = new URLSearchParams();
       if (formattedDate) params.append('date', formattedDate);
@@ -82,7 +76,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
       if (response.ok) {
         const novaLista = data.data.map((agenda: Agenda) => {
-          const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
+          const hora = extractTimeFromUTCISO(agenda.dtagenda);
           return {
             hora,
             situacao: agenda.situacao,
@@ -91,6 +85,7 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
             dadosAgendamento: agenda,
           };
         });
+        console.log("novaLista", novaLista);
         setHorariosDia(novaLista);
       } else {
         console.error("Erro ao buscar agendamentos:", data.error);
@@ -110,6 +105,8 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
       if (unidade?.id) params.append('unidadeId', unidade.id.toString());
       if (prestador?.id) params.append('prestadorId', prestador.id.toString());
       if (especialidade?.id) params.append('especialidadeId', especialidade.id.toString());
+      // Definir limite muito alto para buscar todos os agendamentos
+      params.append('limit', '999999');
 
       const response = await fetch(`/api/agendas?${params}`);
       const data = await response.json();
@@ -168,45 +165,54 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPrestadores = async () => {
     try {
-      const response = await fetch("/api/prestadores");
+      console.log('🔍 Debug - Iniciando busca de prestadores...');
+      const response = await fetch("/api/prestadores?all=true");
       
       if (!response.ok) {
         throw new Error("Erro ao carregar prestadores");
       }
       
       const data = await response.json();
+      console.log('🔍 Debug - Prestadores recebidos:', data.data?.length || 0);
       setPrestadores(data.data);
     } catch (error: any) {
+      console.error('🔍 Debug - Erro ao buscar prestadores:', error);
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
   
   const fetchUnidades = async () => {
     try {
-      const response = await fetch("/api/unidades");
+      console.log('🔍 Debug - Iniciando busca de unidades...');
+      const response = await fetch("/api/unidades?all=true");
       
       if (!response.ok) {
         throw new Error("Erro ao carregar unidades");
       }
       
       const data = await response.json();
+      console.log('🔍 Debug - Unidades recebidas:', data.data?.length || 0);
       setUnidades(data.data);
     } catch (error: any) {
+      console.error('🔍 Debug - Erro ao buscar unidades:', error);
       toast.error("Erro ao carregar dados das Unidades");
     }
   };
   
   const fetchEspecialidades = async () => {
     try {
-      const response = await fetch("/api/especialidades");
+      console.log('🔍 Debug - Iniciando busca de especialidades...');
+      const response = await fetch("/api/especialidades?all=true");
       
       if (!response.ok) {
         throw new Error("Erro ao carregar especialidades");
       }
       
       const data = await response.json();
+      console.log('🔍 Debug - Especialidades recebidas:', data.data?.length || 0);
       setEspecialidades(data.data);
     } catch (error: any) {
+      console.error('🔍 Debug - Erro ao buscar especialidades:', error);
       toast.error("Erro ao carregar dados das Especialidades");
     }
   };

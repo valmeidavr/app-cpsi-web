@@ -20,14 +20,15 @@ export async function GET(request: NextRequest) {
         p.nome as procedimento_nome,
         pr.nome as prestador_nome
       FROM turmas t
-      LEFT JOIN procedimentos p ON t.procedimentos_id = p.id
-      LEFT JOIN prestadores pr ON t.prestadores_id = pr.id
+      LEFT JOIN procedimentos p ON t.procedimento_id = p.id
+      LEFT JOIN prestadores pr ON t.prestador_id = pr.id
+      WHERE 1=1
     `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' WHERE (t.nome LIKE ? OR t.descricao LIKE ?)';
-      params.push(`%${search}%`, `%${search}%`);
+      query += ' AND (t.nome LIKE ? OR p.nome LIKE ? OR pr.nome LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     // Adicionar paginação
@@ -38,12 +39,18 @@ export async function GET(request: NextRequest) {
     const [turmaRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM turmas t';
-    const countParams: (string)[] = [];
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM turmas t
+      LEFT JOIN procedimentos p ON t.procedimento_id = p.id
+      LEFT JOIN prestadores pr ON t.prestador_id = pr.id
+      WHERE 1=1
+    `;
+    const countParams: (string | number)[] = [];
 
     if (search) {
-      countQuery += ' WHERE (t.nome LIKE ? OR t.descricao LIKE ?)';
-      countParams.push(`%${search}%`, `%${search}%`);
+      countQuery += ' AND (t.nome LIKE ? OR p.nome LIKE ? OR pr.nome LIKE ?)';
+      countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const [countRows] = await gestorPool.execute(countQuery, countParams);
@@ -72,15 +79,23 @@ export async function POST(request: NextRequest) {
   try {
     const body: CreateTurmaDTO = await request.json();
 
+    console.log('🔍 Debug - Dados recebidos:', body);
+
     // Inserir turma
     const [result] = await gestorPool.execute(
       `INSERT INTO turmas (
-        nome, horario_inicio, horario_fim, data_inicio, limite_vagas, 
-        procedimentos_id, prestadores_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        nome, horario_inicio, horario_fim, data_inicio, data_fim, limite_vagas, 
+        procedimento_id, prestador_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.nome, body.horarioInicio, body.horarioFim, body.dataInicio,
-        body.limiteVagas, body.procedimento_id, body.prestador_id 
+        body.nome, 
+        body.horario_inicio, 
+        body.horario_fim, 
+        body.data_inicio, 
+        null, // data_fim começa como null
+        body.limite_vagas, 
+        body.procedimento_id, 
+        body.prestador_id 
       ]
     );
 
@@ -116,11 +131,11 @@ export async function PUT(request: NextRequest) {
     await gestorPool.execute(
       `UPDATE turmas SET 
         nome = ?, horario_inicio = ?, horario_fim = ?, data_inicio = ?,
-        limite_vagas = ?, procedimentos_id = ?, prestadores_id = ?
+        limite_vagas = ?, procedimento_id = ?, prestador_id = ?
        WHERE id = ?`,
       [
-        body.nome, body.horarioInicio, body.horarioFim, body.dataInicio,
-        body.limiteVagas, body.procedimento_id , body.prestador_id, id
+        body.nome, body.horario_inicio, body.horario_fim, body.data_inicio,
+        body.limite_vagas, body.procedimento_id, body.prestador_id, id
       ]
     );
 

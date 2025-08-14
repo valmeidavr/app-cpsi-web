@@ -48,24 +48,26 @@ export default function GerenciarAcessoPage() {
 
   // Função para buscar usuários quando digitar
   const handleSearchChange = (value: string) => {
-    console.log('handleSearchChange chamado com:', value, 'length:', value.length)
+    console.log('🔍 Debug - handleSearchChange chamado com:', value, 'length:', value.length)
     setSearchValue(value)
     
     // Limpar timeout anterior
     if (searchTimeout) {
       clearTimeout(searchTimeout)
+      console.log('🔍 Debug - Timeout anterior limpo')
     }
     
     if (value.length >= 3) {
       // Debounce de 300ms
+      console.log('🔍 Debug - Configurando timeout para buscar usuários')
       const timeout = setTimeout(() => {
-        console.log('Buscando usuários com:', value)
+        console.log('🔍 Debug - Timeout executado, buscando usuários com:', value)
         fetchUsuarios(value)
       }, 300)
       setSearchTimeout(timeout)
     } else {
       // Limpa a lista se tem menos de 3 caracteres
-      console.log('Limpando lista de usuários')
+      console.log('🔍 Debug - Limpando lista de usuários (menos de 3 caracteres)')
       setUsuarios([])
     }
   }
@@ -93,20 +95,36 @@ export default function GerenciarAcessoPage() {
   const fetchUsuarios = async (search: string) => {
     try {
       const url = `/api/usuarios?search=${encodeURIComponent(search)}&limit=1000`
-      console.log('Fazendo fetch para:', url)
+      console.log('🔍 Debug - Fazendo fetch para:', url)
       
       const response = await fetch(url)
-      console.log('Response status:', response.status)
+      console.log('🔍 Debug - Response status:', response.status)
+      console.log('🔍 Debug - Response headers:', response.headers)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Dados recebidos:', data)
-        setUsuarios(data.data || data)
+        console.log('🔍 Debug - Dados recebidos:', data)
+        console.log('🔍 Debug - Tipo de data:', typeof data)
+        console.log('🔍 Debug - Data.data existe?', !!data.data)
+        console.log('🔍 Debug - Data.data é array?', Array.isArray(data.data))
+        
+        if (data.data && Array.isArray(data.data)) {
+          setUsuarios(data.data)
+          console.log('🔍 Debug - Usuários definidos:', data.data.length)
+        } else if (Array.isArray(data)) {
+          setUsuarios(data)
+          console.log('🔍 Debug - Usuários definidos (array direto):', data.length)
+        } else {
+          console.error('🔍 Debug - Formato de dados inesperado:', data)
+          setUsuarios([])
+        }
       } else {
-        console.error('Erro na resposta:', response.status, response.statusText)
+        console.error('🔍 Debug - Erro na resposta:', response.status, response.statusText)
+        const errorText = await response.text()
+        console.error('🔍 Debug - Texto do erro:', errorText)
       }
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error)
+      console.error('🔍 Debug - Erro ao buscar usuários:', error)
       toast.error('Erro ao carregar usuários')
     }
   }
@@ -247,6 +265,28 @@ export default function GerenciarAcessoPage() {
                     onChange={(e) => handleSearchChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
+                  
+                  {/* Botão de teste para debug */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/usuarios/test-search?search=${encodeURIComponent(searchValue)}`);
+                        const data = await response.json();
+                        console.log('🔍 Teste Busca - Resultado:', data);
+                        toast.success('Teste de busca executado. Veja o console.');
+                      } catch (error) {
+                        console.error('Erro no teste de busca:', error);
+                        toast.error('Erro ao testar busca');
+                      }
+                    }}
+                  >
+                    Testar
+                  </Button>
+                  
                   {searchValue.length >= 3 && usuarios.length > 0 && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto z-10">
                       {usuarios.map((usuario) => (

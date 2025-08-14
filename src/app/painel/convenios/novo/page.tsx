@@ -38,25 +38,36 @@ import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConve
 
 export default function NovoConvenio() {
   const [loading, setLoading] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
+  const [tabelaFaturamento, setTabelaFaturamento] = useState<
     TabelaFaturamento[]
   >([]);
 
   const router = useRouter();
-  const form = useForm({
+  const form = useForm<z.infer<typeof createConvenioSchema>>({
     resolver: zodResolver(createConvenioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
       regras: "",
       desconto: 0,
-      tabela_faturamento_id: 0,
+      tabela_faturamento_id: undefined,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
+      console.log("🔍 Valores do formulário:", values);
+      console.log("🔍 Tipo do tabela_faturamento_id:", typeof values.tabela_faturamento_id);
+      console.log("🔍 Valor do tabela_faturamento_id:", values.tabela_faturamento_id);
+      
+      // Validação adicional
+      if (!values.tabela_faturamento_id || values.tabela_faturamento_id <= 0) {
+        toast.error("Selecione uma tabela de faturamento válida");
+        setLoading(false);
+        return;
+      }
+      
       const response = await fetch("/api/convenios", {
         method: 'POST',
         headers: {
@@ -215,14 +226,16 @@ export default function NovoConvenio() {
             />
             <FormField
               control={form.control}
-                                name="tabela_faturamento_id"
+              name="tabela_faturamento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tabela de Faturamento *</FormLabel>
                   <Select
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
-                      field.onChange(Number(value));
+                      const numValue = Number(value);
+                      console.log("🔍 Valor selecionado:", numValue);
+                      field.onChange(numValue);
                     }}
                   >
                     <FormControl
@@ -237,7 +250,7 @@ export default function NovoConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {tabelaFaturamentos.map((option) => (
+                      {tabelaFaturamento.map((option) => (
                         <SelectItem
                           key={option.id}
                           value={option.id.toString()}

@@ -45,9 +45,9 @@ export async function PUT(
     // Atualizar valor de procedimento
     await gestorPool.execute(
       `UPDATE valor_procedimentos SET 
-        valor = ?, tipo = ?, tabela_faturamentos_id = ?, procedimentos_id = ?
+        valor = ?, tipo = ?, tabela_faturamento_id = ?, procedimento_id = ?
        WHERE id = ?`,
-      [body.valor, body.tipo, body.tabela_faturamentos_id, body.procedimentos_id, id]
+      [body.valor, body.tipo, body.tabela_faturamento_id, body.procedimento_id, id]
     );
 
     return NextResponse.json({ success: true });

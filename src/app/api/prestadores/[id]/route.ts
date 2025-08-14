@@ -22,7 +22,9 @@ export async function GET(
     }
 
     const prestador = (rows as any[])[0];
-    console.log(prestador)
+    console.log('🔍 API Debug - Prestador completo:', prestador);
+    console.log('🔍 API Debug - Data de nascimento:', prestador.dtnascimento);
+    console.log('🔍 API Debug - Tipo da data:', typeof prestador.dtnascimento);
     return NextResponse.json(prestador);
   } catch (error) {
     console.error('Erro ao buscar prestador:', error);

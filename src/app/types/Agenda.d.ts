@@ -18,6 +18,7 @@ export interface Agenda {
   unidade_id: number | null;
   especialidade_id: number | null;
   tipo: "PROCEDIMENTO" | "ENCAIXE";
+  tipo_cliente: "SOCIO" | "NSOCIO" | "PARCEIRO" | "FUNCIONARIO";
 
   // Campos de JOIN para exibição
   cliente_nome?: string;

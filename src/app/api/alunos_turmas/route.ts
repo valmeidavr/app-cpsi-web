@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gestorPool } from "@/lib/mysql";
-import { z } from "zod";
+import { createAlunoTurmaSchema } from "./schema/formSchemaAlunosTurmas";
 
 // GET - Listar alunos de turmas com paginação e busca
 export async function GET(request: NextRequest) {
@@ -11,37 +11,62 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const turmaId = searchParams.get('turmaId') || '';
 
-    let query = 'SELECT * FROM alunos_turmas ';
+    let query = `
+      SELECT 
+        at.id,
+        at.turma_id,
+        at.cliente_id,
+        at.data_inscricao,
+        at.status,
+        at.createdAt,
+        at.updatedAt,
+        JSON_OBJECT(
+          'id', c.id,
+          'nome', c.nome,
+          'cpf', c.cpf,
+          'telefone1', c.telefone1,
+          'dtnascimento', c.dtnascimento,
+          'status', c.status
+        ) as cliente
+      FROM alunos_turmas at
+      LEFT JOIN clientes c ON at.cliente_id = c.id
+      WHERE 1=1
+    `;
     const params: (string | number)[] = [];
 
     if (turmaId) {
-      query += ' AND at.turmas_id = ?';
-      params.push(turmaId);
+      query += ' AND at.turma_id = ?';
+      params.push(parseInt(turmaId));
     }
 
     if (search) {
-      query += ' AND (alunos_id LIKE ? OR turmas_id LIKE ?)';
+      query += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY id DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY at.id DESC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
     const [alunoTurmaRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM alunos_turmas ';
-    const countParams: (string)[] = [];
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM alunos_turmas at
+      LEFT JOIN clientes c ON at.cliente_id = c.id
+      WHERE 1=1
+    `;
+    const countParams: (string | number)[] = [];
 
     if (turmaId) {
-      countQuery += ' AND at.turmas_id = ?';
-      countParams.push(turmaId);
+      countQuery += ' AND at.turma_id = ?';
+      countParams.push(parseInt(turmaId));
     }
 
     if (search) {
-      countQuery += ' AND (alunos_id LIKE ? OR turmas_id LIKE ?)';
+      countQuery += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
@@ -70,14 +95,17 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
+    // Validar dados com Zod
+    const validatedData = createAlunoTurmaSchema.parse(body);
 
     // Inserir aluno em turma
     const [result] = await gestorPool.execute(
       `INSERT INTO alunos_turmas (
-        alunos_id, turmas_id, status
-      ) VALUES (?, ?, ?)`,
+        cliente_id, turma_id, data_inscricao, status
+      ) VALUES (?, ?, ?, ?)`,
       [
-        body.alunosId, body.turmasId, 'Ativo'
+        validatedData.cliente_id, validatedData.turma_id, validatedData.data_inscricao || new Date().toISOString(), 'Ativo'
       ]
     );
 

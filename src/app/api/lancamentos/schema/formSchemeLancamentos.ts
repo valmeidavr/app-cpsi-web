@@ -28,9 +28,9 @@ export const createLancamentoSchema = z.object({
 
   cliente_id: z
     .union([z.string(), z.number()])
-    .transform((val) => Number(val))
-    .optional()
-    .nullable(),
+    .transform((val) => val ? Number(val) : null)
+    .nullable()
+    .optional(),
 
   plano_conta_id: z
     .union([z.string(), z.number()])
@@ -42,11 +42,15 @@ export const createLancamentoSchema = z.object({
     .transform((val) => Number(val))
     .refine((val) => val > 0, { message: "Caixa é obrigatório" }),
 
-  lancamento_original_id: z.number().nullable().optional(),
+  lancamento_original_id: z
+    .union([z.string(), z.number()])
+    .transform((val) => val ? Number(val) : null)
+    .nullable()
+    .optional(),
 
   id_transferencia: z
     .union([z.string(), z.number()])
-    .transform((val) => Number(val))
+    .transform((val) => val ? Number(val) : null)
     .nullable()
     .optional(),
 
@@ -54,26 +58,19 @@ export const createLancamentoSchema = z.object({
 
   motivo_transferencia: z.string().nullable().optional(),
 
-  forma_pagamento: z.enum(["DINHEIRO", "CARTAO", "CHEQUE", "BOLETO", "PIX"], {
-    required_error: "A forma de pagamento é obrigatória",
-    invalid_type_error: "Forma de pagamento inválida",
-  }),
+  forma_pagamento: z.enum(["DINHEIRO", "CARTAO", "CHEQUE", "BOLETO", "PIX"]).optional(),
 
-  status_pagamento: z.enum(["PENDENTE", "PAGO"], {
-    required_error: "Status de pagamento é obrigatório",
-    invalid_type_error: "Status inválido",
-  }),
+  status_pagamento: z.enum(["PENDENTE", "PAGO"]).optional(),
 
   agenda_id: z
     .union([z.string(), z.number()])
-    .transform((val) => Number(val))
+    .transform((val) => val ? Number(val) : null)
     .nullable()
     .optional(),
 
   usuario_id: z
-    .union([z.string(), z.number()])
-    .transform((val) => Number(val))
-    .refine((val) => val > 0, { message: "Usuário é obrigatório" }),
+    .string()
+    .min(1, { message: "Usuário é obrigatório" }),
 });
 
 export const updateLancamentoSchema = createLancamentoSchema.partial();

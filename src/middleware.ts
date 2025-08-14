@@ -1,59 +1,5 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-
-// Mapeamento de roles do menu.json para níveis do banco
-const ROLE_MAPPING = {
-  'ADMIN': 'Administrador',
-  'GESTOR': 'Gestor', 
-  'USUARIO': 'Usuario'
-}
-
-// Função para verificar se o usuário tem permissão para a rota
-function hasRoutePermission(userLevel: string, requiredGroups: string[]): boolean {
-  // Administrador tem acesso a tudo
-  if (userLevel === 'Administrador') return true
-  
-  // Gestor tem acesso a rotas que requerem ADMIN ou GESTOR
-  if (userLevel === 'Gestor') {
-    return requiredGroups.some(group => group === 'ADMIN' || group === 'GESTOR')
-  }
-  
-  // Usuario tem acesso apenas a rotas que requerem USUARIO
-  if (userLevel === 'Usuario') {
-    return requiredGroups.some(group => group === 'USUARIO')
-  }
-  
-  return false
-}
-
-export function middleware(request: NextRequest) {
-  // Adicionar headers para controle de cache e conexões
-  const response = NextResponse.next()
-  
-  // Headers para evitar cache desnecessário
-  response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate')
-  response.headers.set('Pragma', 'no-cache')
-  response.headers.set('Expires', '0')
-  
-  // Header para controle de conexões
-  response.headers.set('Connection', 'keep-alive')
-  
-  return response
-}
-
-export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ],
-}
 
 export default withAuth(
   function middleware(req) {
@@ -71,35 +17,38 @@ export default withAuth(
     }
     
     // Verificar permissões específicas para rotas do painel
-    if (pathname.startsWith('/painel/') && token?.userLevel) {
-      // Importar menu.json dinamicamente (simulado aqui)
-      const menuRoutes = [
-        { path: '/painel/convenios', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/clientes', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/especialidades', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/procedimentos', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/unidades', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/prestadores', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/alocacoes', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/expedientes', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/turmas', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/agendas', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/lancamentos', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/plano_contas', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/caixas', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/tabela_faturamentos', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/valores_procedimentos', requiredGroups: ['ADMIN', 'GESTOR'] },
-        { path: '/painel/usuarios', requiredGroups: ['ADMIN', 'GESTOR'] },
-      ]
+    if (pathname.startsWith('/painel/') && token?.role) {
+      // Mapeamento de rotas e permissões necessárias
+      const routePermissions = {
+        '/painel/usuarios': ['Administrador'],
+        '/painel/convenios': ['Administrador', 'Gestor'],
+        '/painel/clientes': ['Administrador', 'Gestor'],
+        '/painel/especialidades': ['Administrador', 'Gestor'],
+        '/painel/procedimentos': ['Administrador', 'Gestor'],
+        '/painel/unidades': ['Administrador', 'Gestor'],
+        '/painel/prestadores': ['Administrador', 'Gestor'],
+        '/painel/alocacoes': ['Administrador', 'Gestor'],
+        '/painel/expedientes': ['Administrador', 'Gestor'],
+        '/painel/turmas': ['Administrador', 'Gestor'],
+        '/painel/agendas': ['Administrador', 'Gestor'],
+        '/painel/lancamentos': ['Administrador', 'Gestor'],
+        '/painel/plano_contas': ['Administrador', 'Gestor'],
+        '/painel/caixas': ['Administrador', 'Gestor'],
+        '/painel/tabela_faturamentos': ['Administrador', 'Gestor'],
+        '/painel/valores_procedimentos': ['Administrador', 'Gestor'],
+      }
       
       // Verificar se a rota atual requer permissões específicas
-      const currentRoute = menuRoutes.find(route => pathname.startsWith(route.path))
+      const currentRoute = Object.keys(routePermissions).find(route => 
+        pathname.startsWith(route)
+      )
       
       if (currentRoute) {
-        const hasPermission = hasRoutePermission(token.userLevel, currentRoute.requiredGroups)
+        const requiredRoles = routePermissions[currentRoute as keyof typeof routePermissions]
+        const hasPermission = requiredRoles.includes(token.role)
         
         if (!hasPermission) {
-          console.log(`Middleware - Usuário sem permissão para ${pathname}. Nível: ${token.userLevel}, Requerido: ${currentRoute.requiredGroups}`)
+          console.log(`Middleware - Usuário sem permissão para ${pathname}. Nível: ${token.role}, Requerido: ${requiredRoles}`)
           return NextResponse.redirect(new URL('/acesso-negado', req.url))
         }
       }
@@ -115,3 +64,10 @@ export default withAuth(
     },
   }
 )
+
+export const config = {
+  matcher: [
+    '/painel/:path*',
+    '/api/protected/:path*',
+  ],
+}

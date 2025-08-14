@@ -63,16 +63,27 @@ export default function NovoTurma() {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await http.get("/api/prestadores");
-      setPrestadores(data.data);
+      const response = await fetch("/api/prestadores?limit=1000");
+      const data = await response.json();
+      if (response.ok) {
+        setPrestadores(data.data);
+      } else {
+        toast.error("Erro ao carregar prestadores");
+      }
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
+
   const fetchProcedimentos = async () => {
     try {
-      const { data } = await http.get("/api/procedimentos");
-      setProcedimentos(data.data);
+      const response = await fetch("/api/procedimentos?limit=1000");
+      const data = await response.json();
+      if (response.ok) {
+        setProcedimentos(data.data);
+      } else {
+        toast.error("Erro ao carregar procedimentos");
+      }
     } catch (error: any) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }

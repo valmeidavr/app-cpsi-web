@@ -42,12 +42,15 @@ import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
 import { Usuario } from "@/app/types/Usuario";
 
+type CreateLancamentoFormData = z.infer<typeof createLancamentoSchema>;
+
 export default function NovoLancamento() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [clientes, setClientes] = useState<any[]>([]);
   const router = useRouter();
   const searchParams = useSearchParams();
   const tipo = (
@@ -58,7 +61,7 @@ export default function NovoLancamento() {
       : undefined
   ) as "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA" | undefined;
 
-  const form = useForm({
+  const form = useForm<CreateLancamentoFormData>({
     resolver: zodResolver(createLancamentoSchema),
     mode: "onChange",
     defaultValues: {
@@ -66,17 +69,17 @@ export default function NovoLancamento() {
       descricao: "",
       data_lancamento: "",
       tipo: tipo,
-      clientes_Id: undefined,
+      cliente_id: undefined,
       plano_conta_id: 0,
       caixa_id: 0,
-      lancamento_original_id: null,
-      id_transferencia: null,
-      motivo_estorno: null,
-      motivo_transferencia: null,
-      forma_pagamento: undefined,
-      status_pagamento: undefined,
-      agenda_id: null,
-      usuario_id: 0,
+      lancamento_original_id: undefined,
+      id_transferencia: undefined,
+      motivo_estorno: undefined,
+      motivo_transferencia: undefined,
+      forma_pagamento: "DINHEIRO",
+      status_pagamento: "PENDENTE",
+      agenda_id: undefined,
+      usuario_id: "",
     },
   });
 
@@ -110,20 +113,38 @@ export default function NovoLancamento() {
     }
   };
 
-  const fetchUsuario = async () => {
+  const fetchClientes = async () => {
     try {
-      const response = await fetch("/api/usuarios");
+      const response = await fetch("/api/clientes?limit=1000");
       const data = await response.json();
       
+      console.log('🔍 Debug - Resposta da API clientes:', response.status, data);
+      
       if (response.ok) {
-        setUsuarios(data.data);
+        setClientes(data.data);
+        console.log('🔍 Debug - Clientes carregados:', data.data);
       } else {
-        console.error("Erro ao carregar usuários:", data.error);
+        console.error("Erro ao carregar clientes:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao carregar usuários:", error);
+      console.error("Erro ao carregar clientes:", error);
     }
   };
+
+      const fetchUsuario = async () => {
+      try {
+        const response = await fetch("/api/usuarios?limit=1000");
+        const data = await response.json();
+        
+        if (response.ok) {
+          setUsuarios(data.data);
+        } else {
+          console.error("Erro ao carregar usuários:", data.error);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar usuários:", error);
+      }
+    };
 
   useEffect(() => {
     setLoadingData(true);
@@ -131,6 +152,7 @@ export default function NovoLancamento() {
       try {
         await fetchCaixas();
         await fetchPlanoContas();
+        await fetchClientes();
         await fetchUsuario();
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -141,7 +163,7 @@ export default function NovoLancamento() {
     fetchData();
   }, []);
 
-  const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
+  const onSubmit = async (values: CreateLancamentoFormData) => {
     setLoading(true);
     try {
       const response = await fetch("/api/lancamentos", {
@@ -180,6 +202,71 @@ export default function NovoLancamento() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4">Novo Lançamento</h1>
+      
+      {/* Botão de teste para debug */}
+      <div className="mb-4 p-4 bg-gray-100 rounded-lg">
+        <h3 className="font-semibold mb-2">Debug - Testar APIs:</h3>
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => fetchClientes()}
+            disabled={loadingData}
+          >
+            Testar Clientes
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => fetchUsuario()}
+            disabled={loadingData}
+          >
+            Testar Usuários
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => fetchCaixas()}
+            disabled={loadingData}
+          >
+            Testar Caixas
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => fetchPlanoContas()}
+            disabled={loadingData}
+          >
+            Testar Plano Contas
+          </Button>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={async () => {
+              try {
+                const response = await fetch("/api/lancamentos/test");
+                const data = await response.json();
+                console.log('🔍 Teste - Estrutura das tabelas:', data);
+                toast.success('Estrutura verificada. Veja o console.');
+              } catch (error) {
+                console.error('Erro no teste:', error);
+                toast.error('Erro ao testar estrutura');
+              }
+            }}
+            disabled={loadingData}
+          >
+            Testar Estrutura
+          </Button>
+        </div>
+        <div className="mt-2 text-sm text-gray-600">
+          <p>Clientes: {clientes.length} | Usuários: {usuarios.length} | Caixas: {caixas.length} | Plano Contas: {planoConta.length}</p>
+        </div>
+      </div>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <FormField
@@ -238,7 +325,7 @@ export default function NovoLancamento() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipo</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                <Select onValueChange={field.onChange} value={field.value || ""} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
@@ -257,22 +344,26 @@ export default function NovoLancamento() {
           />
           <FormField
             control={form.control}
-            name="clientes_Id"
+            name="cliente_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Cliente</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                <Select onValueChange={field.onChange} value={field.value?.toString() || ""} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o cliente" />
+                      <SelectValue placeholder={loadingData ? "Carregando..." : "Selecione o cliente"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {usuarios.map((usuario) => (
-                      <SelectItem key={usuario.id} value={usuario.id}>
-                        {usuario.nome}
-                      </SelectItem>
-                    ))}
+                    {clientes.length === 0 && !loadingData ? (
+                      <SelectItem value="" disabled>Nenhum cliente encontrado</SelectItem>
+                    ) : (
+                      clientes.map((cliente) => (
+                        <SelectItem key={cliente.id} value={cliente.id?.toString() || ""}>
+                          {cliente.nome} - {cliente.cpf}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -281,22 +372,26 @@ export default function NovoLancamento() {
           />
           <FormField
             control={form.control}
-                              name="plano_conta_id"
+            name="plano_conta_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Plano de Conta</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                <Select onValueChange={field.onChange} value={field.value?.toString() || ""} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o plano de conta" />
+                      <SelectValue placeholder={loadingData ? "Carregando..." : "Selecione o plano de conta"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {planoConta.map((conta) => (
-                      <SelectItem key={conta.id} value={conta.id}>
-                        {conta.nome}
-                      </SelectItem>
-                    ))}
+                    {planoConta.length === 0 && !loadingData ? (
+                      <SelectItem value="" disabled>Nenhum plano de conta encontrado</SelectItem>
+                    ) : (
+                      planoConta.map((conta) => (
+                        <SelectItem key={conta.id} value={conta.id?.toString() || ""}>
+                          {conta.nome}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -305,162 +400,26 @@ export default function NovoLancamento() {
           />
           <FormField
             control={form.control}
-                              name="caixa_id"
+            name="caixa_id"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Caixa</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                <Select onValueChange={field.onChange} value={field.value?.toString() || ""} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o caixa" />
+                      <SelectValue placeholder={loadingData ? "Carregando..." : "Selecione o caixa"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {caixas.map((caixa) => (
-                      <SelectItem key={caixa.id} value={caixa.id}>
-                        {caixa.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-                              name="lancamento_original_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Lançamento Original</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o lançamento original" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for original lancamentos */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="id_transferencia"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Transferência</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a transferência" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for transferencias */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="motivo_estorno"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Motivo do Estorno</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o motivo do estorno" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for motivos de estorno */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="motivo_transferencia"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Motivo da Transferência</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o motivo da transferência" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for motivos de transferencia */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="forma_pagamento"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Forma de Pagamento</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a forma de pagamento" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for formas de pagamento */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="status_pagamento"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status do Pagamento</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o status do pagamento" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for status de pagamento */}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-                              name="agenda_id"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Agenda</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a agenda" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {/* Placeholder for agendas */}
+                    {caixas.length === 0 && !loadingData ? (
+                      <SelectItem value="" disabled>Nenhum caixa encontrado</SelectItem>
+                    ) : (
+                      caixas.map((caixa) => (
+                        <SelectItem key={caixa.id} value={caixa.id?.toString() || ""}>
+                          {caixa.nome}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -473,25 +432,29 @@ export default function NovoLancamento() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Usuário</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={loading}>
+                <Select onValueChange={field.onChange} value={field.value?.toString() || ""} disabled={loading}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o usuário" />
+                      <SelectValue placeholder={loadingData ? "Carregando..." : "Selecione o usuário"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {usuarios.map((usuario) => (
-                      <SelectItem key={usuario.id} value={usuario.id}>
-                        {usuario.nome}
-                      </SelectItem>
-                    ))}
+                    {usuarios.length === 0 && !loadingData ? (
+                      <SelectItem value="" disabled>Nenhum usuário encontrado</SelectItem>
+                    ) : (
+                      usuarios.map((usuario) => (
+                        <SelectItem key={usuario.login} value={usuario.login || ""}>
+                          {usuario.nome}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <Button type="submit" className="flex items-center gap-2" disabled={loading}>
+          <Button type="submit" className="flex items-center gap-2" disabled={loading || loadingData}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar Lançamento
           </Button>

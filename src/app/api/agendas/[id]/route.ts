@@ -10,7 +10,7 @@ export async function GET(
     const id = params.id;
 
     const rows = await executeWithRetry(gestorPool,
-      'SELECT * FROM agendas WHERE id = ?',
+      'SELECT id, dtagenda, situacao, cliente_id, convenio_id, procedimento_id, expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente, createdAt, updatedAt FROM agendas WHERE id = ?',
       [id]
     );
 
@@ -72,12 +72,12 @@ export async function PUT(
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?, 
         procedimento_id = ?, expediente_id = ?, prestador_id = ?, 
-        unidade_id = ?, especialidade_id = ?, tipo = ?
+        unidade_id = ?, especialidade_id = ?, tipo = ?, tipo_cliente = ?
        WHERE id = ?`,
       [
         body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
         body.procedimento_id, body.expediente_id, body.prestador_id,
-        body.unidade_id, body.especialidade_id, body.tipo, id
+        body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente, id
       ]
     );
 

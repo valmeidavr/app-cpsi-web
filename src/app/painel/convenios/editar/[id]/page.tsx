@@ -91,7 +91,7 @@ export default function EditarConvenio() {
             nome: data.nome,
             regras: data.regras,
             desconto: data.desconto,
-            tabela_faturamento_id: data.tabelaFaturamentosId,
+            tabela_faturamento_id: data.tabela_faturamento_id,
           });
         } else {
           console.error("Erro ao carregar convenio:", data.error);

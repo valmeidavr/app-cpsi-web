@@ -14,11 +14,11 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    let query = 'SELECT * FROM procedimentos';
+    let query = 'SELECT * FROM procedimentos WHERE status = "Ativo"';
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
+      query += ' AND (nome LIKE ? OR codigo LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
 
@@ -30,11 +30,11 @@ export async function GET(request: NextRequest) {
     const [procedimentoRows] = await gestorPool.execute(query, params);
 
     // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos';
+    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos WHERE status = "Ativo"';
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
+      countQuery += ' AND (nome LIKE ? OR codigo LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
 

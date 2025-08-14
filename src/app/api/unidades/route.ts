@@ -13,6 +13,25 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const all = searchParams.get('all') || '';
+
+    // Se for para retornar todas as unidades (sem paginação)
+    if (all === 'true' || limit === '1000') {
+      console.log('🔍 Debug - Buscando todas as unidades');
+      const [rows] = await gestorPool.execute(
+        'SELECT * FROM unidades ORDER BY nome ASC'
+      );
+      console.log('🔍 Debug - Unidades encontradas:', (rows as any[]).length);
+      return NextResponse.json({
+        data: rows,
+        pagination: {
+          page: 1,
+          limit: (rows as any[]).length,
+          total: (rows as any[]).length,
+          totalPages: 1
+        }
+      });
+    }
 
     // 1. Construir a cláusula WHERE dinamicamente
     let whereClause = '';

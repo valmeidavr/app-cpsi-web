@@ -1,60 +1,65 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { AlertTriangle, LogOut } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
-import { useRouter } from 'next/navigation'
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, ArrowLeft, Lock } from "lucide-react";
 
-export default function AcessoNegadoPage() {
-  const { logout } = useAuth()
-  const router = useRouter()
-
-  const handleLogout = async () => {
-    await logout()
-    router.push('/login')
-  }
+export default function AcessoNegado() {
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+    <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
+      <Card className="w-full max-w-md shadow-lg">
+        <CardHeader className="space-y-1 text-center">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+              <Lock className="h-8 w-8 text-red-600" />
+            </div>
           </div>
-          <CardTitle className="text-xl text-red-600">Acesso Negado</CardTitle>
-          <CardDescription>
-            Você não tem permissão para acessar este sistema.
+          <CardTitle className="text-2xl font-bold text-red-600">
+            Acesso Negado
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            Você não tem permissão para acessar esta área do sistema
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="text-center text-sm text-gray-600">
-            <p>
-              Para acessar o sistema CPSI, você precisa ter permissão concedida por um administrador.
-            </p>
-            <p className="mt-2">
-              Entre em contato com o administrador do sistema para solicitar acesso.
-            </p>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-start space-x-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-yellow-800">
+                <p className="font-medium">Possíveis motivos:</p>
+                <ul className="mt-2 space-y-1">
+                  <li>• Você não está logado no sistema</li>
+                  <li>• Sua conta não tem permissão para esta área</li>
+                  <li>• Sua sessão expirou</li>
+                  <li>• Você não tem acesso ao sistema CPSI</li>
+                </ul>
+              </div>
+            </div>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-col space-y-3">
             <Button 
-              variant="outline" 
-              onClick={() => router.push('/login')}
-              className="flex-1"
+              onClick={() => router.push("/")} 
+              className="w-full"
+              variant="default"
             >
-              Voltar ao Login
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para o Login
             </Button>
+            
             <Button 
-              onClick={handleLogout}
-              className="flex-1"
+              onClick={() => router.back()} 
+              className="w-full"
+              variant="outline"
             >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sair
+              Voltar à Página Anterior
             </Button>
           </div>
         </CardContent>
       </Card>
-    </div>
-  )
+    </main>
+  );
 } 

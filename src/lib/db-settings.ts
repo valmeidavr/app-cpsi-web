@@ -6,7 +6,7 @@ export const dbSettings = {
     queueLimit: parseInt(process.env.MYSQL_POOL_QUEUE_LIMIT || '5'),
     waitForConnections: process.env.MYSQL_POOL_WAIT_FOR_CONNECTIONS === 'true',
   },
-  
+
   // Configurações de timeout
   timeout: {
     query: parseInt(process.env.MYSQL_QUERY_TIMEOUT || '30000'),

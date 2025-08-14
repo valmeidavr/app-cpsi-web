@@ -13,13 +13,32 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const all = searchParams.get('all') || '';
+
+    // Se for para retornar todos os prestadores (sem paginação)
+    if (all === 'true' || limit === '1000') {
+      console.log('🔍 Debug - Buscando todos os prestadores ativos');
+      const [rows] = await gestorPool.execute(
+        'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC'
+      );
+      console.log('🔍 Debug - Prestadores encontrados:', (rows as any[]).length);
+      return NextResponse.json({
+        data: rows,
+        pagination: {
+          page: 1,
+          limit: (rows as any[]).length,
+          total: (rows as any[]).length,
+          totalPages: 1
+        }
+      });
+    }
 
     // 1. Construir a cláusula WHERE dinamicamente
-    let whereClause = '';
+    let whereClause = ' WHERE status = "Ativo"'; // Mostrar apenas prestadores ativos
     const queryParams: (string | number)[] = [];
 
     if (search) {
-      whereClause = ' WHERE (nome LIKE ? OR cpf LIKE ? OR email LIKE ?)';
+      whereClause += ' AND (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
@@ -121,6 +140,45 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar prestador:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Alterar status do prestador
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID do prestador é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    const body = await request.json();
+    const { status } = body;
+
+    if (!status || !['Ativo', 'Inativo'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Status deve ser "Ativo" ou "Inativo"' },
+        { status: 400 }
+      );
+    }
+
+    // Atualizar status do prestador
+    await gestorPool.execute(
+      'UPDATE prestadores SET status = ? WHERE id = ?',
+      [status, id]
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao alterar status do prestador:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

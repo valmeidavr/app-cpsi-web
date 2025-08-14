@@ -17,18 +17,24 @@ export async function GET(request: NextRequest) {
     let query = `
       SELECT 
         a.*,
+        e.id as especialidade_id,
         e.nome as especialidade_nome,
+        u.id as unidade_id,
         u.nome as unidade_nome,
-        p.nome as prestador_nome
+        p.id as prestador_id,
+        p.nome as prestador_nome,
+        p.cpf as prestador_cpf,
+        p.celular as prestador_celular
       FROM alocacoes a
       LEFT JOIN especialidades e ON a.especialidade_id = e.id
       LEFT JOIN unidades u ON a.unidade_id = u.id
       LEFT JOIN prestadores p ON a.prestador_id = p.id
+      WHERE 1=1
     `;
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' WHERE (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      query += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
@@ -37,7 +43,12 @@ export async function GET(request: NextRequest) {
     query += ' ORDER BY a.id ASC LIMIT ? OFFSET ?';
     params.push(parseInt(limit), offset);
 
+    console.log("🔍 Query de alocações:", query);
+    console.log("🔍 Parâmetros:", params);
+    
     const alocacaoRows = await executeWithRetry(gestorPool, query, params);
+    
+    console.log("✅ Alocações encontradas:", alocacaoRows?.length || 0);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -46,19 +57,44 @@ export async function GET(request: NextRequest) {
       LEFT JOIN especialidades e ON a.especialidade_id = e.id
       LEFT JOIN unidades u ON a.unidade_id = u.id
       LEFT JOIN prestadores p ON a.prestador_id = p.id
+      WHERE 1=1
     `;
     const countParams: (string)[] = [];
 
     if (search) {
-      countQuery += ' WHERE (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
 
+    // Transformar os dados para incluir objetos aninhados
+    const alocacoesFormatadas = alocacaoRows.map((row: any) => ({
+      id: row.id,
+      unidade_id: row.unidade_id,
+      especialidade_id: row.especialidade_id,
+      prestador_id: row.prestador_id,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      unidade: {
+        id: row.unidade_id,
+        nome: row.unidade_nome
+      },
+      especialidade: {
+        id: row.especialidade_id,
+        nome: row.especialidade_nome
+      },
+      prestador: {
+        id: row.prestador_id,
+        nome: row.prestador_nome,
+        cpf: row.prestador_cpf,
+        celular: row.prestador_celular
+      }
+    }));
+
     return NextResponse.json({
-      data: alocacaoRows,
+      data: alocacoesFormatadas,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

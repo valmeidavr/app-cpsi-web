@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,8 +17,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
-import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
   const router = useRouter();
@@ -26,24 +25,31 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const { login: authLogin } = useAuth()
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-
+  async function onSubmit(event: FormEvent): Promise<void> {
+    event.preventDefault();
+    setErrorMessage(null);
+    setLoading(true);
+  
     try {
-      await authLogin(login, senha)
-      toast.success('Login realizado com sucesso!')
-      router.push('/painel')
-    } catch (error) {
-      toast.error('Erro no login. Verifique suas credenciais.')
-      console.error('Erro no login:', error)
+      const result = await signIn("credentials", {
+        login,
+        password: senha,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setErrorMessage("Credenciais inválidas. Verifique seu login e senha.");
+      } else if (result?.ok) {
+        // Login bem-sucedido, redirecionar para o painel
+        router.replace("/painel");
+      }
+    } catch (err: any) {
+      setErrorMessage("Erro interno do servidor. Tente novamente.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
-
+  
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -54,18 +60,32 @@ export default function Home() {
           <CardTitle className="text-2xl font-bold">Bem-vindo ao Sistema CPSI</CardTitle>
           <CardDescription>Entre com suas credenciais para acessar sua conta</CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input type="text" placeholder="login" className="pl-10" required value={login} onChange={(e) => setLogin(e.target.value)} />
+                <Input 
+                  type="text" 
+                  placeholder="Login ou Email" 
+                  className="pl-10" 
+                  required 
+                  value={login} 
+                  onChange={(e) => setLogin(e.target.value)} 
+                />
               </div>
             </div>
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input type="password" placeholder="Senha" className="pl-10" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+                <Input 
+                  type="password" 
+                  placeholder="Senha" 
+                  className="pl-10" 
+                  required 
+                  value={senha} 
+                  onChange={(e) => setSenha(e.target.value)} 
+                />
               </div>
             </div>
             {errorMessage && (

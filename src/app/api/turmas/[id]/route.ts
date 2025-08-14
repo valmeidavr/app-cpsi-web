@@ -46,11 +46,11 @@ export async function PUT(
     await gestorPool.execute(
       `UPDATE turmas SET 
         nome = ?, horario_inicio = ?, horario_fim = ?, data_inicio = ?, 
-        limite_vagas = ?, procedimentos_id = ?, prestadores_id = ?
+        limite_vagas = ?, procedimento_id = ?, prestador_id = ?
        WHERE id = ?`,
       [
         body.nome, body.horario_inicio, body.horario_fim, body.data_inicio,
-        body.limite_vagas, body.procedimentos_id, body.prestadores_id, id
+        body.limite_vagas, body.procedimento_id, body.prestador_id, id
       ]
     );
 

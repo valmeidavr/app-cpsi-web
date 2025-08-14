@@ -40,16 +40,15 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useAgenda } from "../AgendaContext";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import ConveniosCliente from "@/app/types/ConveniosCliente";
 import { Cliente, TipoCliente } from "@/app/types/Cliente";
-import { Loader2 } from "lucide-react";
+import { localDateToUTCISO } from "@/app/helpers/dateUtils";
 
 interface CriarAgendamentoProps {
   isOpenModalCreate: boolean;
@@ -77,6 +76,7 @@ const CriarAgendamento = ({
       especialidade_id: 0,
       dtagenda: "",
       tipo: "PROCEDIMENTO",
+      tipo_cliente: "NSOCIO",
     },
   });
 
@@ -84,20 +84,17 @@ const CriarAgendamento = ({
   const [procedimentos, setProcedimentos] = useState<ValorProcedimento[]>([]);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [loading, setLoading] = useState(false);
-  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
-    null
-  );
+  const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null);
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
-  const [tipoClienteSelecionado, setTipoClienteSelecionada] =
-    useState<TipoCliente>(TipoCliente.NSOCIO);
-  const [convenioSelecionado, setConvenioSelecionada] = useState<
-    Convenio | undefined
-  >(undefined);
-  const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<
-    ValorProcedimento | null
-  >(null);
+  const [tipoClienteSelecionado, setTipoClienteSelecionada] = useState<TipoCliente>(TipoCliente.NSOCIO);
+  const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio | undefined>(undefined);
+  const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(null);
+  const [searchCliente, setSearchCliente] = useState("");
+  const [searchProcedimento, setSearchProcedimento] = useState("");
+  const [openSelectConvenios, setOpenSelectConvenios] = useState(false);
+  const [searchConvenio, setSearchConvenio] = useState("");
 
   useEffect(() => {
     form.reset({
@@ -106,10 +103,7 @@ const CriarAgendamento = ({
       unidade_id: unidade?.id || 0,
       especialidade_id: especialidade?.id || 0,
       dtagenda: dataSelecionada
-        ? new Date(
-            dataSelecionada.getTime() -
-              dataSelecionada.getTimezoneOffset() * 60000
-          ).toISOString()
+        ? localDateToUTCISO(dataSelecionada)
         : "",
     });
   }, [prestador, unidade, especialidade, dataSelecionada, form.reset]);
@@ -120,50 +114,77 @@ const CriarAgendamento = ({
 
   useEffect(() => {
     if (convenioSelecionado && tipoClienteSelecionado) {
-      fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
+      fetchProcedimentos(convenioSelecionado.id);
     } else {
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
     }
-  }, [tipoClienteSelecionado, convenioSelecionado]);
+  }, [convenioSelecionado, tipoClienteSelecionado]);
 
   const fetchClientes = async () => {
     try {
       const response = await fetch("/api/clientes");
+      
       if (!response.ok) {
-        throw new Error("Erro ao carregar clientes");
+        const errorData = await response.json();
+        throw new Error(`Erro ao carregar clientes: ${response.status} - ${errorData.error || 'Erro desconhecido'}`);
       }
+      
       const data = await response.json();
-      setClientes(data.data);
+      
+      if (data.data && Array.isArray(data.data)) {
+        setClientes(data.data);
+      } else {
+        setClientes([]);
+      }
     } catch (error) {
-      toast.error("Erro ao carregar clientes");
       console.error("Erro ao carregar clientes:", error);
+      toast.error("Erro ao carregar clientes");
+      setClientes([]);
     }
   };
 
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
-      const response = await fetch(
-        `/api/convenios-clientes?clienteId=${clienteId}`
-      );
-      if (!response.ok) {
+      const response = await fetch(`/api/convenios-clientes?clienteId=${clienteId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.data && data.data.length > 0) {
+          const conveniosList = data.data.map((item: any) => ({
+            id: item.convenioId,
+            nome: item.nome,
+            regras: item.regras,
+            tabela_faturamento_id: item.tabela_faturamentos_id,
+            desconto: item.desconto
+          })) as Convenio[];
+
+          setConvenios(conveniosList);
+          setConvenioSelecionada(undefined);
+          form.setValue("convenio_id", 0);
+          setProcedimentos([]);
+          form.setValue("procedimento_id", 0);
+          return;
+        }
+      }
+      
+      const fallbackResponse = await fetch("/api/convenios?limit=1000");
+      
+      if (fallbackResponse.ok) {
+        const fallbackData = await fallbackResponse.json();
+        setConvenios(fallbackData.data || []);
+        setConvenioSelecionada(undefined);
+        form.setValue("convenio_id", 0);
+        setProcedimentos([]);
+        form.setValue("procedimento_id", 0);
+      } else {
         throw new Error("Erro ao carregar convênios");
       }
-      const data = await response.json();
-      const conveniosListRaw = data.data.map(
-        (item: ConveniosCliente) => item.convenios
-      );
-      const conveniosList = Array.from(
-        new Map(conveniosListRaw.map((c: Convenio) => [c.id, c])).values()
-      ) as Convenio[];
-
-      setConvenios(conveniosList);
-      setConvenioSelecionada(undefined);
-      form.setValue("convenio_id", 0);
-      setProcedimentos([]);
-      form.setValue("procedimento_id", 0);
+      
     } catch (error) {
+      console.error("Erro ao carregar convênios:", error);
       toast.error("Erro ao carregar convênios para este cliente.");
       setConvenios([]);
       setConvenioSelecionada(undefined);
@@ -173,43 +194,44 @@ const CriarAgendamento = ({
     }
   };
 
-  const fetchProcedimentos = async (
-    tipoCliente: TipoCliente,
-    conveniosId: number
-  ) => {
+  const fetchProcedimentos = async (conveniosId: number) => {
     try {
-      const response = await fetch(
-        `/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${tipoCliente}`
-      );
+      console.log("🔍 Buscando procedimentos para:", { conveniosId, tipoCliente: tipoClienteSelecionado });
+      
+      // Verificar se temos tanto convênio quanto tipo de cliente
+      if (!tipoClienteSelecionado) {
+        console.log("⚠️ Tipo de cliente não selecionado");
+        setProcedimentos([]);
+        return;
+      }
+      
+      const response = await fetch(`/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${String(tipoClienteSelecionado)}`);
       if (!response.ok) {
         throw new Error("Erro ao carregar procedimentos");
       }
       const data = await response.json();
+      console.log("✅ Procedimentos encontrados:", data);
       setProcedimentos(data);
     } catch (e) {
-      toast.error(
-        "Nenhum procedimento encontrado para este convênio/tipo de cliente."
-      );
+      console.error("❌ Erro ao carregar procedimentos:", e);
+      toast.error("Nenhum procedimento encontrado para este convênio/tipo de cliente.");
       setProcedimentos([]); 
     }
   };
-
 
   const onSubmit = async (values: any) => {
     setLoading(true);
 
     try {
+      console.log("📝 Valores do formulário:", values);
+      
       if (!unidade?.id || !prestador?.id || !especialidade?.id) {
-        toast.error(
-          "Unidade, Prestador e Especialidade devem ser selecionados na tela principal antes de agendar."
-        );
+        toast.error("Unidade, Prestador e Especialidade devem ser selecionados na tela principal antes de agendar.");
         setLoading(false);
         return;
       }
       if (!dataSelecionada || !values.horario) {
-        toast.error(
-          "Data e horário são obrigatórios para criar o agendamento."
-        );
+        toast.error("Data e horário são obrigatórios para criar o agendamento.");
         setLoading(false);
         return;
       }
@@ -224,24 +246,24 @@ const CriarAgendamento = ({
         setLoading(false);
         return;
       }
+      if (!values.tipo_cliente) {
+        toast.error("O Tipo de Cliente é obrigatório.");
+        setLoading(false);
+        return;
+      }
       if (!values.procedimento_id || values.procedimento_id === 0) {
         toast.error("O Procedimento é obrigatório.");
         setLoading(false);
         return;
       }
-      const [horas, minutos] = values.horario.split(":").map(Number);
 
-      const ano = dataSelecionada.getFullYear();
-      const mes = (dataSelecionada.getMonth() + 1).toString().padStart(2, "0"); 
-      const dia = dataSelecionada.getDate().toString().padStart(2, "0");
-      const horasFormatadas = horas.toString().padStart(2, "0");
-      const minutosFormatados = minutos.toString().padStart(2, "0");
-      values.dtagenda = `${ano}-${mes}-${dia}T${horasFormatadas}:${minutosFormatados}:00.000Z`;
-  
+      // Usar a função utilitária para criar a data UTC ISO
+      values.dtagenda = localDateToUTCISO(dataSelecionada, values.horario);
 
       values.prestador_id = prestador?.id;
       values.unidade_id = unidade?.id;
       values.especialidade_id = especialidade?.id;
+      values.tipo_cliente = tipoClienteSelecionado;
       delete values.horario;
 
       const response = await fetch("/api/agendas", {
@@ -262,11 +284,7 @@ const CriarAgendamento = ({
       await carregarAgendamentos(); 
     } catch (e: any) {
       console.error("Erro ao salvar agendamento:", e);
-      toast.error(
-        `Erro ao salvar agendamento: ${
-          e.message || "Verifique os dados e tente novamente."
-        }`
-      );
+      toast.error(`Erro ao salvar agendamento: ${e.message || "Verifique os dados e tente novamente."}`);
     } finally {
       setLoading(false);
       setIsOpenModalCreate(false);
@@ -277,8 +295,29 @@ const CriarAgendamento = ({
       setConvenios([]);
       setProcedimentos([]);
       setHoraSelecionada(null);
+      setSearchCliente("");
+      setSearchProcedimento("");
+      setSearchConvenio("");
+      form.setValue("tipo_cliente", "NSOCIO");
     }
   };
+
+  // Filtrar clientes baseado na pesquisa
+  const filteredClientes = clientes.filter(cliente =>
+    cliente.nome.toLowerCase().includes(searchCliente.toLowerCase()) ||
+    cliente.cpf?.includes(searchCliente) ||
+    cliente.email?.toLowerCase().includes(searchCliente.toLowerCase())
+  );
+
+  // Filtrar procedimentos baseado na pesquisa
+  const filteredProcedimentos = procedimentos.filter(proc =>
+    proc.procedimento.nome.toLowerCase().includes(searchProcedimento.toLowerCase()) ||
+    proc.procedimento.codigo?.toLowerCase().includes(searchProcedimento.toLowerCase())
+  );
+
+  const filteredConvenios = convenios.filter(convenio =>
+    convenio.nome.toLowerCase().includes(searchConvenio.toLowerCase())
+  );
 
   return (
     <Dialog open={isOpenModalCreate} onOpenChange={setIsOpenModalCreate}>
@@ -316,8 +355,7 @@ const CriarAgendamento = ({
                               )}
                             >
                               {field.value
-                                ? clientes.find((item) => +item.id == field.value)
-                                    ?.nome
+                                ? clientes.find((item) => +item.id == field.value)?.nome
                                 : "Selecione o cliente"}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -325,24 +363,34 @@ const CriarAgendamento = ({
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0">
                           <Command className="w-[480px] p-0">
-                            <CommandInput placeholder="Busque cliente..." />
+                            <CommandInput 
+                              placeholder="Busque por nome, CPF ou email..." 
+                              value={searchCliente}
+                              onValueChange={setSearchCliente}
+                            />
                             <CommandList>
                               <CommandEmpty>
                                 Nenhum cliente encontrado.
                               </CommandEmpty>
                               <CommandGroup className="w-full p-0">
-                                {clientes.map((item) => (
+                                {filteredClientes.map((item) => (
                                   <CommandItem
                                     value={item.nome.toString()}
                                     key={item.id}
                                     onSelect={() => {
                                       form.setValue("cliente_id", +item.id);
                                       setClienteSelecionado(item);
+                                      setTipoClienteSelecionada(item.tipo);
                                       fetchConvenios(+item.id);
                                       setOpenSelectClientes(false);
+                                      setSearchCliente("");
                                     }}
                                   >
-                                    {item.nome}
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{item.nome}</span>
+                                      {item.cpf && <span className="text-sm text-gray-500">CPF: {item.cpf}</span>}
+                                      {item.email && <span className="text-sm text-gray-500">Email: {item.email}</span>}
+                                    </div>
                                     <Check
                                       className={cn(
                                         "ml-auto",
@@ -367,42 +415,114 @@ const CriarAgendamento = ({
 
                 <FormField
                   control={form.control}
+                  name="tipo_cliente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Tipo Cliente *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setTipoClienteSelecionada(value as TipoCliente);
+                          // Limpar procedimento selecionado quando tipo mudar
+                          setProcedimentoSelecionado(null);
+                          form.setValue("procedimento_id", 0);
+                          // Recarregar procedimentos se já há convênio selecionado
+                          if (convenioSelecionado) {
+                            fetchProcedimentos(convenioSelecionado.id);
+                          }
+                        }}
+                        value={field.value || tipoClienteSelecionado}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SOCIO">SOCIO</SelectItem>
+                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
+                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
+                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage>
+                        {form.formState.errors.tipo_cliente?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="convenio_id"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-sm font-medium text-gray-700">Convênio *</FormLabel>
-                      <Select
-                        disabled={!clienteSelecionado}
-                        onValueChange={(value) => {
-                          field.onChange(Number(value));
-                          const selectedConvenio = convenios.find(
-                            (item) => String(item.id) === value
-                          );
-                          if (selectedConvenio) {
-                            setConvenioSelecionada(selectedConvenio);
-                          }
-                        }}
-                        value={String(field.value)}
+                      <Popover
+                        open={openSelectConvenios}
+                        onOpenChange={setOpenSelectConvenios}
                       >
-                        <FormControl>
-                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="0" disabled>
-                            Selecione
-                          </SelectItem>
-
-                          {convenios.map((item) => {
-                            return (
-                              <SelectItem key={item.id} value={String(item.id)}>
-                                {item.nome}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant="outline"
+                              role="combobox"
+                              disabled={!clienteSelecionado}
+                              className={cn(
+                                "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
+                                !field.value && "text-muted-foreground",
+                                !clienteSelecionado && "opacity-50 cursor-not-allowed"
+                              )}
+                            >
+                              {field.value
+                                ? convenios.find((item) => +item.id == field.value)?.nome
+                                : clienteSelecionado ? "Selecione convênio" : "Selecione cliente primeiro"}
+                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-full p-0">
+                          <Command className="w-[480px] p-0">
+                            <CommandInput 
+                              placeholder="Busque convênio..." 
+                              value={searchConvenio}
+                              onValueChange={setSearchConvenio}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhum convênio encontrado.
+                              </CommandEmpty>
+                              <CommandGroup className="w-full p-0">
+                                {filteredConvenios.map((item) => (
+                                  <CommandItem
+                                    value={item.nome.toString()}
+                                    key={item.id}
+                                    onSelect={() => {
+                                      field.onChange(Number(item.id));
+                                      setConvenioSelecionada(item);
+                                      setOpenSelectConvenios(false);
+                                      setSearchConvenio("");
+                                    }}
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{item.nome}</span>
+                                      {item.regras && <span className="text-sm text-gray-500">{item.regras}</span>}
+                                    </div>
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        +item.id == field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
                       <FormMessage>
                         {form.formState.errors.convenio_id?.message}
                       </FormMessage>
@@ -412,18 +532,12 @@ const CriarAgendamento = ({
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                 <div className="flex items-center justify-center">
-                   <div className="w-full h-11 bg-gray-50 border border-gray-200 rounded-md flex items-center justify-center">
-                     <span className="text-sm text-gray-500">Tipo de Cliente será definido automaticamente</span>
-                   </div>
-                 </div>
-
                 <FormField
                   control={form.control}
                   name="procedimento_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Procedimentos *</FormLabel>
+                      <FormLabel className="text-sm font-medium text-gray-700">Procedimento *</FormLabel>
                       <Popover
                         open={openSelectProcedimentos}
                         onOpenChange={setOpenSelectProcedimentos}
@@ -433,9 +547,11 @@ const CriarAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
+                              disabled={!convenioSelecionado || !tipoClienteSelecionado}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
-                                !field.value && "text-muted-foreground"
+                                !field.value && "text-muted-foreground",
+                                (!convenioSelecionado || !tipoClienteSelecionado) && "opacity-50 cursor-not-allowed"
                               )}
                             >
                               {(() => {
@@ -444,14 +560,16 @@ const CriarAgendamento = ({
                                     (p) => p.procedimento.id == field.value
                                   );
                                   if (selectedItem) {
-                                    return `${
-                                      selectedItem.procedimento.nome
-                                    } -  R$${Number(
-                                      selectedItem.valor
-                                    ).toFixed(2)}`;
+                                    return `${selectedItem.procedimento.nome} - R$${Number(selectedItem.valor).toFixed(2)}`;
                                   }
                                 } else {
-                                  return "Selecione procedimento";
+                                  if (!convenioSelecionado) {
+                                    return "Selecione convênio primeiro";
+                                  } else if (!tipoClienteSelecionado) {
+                                    return "Selecione tipo de cliente primeiro";
+                                  } else {
+                                    return "Selecione procedimento";
+                                  }
                                 }
                               })()}
                               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -460,29 +578,35 @@ const CriarAgendamento = ({
                         </PopoverTrigger>
                         <PopoverContent className="w-full p-0">
                           <Command className="w-[480px] p-0">
-                            <CommandInput placeholder="Busque procedimento..." />
+                            <CommandInput 
+                              placeholder="Busque procedimento..." 
+                              value={searchProcedimento}
+                              onValueChange={setSearchProcedimento}
+                            />
                             <CommandList>
                               <CommandEmpty>
                                 Nenhum procedimento encontrado.
                               </CommandEmpty>
                               <CommandGroup className="w-full p-0">
-                                {procedimentos.map((item) => (
+                                {filteredProcedimentos.map((item) => (
                                   <CommandItem
                                     value={item.procedimento.nome}
                                     key={item.procedimento.id}
                                     className="flex items-center justify-between"
                                     onSelect={() => {
-                                      form.setValue(
-                                        "procedimento_id",
-                                        item.procedimento.id
-                                      );
+                                      form.setValue("procedimento_id", item.procedimento.id);
                                       setProcedimentoSelecionado(item);
-
                                       setOpenSelectProcedimentos(false);
+                                      setSearchProcedimento("");
                                     }}
                                   >
-                                    <span>{item.procedimento.nome}</span>
-                                    <span className="mx-6">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{item.procedimento.nome}</span>
+                                      {item.procedimento.codigo && (
+                                        <span className="text-sm text-gray-500">Código: {item.procedimento.codigo}</span>
+                                      )}
+                                    </div>
+                                    <span className="mx-4 font-semibold text-green-600">
                                       R${Number(item.valor).toFixed(2)}
                                     </span>
                                     <Check
@@ -502,6 +626,29 @@ const CriarAgendamento = ({
                       </Popover>
                       <FormMessage>
                         {form.formState.errors.procedimento_id?.message}
+                      </FormMessage>
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="horario"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Horário *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
+                      </FormControl>
+                      <FormMessage>
+                        {form.formState.errors.horario?.message}
                       </FormMessage>
                     </FormItem>
                   )}

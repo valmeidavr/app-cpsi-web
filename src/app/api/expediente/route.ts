@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createExpedienteSchema, updateExpedienteSchema } from "./schema/formSchemaExpedientes";
+import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
 
 export type CreateExpedienteDTO = z.infer<typeof createExpedienteSchema>;
 export type UpdateExpedienteDTO = z.infer<typeof updateExpedienteSchema>;
@@ -62,10 +63,11 @@ export async function GET(request: NextRequest) {
 
     const expedienteRows = await executeWithRetry(gestorPool, query, params);
     
-    // Debug: log dos dados retornados
-    console.log("Query executada:", query);
-    console.log("Parâmetros:", params);
-    console.log("Dados retornados:", expedienteRows);
+    // Debug: verificar dados retornados
+    console.log("🔍 Query executada:", query);
+    console.log("🔍 Parâmetros:", params);
+    console.log("✅ Expedientes encontrados:", (expedienteRows as any[])?.length || 0);
+    console.log("🔍 Primeiro expediente:", (expedienteRows as any[])?.[0]);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -87,6 +89,11 @@ export async function GET(request: NextRequest) {
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
+    
+    // Debug: verificar contagem
+    console.log("🔍 Query de contagem:", countQuery);
+    console.log("🔍 Parâmetros de contagem:", countParams);
+    console.log("✅ Total de expedientes:", total);
 
     return NextResponse.json({
       data: expedienteRows,
@@ -110,9 +117,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body: CreateExpedienteDTO = await request.json();
+    console.log("🔍 Criando expediente:", body);
 
-    // Inserir expediente
-    const result = await executeWithRetry(gestorPool,
+    // 1. Inserir expediente
+    const expedienteResult = await executeWithRetry(gestorPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
         semana, alocacao_id
@@ -123,14 +131,142 @@ export async function POST(request: NextRequest) {
       ]
     );
 
+    const expedienteId = (expedienteResult as any).insertId;
+    console.log("✅ Expediente criado com ID:", expedienteId);
+
+    // 2. Buscar dados da alocação
+    const alocacaoRows = await executeWithRetry(gestorPool,
+      `SELECT 
+        a.unidade_id,
+        a.especialidade_id,
+        a.prestador_id
+       FROM alocacoes a 
+       WHERE a.id = ?`,
+      [body.alocacao_id]
+    );
+
+    if (!alocacaoRows || (alocacaoRows as any[]).length === 0) {
+      throw new Error(`Alocação com ID ${body.alocacao_id} não encontrada`);
+    }
+
+    const alocacao = (alocacaoRows as any[])[0];
+    console.log("✅ Dados da alocação:", alocacao);
+
+    // 3. Mapear dias da semana
+    const diasDaSemana: Record<string, number> = {
+      "Domingo": 0,
+      "Segunda": 1,
+      "Terça": 2,
+      "Quarta": 3,
+      "Quinta": 4,
+      "Sexta": 5,
+      "Sábado": 6
+    };
+
+    if (!body.semana || !(body.semana in diasDaSemana)) {
+      throw new Error(`Dia da semana inválido: ${body.semana}`);
+    }
+
+    const semanaIndex = diasDaSemana[body.semana];
+    console.log("✅ Índice da semana:", semanaIndex);
+
+    // 4. Gerar datas válidas
+    const dataInicial = new Date(body.dtinicio);
+    const dataFinal = new Date(body.dtfinal);
+
+    // Validar se as datas são válidas
+    if (isNaN(dataInicial.getTime()) || isNaN(dataFinal.getTime())) {
+      return NextResponse.json(
+        { error: "Datas inválidas fornecidas" },
+        { status: 400 }
+      );
+    }
+
+    // Gerar datas entre dataInicial e dataFinal
+    const datasValidas: Date[] = [];
+    const dataAtual = new Date(dataInicial);
+    
+    while (dataAtual <= dataFinal) {
+      datasValidas.push(new Date(dataAtual));
+      dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+
+    if (datasValidas.length === 0) {
+      throw new Error(
+        `Não existe nenhuma data correspondente à semana "${body.semana}" entre ${body.dtinicio} e ${body.dtfinal}.`
+      );
+    }
+
+    console.log("✅ Datas válidas encontradas:", datasValidas.length);
+
+    // 5. Gerar agendamentos
+    const agendasToCreate: any[] = [];
+    const intervaloMin = parseInt(body.intervalo, 10);
+
+    for (const data of datasValidas) {
+      const [hStart, mStart] = body.hinicio.split(':').map(Number);
+      const [hEnd, mEnd] = body.hfinal.split(':').map(Number);
+
+      let startMinutes = hStart * 60 + mStart;
+      const endMinutes = hEnd * 60 + mEnd;
+
+      while (startMinutes + intervaloMin <= endMinutes) {
+        const hora = Math.floor(startMinutes / 60);
+        const minuto = startMinutes % 60;
+
+        const agendaDate = new Date(data);
+        agendaDate.setHours(hora, minuto, 0, 0);
+
+        agendasToCreate.push({
+          dtagenda: agendaDate,
+          situacao: "LIVRE",
+          expediente_id: expedienteId,
+          prestador_id: alocacao.prestador_id,
+          unidade_id: alocacao.unidade_id,
+          especialidade_id: alocacao.especialidade_id,
+          tipo: "PROCEDIMENTO"
+        });
+
+        startMinutes += intervaloMin;
+      }
+    }
+
+    console.log("✅ Agendamentos a serem criados:", agendasToCreate.length);
+
+    // 6. Inserir agendamentos em lote
+    if (agendasToCreate.length > 0) {
+      const values = agendasToCreate.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+      const params = agendasToCreate.flatMap(agenda => [
+        agenda.dtagenda,
+        agenda.situacao,
+        agenda.expediente_id,
+        agenda.prestador_id,
+        agenda.unidade_id,
+        agenda.especialidade_id,
+        agenda.tipo
+      ]);
+
+      await executeWithRetry(gestorPool,
+        `INSERT INTO agendas (
+          dtagenda, situacao, expediente_id, prestador_id, 
+          unidade_id, especialidade_id, tipo
+        ) VALUES ${values}`,
+        params
+      );
+
+      console.log("✅ Agendamentos criados com sucesso");
+    }
+
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      expedienteId,
+      agendamentosCriados: agendasToCreate.length,
+      message: 'Expediente e agendamentos criados com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao criar expediente:', error);
+    console.error('❌ Erro ao criar expediente:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
     );
   }
