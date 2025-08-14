@@ -102,59 +102,57 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Função para criar usuário
-export async function createUsuario(data: CreateUsuarioDTO) {
+export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
+    const validatedData = createUsuarioSchema.parse(body);
+    
     // Hash da senha
-    const hashedPassword = await bcrypt.hash(data.senha, 10);
+    const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
     
     // Inserir usuário - usando email como login já que o schema não tem campo login
     const [result] = await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
-      [data.email, data.nome, data.email, hashedPassword, 'Ativo']
+      [validatedData.email, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );
     
-    return NextResponse.json({ success: true, login: data.email });
+    return NextResponse.json({ success: true, login: validatedData.email });
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
-    throw new Error('Erro ao criar usuário');
-  }
-}
-
-// Função para buscar usuário por ID
-export async function getUsuarioById(login: string) {
-  try {
-    const [rows] = await accessPool.execute(
-      'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
-      [login]
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
     );
-    
-    const usuarios = rows as any[];
-    return usuarios[0] || null;
-  } catch (error) {
-    console.error('Erro ao buscar usuário:', error);
-    throw new Error('Erro ao buscar usuário');
   }
 }
 
-// Função para atualizar usuário
-export async function updateUsuario(login: string, data: UpdateUsuarioDTO) {
+export async function PUT(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const login = searchParams.get('login');
+    
+    if (!login) {
+      return NextResponse.json({ error: 'Login é obrigatório' }, { status: 400 });
+    }
+    
+    const body = await request.json();
+    const validatedData = updateUsuarioSchema.parse(body);
+    
     let query = 'UPDATE usuarios SET ';
     const params: any[] = [];
     
-    if (data.nome) {
+    if (validatedData.nome) {
       query += 'nome = ?, ';
-      params.push(data.nome);
+      params.push(validatedData.nome);
     }
     
-    if (data.email) {
+    if (validatedData.email) {
       query += 'email = ?, ';
-      params.push(data.email);
+      params.push(validatedData.email);
     }
     
-    if (data.senha) {
-      const hashedPassword = await bcrypt.hash(data.senha, 10);
+    if (validatedData.senha) {
+      const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
       query += 'senha = ?, ';
       params.push(hashedPassword);
     }
@@ -168,20 +166,9 @@ export async function updateUsuario(login: string, data: UpdateUsuarioDTO) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
-    throw new Error('Erro ao atualizar usuário');
-  }
-}
-
-// Função para buscar todos os usuários (simplificada)
-export async function getUsuarios() {
-  try {
-    const [rows] = await accessPool.execute(
-      'SELECT login, nome, email, status FROM usuarios  ORDER BY nome ASC'
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
     );
-    console.log('Usuários encontrados:', rows);
-    return rows;
-  } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
-    throw new Error('Erro ao buscar usuários');
   }
 }

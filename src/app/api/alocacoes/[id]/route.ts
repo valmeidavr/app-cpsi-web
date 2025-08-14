@@ -4,10 +4,10 @@ import { gestorPool, executeWithRetry } from "@/lib/mysql";
 // GET - Buscar alocacao por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     const rows = await executeWithRetry(gestorPool,
       'SELECT * FROM alocacoes WHERE id = ?',
@@ -36,10 +36,10 @@ export async function GET(
 // PUT - Atualizar alocacao
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Atualizar alocacao
@@ -63,10 +63,10 @@ export async function PUT(
 // DELETE - Excluir alocacao
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     // Excluir alocacao
     await executeWithRetry(gestorPool,

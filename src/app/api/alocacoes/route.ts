@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     
     const alocacaoRows = await executeWithRetry(gestorPool, query, params);
     
-    console.log("✅ Alocações encontradas:", alocacaoRows?.length || 0);
+    console.log("✅ Alocações encontradas:", (alocacaoRows as any[])?.length || 0);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
     const total = (countRows as any[])[0]?.total || 0;
 
     // Transformar os dados para incluir objetos aninhados
-    const alocacoesFormatadas = alocacaoRows.map((row: any) => ({
+    const alocacoesFormatadas = (alocacaoRows as any[]).map((row: any) => ({
       id: row.id,
       unidade_id: row.unidade_id,
       especialidade_id: row.especialidade_id,

@@ -4,10 +4,10 @@ import { gestorPool } from "@/lib/mysql";
 // GET - Buscar convenio por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     const [rows] = await gestorPool.execute(
       'SELECT id, nome, desconto, regras, tabelaFaturamentosId as tabela_faturamento_id FROM convenios WHERE id = ?',
@@ -36,10 +36,10 @@ export async function GET(
 // PUT - Atualizar convenio
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Validar campos obrigatórios

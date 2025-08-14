@@ -115,8 +115,11 @@ export default function EditarPlanoConta() {
 
   const fetchPlanos = async () => {
     try {
-      const { data } = await getPlanos();
-      setPlanoConta(data);
+      const response = await fetch('/api/plano_contas');
+      const data = await response.json();
+      if (response.ok) {
+        setPlanoConta(data.data);
+      }
     } catch (error: any) { }
   };
 

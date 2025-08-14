@@ -74,7 +74,7 @@ export default function EditarLancamento() {
       descricao: "",
       data_lancamento: "",
       tipo: tipo,
-      clientes_Id: undefined,
+              cliente_id: undefined,
       plano_conta_id: 0,
       caixa_id: 0,
       lancamento_original_id: null,
@@ -84,7 +84,7 @@ export default function EditarLancamento() {
       forma_pagamento: undefined,
       status_pagamento: undefined,
       agenda_id: null,
-      usuario_id: 0,
+      usuario_id: undefined,
     },
   });
 
@@ -152,7 +152,7 @@ export default function EditarLancamento() {
             descricao: data.descricao,
             data_lancamento: data.data_lancamento,
             tipo: data.tipo,
-            clientes_Id: data.clientes_id,
+            cliente_id: data.clientes_id,
                     plano_conta_id: data.plano_conta_id,
         caixa_id: data.caixa_id,
         lancamento_original_id: data.lancamento_original_id,

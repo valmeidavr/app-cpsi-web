@@ -187,12 +187,11 @@ export default function ValorProcedimentos() {
 
         formUpdate.reset({
           convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
-          tipo_cliente: valorProcedimentoSelecionado.tipo,
+          tipo: valorProcedimentoSelecionado.tipo,
           tabela_faturamento_id:
             valorProcedimentoSelecionado.tabela_faturamento_id,
           procedimento_id: valorProcedimentoSelecionado.procedimento_id,
           valor: +valorProcedimentoSelecionado.valor,
-          tipo: valorProcedimentoSelecionado.tipo,
         });
       } catch (error) {
         console.error("Erro ao carregar valor procedimento:", error);

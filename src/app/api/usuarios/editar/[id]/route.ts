@@ -9,12 +9,14 @@ export type UpdateUsuarioDTO = z.infer<typeof updateUsuarioSchema>;
 // API route para GET (buscar usuário por ID)
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     const [rows] = await accessPool.execute(
       'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
-      [params.id]
+      [id]
     );
     
     const usuarios = rows as any[];
@@ -30,7 +32,7 @@ export async function GET(
        FROM sistemas s 
        INNER JOIN usuario_sistema us ON s.id = us.sistemas_id 
        WHERE us.usuarios_login = ?`,
-      [params.id]
+      [id]
     );
     
     return NextResponse.json({
@@ -49,9 +51,10 @@ export async function GET(
 // API route para PUT (atualizar usuário)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const validatedData = updateUsuarioSchema.parse(body);
     
@@ -76,7 +79,7 @@ export async function PUT(
     
     // Remove a vírgula extra e adiciona WHERE
     query = query.slice(0, -2) + ' WHERE login = ?';
-    queryParams.push(params.id);
+    queryParams.push(id);
     
     await accessPool.execute(query, queryParams);
     

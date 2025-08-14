@@ -4,10 +4,10 @@ import { gestorPool } from "@/lib/mysql";
 // GET - Buscar plano de contas por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     const [rows] = await gestorPool.execute(
       'SELECT * FROM plano_contas WHERE id = ?',
@@ -36,10 +36,10 @@ export async function GET(
 // PUT - Atualizar plano de contas
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Atualizar plano de contas
