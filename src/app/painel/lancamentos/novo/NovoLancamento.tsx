@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { getUsuarios } from "@/app/api/usuarios/route";
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
 
 //helpers
@@ -75,7 +74,7 @@ export default function NovoLancamento() {
       descricao: "",
       data_lancamento: "",
       tipo: tipo,
-      clientes_Id: undefined,
+      cliente_id: undefined,
       plano_conta_id: 0,
       caixa_id: 0,
       lancamento_original_id: null,
@@ -85,7 +84,7 @@ export default function NovoLancamento() {
       forma_pagamento: undefined,
       status_pagamento: undefined,
       agenda_id: null,
-      usuario_id: 0,
+      usuario_id: undefined,
     },
   });
 

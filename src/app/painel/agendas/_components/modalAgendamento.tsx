@@ -368,7 +368,7 @@ const ModalAgendamento = ({
                                       onSelect={() => {
                                         field.onChange(cliente.id);
                                         setClienteSelecionado(cliente);
-                                        setTipoClienteSelecionado(cliente.tipo);
+                                        setTipoClienteSelecionado(cliente.tipoCliente);
                                         fetchConvenios(cliente.id);
                                         setOpenSelectClientes(false);
                                         setSearchCliente("");

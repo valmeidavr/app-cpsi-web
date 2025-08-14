@@ -3,14 +3,15 @@ import { gestorPool } from "@/lib/mysql";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { cpf: string } }
+  { params }: { params: Promise<{ cpf: string }> }
 ) {
   try {
-    const cpf = decodeURIComponent(params.cpf);
+    const { cpf } = await params;
+    const cpfDecoded = decodeURIComponent(cpf);
 
     const [rows] = await gestorPool.execute(
       'SELECT id FROM clientes WHERE cpf = ? AND status = "Ativo"',
-      [cpf]
+      [cpfDecoded]
     );
 
     return NextResponse.json(rows);

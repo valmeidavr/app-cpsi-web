@@ -108,7 +108,7 @@ export default function EditarCliente() {
   useEffect(() => {
     if (cliente) {
       const formattedPhone1 = formatTelefoneInput(cliente.telefone1 || "");
-      const formattedPhone2 = formatTelefoneInput(cliente.telefone2 || "");
+      const formattedPhone2 = formatTelefoneInput(cliente.telefone || "");
       const formattedCPF = formatCPFInput(cliente.cpf || "");
 
       form.setValue("telefone1", formattedPhone1);

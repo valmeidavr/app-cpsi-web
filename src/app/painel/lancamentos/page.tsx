@@ -427,7 +427,7 @@ export default function Lancamentos() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{lancamento.usuario.nome}</Badge>
+                      <Badge variant="outline">{lancamento.usuario?.nome || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="flex gap-3 justify-center">
                       <Tooltip.Provider>

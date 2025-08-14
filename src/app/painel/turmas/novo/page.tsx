@@ -52,10 +52,10 @@ export default function NovoTurma() {
     mode: "onChange",
     defaultValues: {
       nome: "",
-      horarioInicio: "",
-      horarioFim: "",
-      dataInicio: "",
-      limiteVagas: 0,
+      horario_inicio: "",
+      horario_fim: "",
+      data_inicio: "",
+      limite_vagas: 0,
       prestador_id: 0,
       procedimento_id: 0,
     },
@@ -148,7 +148,7 @@ export default function NovoTurma() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="horarioInicio"
+              name="horario_inicio"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Horário de Início *</FormLabel>
@@ -156,14 +156,14 @@ export default function NovoTurma() {
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>
                   <FormMessage>
-                    {form.formState.errors.horarioInicio?.message}
+                    {form.formState.errors.horario_inicio?.message}
                   </FormMessage>
                 </FormItem>
               )}
             />
             <FormField
               control={form.control}
-              name="horarioFim"
+              name="horario_fim"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Horário de Fim *</FormLabel>
@@ -171,7 +171,7 @@ export default function NovoTurma() {
                     <Input {...field} type="time" placeholder="08:00" />
                   </FormControl>
                   <FormMessage>
-                    {form.formState.errors.horarioFim?.message}
+                    {form.formState.errors.horario_fim?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -180,7 +180,7 @@ export default function NovoTurma() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
-              name="dataInicio"
+              name="data_inicio"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Início *</FormLabel>
@@ -188,7 +188,7 @@ export default function NovoTurma() {
                     <Input {...field} type="date" />
                   </FormControl>
                   <FormMessage>
-                    {form.formState.errors.dataInicio?.message}
+                    {form.formState.errors.data_inicio?.message}
                   </FormMessage>
                 </FormItem>
               )}
@@ -272,7 +272,7 @@ export default function NovoTurma() {
             />
             <FormField
               control={form.control}
-              name="limiteVagas"
+              name="limite_vagas"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Limite de Vagas *</FormLabel>
@@ -284,7 +284,7 @@ export default function NovoTurma() {
                     />
                   </FormControl>
                   <FormMessage>
-                    {form.formState.errors.limiteVagas?.message}
+                    {form.formState.errors.limite_vagas?.message}
                   </FormMessage>
                 </FormItem>
               )}

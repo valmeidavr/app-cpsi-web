@@ -4,10 +4,10 @@ import { gestorPool, executeWithRetry } from "@/lib/mysql";
 // GET - Buscar agenda por ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
 
     const rows = await executeWithRetry(gestorPool,
       'SELECT id, dtagenda, situacao, cliente_id, convenio_id, procedimento_id, expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente, createdAt, updatedAt FROM agendas WHERE id = ?',
@@ -36,10 +36,10 @@ export async function GET(
 // PATCH - Atualizar situação da agenda
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Atualizar apenas a situação da agenda
@@ -61,10 +61,10 @@ export async function PATCH(
 // PUT - Atualizar agenda completa
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     // Atualizar agenda com campos corretos

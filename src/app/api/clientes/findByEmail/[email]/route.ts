@@ -3,14 +3,15 @@ import { gestorPool } from "@/lib/mysql";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { email: string } }
+  { params }: { params: Promise<{ email: string }> }
 ) {
   try {
-    const email = decodeURIComponent(params.email);
+    const { email } = await params;
+    const emailDecoded = decodeURIComponent(email);
 
     const [rows] = await gestorPool.execute(
       'SELECT id FROM clientes WHERE email = ? AND status = "Ativo"',
-      [email]
+      [emailDecoded]
     );
 
     const exists = (rows as any[]).length > 0;

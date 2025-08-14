@@ -53,10 +53,10 @@ export default function EditarTurma() {
     mode: "onChange",
     defaultValues: {
       nome: "",
-      horarioInicio: "",
-      horarioFim: "",
-      dataInicio: "",
-      limiteVagas: 0,
+      horario_inicio: "",
+      horario_fim: "",
+      data_inicio: "",
+      limite_vagas: 0,
       prestador_id: 0,
       procedimento_id: 0,
     },
@@ -75,10 +75,10 @@ export default function EditarTurma() {
         },
         body: JSON.stringify({
           nome: values.nome,
-          horario_inicio: values.horarioInicio,
-          horario_fim: values.horarioFim,
-          data_inicio: values.dataInicio,
-          limite_vagas: values.limiteVagas,
+          horario_inicio: values.horario_inicio,
+                      horario_fim: values.horario_fim,
+                      data_inicio: values.data_inicio,
+                      limite_vagas: values.limite_vagas,
                   prestador_id: values.prestador_id,
         procedimento_id: values.procedimento_id
         }),
@@ -147,10 +147,10 @@ export default function EditarTurma() {
           setTurma(data);
           form.reset({
             nome: data.nome,
-            horarioInicio: data.horario_inicio,
-            horarioFim: data.horario_fim,
-            dataInicio: data.data_inicio,
-            limiteVagas: data.limite_vagas,
+            horario_inicio: data.horario_inicio,
+                          horario_fim: data.horario_fim,
+                          data_inicio: data.data_inicio,
+                          limite_vagas: data.limite_vagas,
                     prestador_id: data.prestador_id,
         procedimento_id: data.procedimento_id,
           });
@@ -216,7 +216,7 @@ export default function EditarTurma() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="horarioInicio"
+                name="horario_inicio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Horário de Início *</FormLabel>
@@ -224,14 +224,14 @@ export default function EditarTurma() {
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
                     <FormMessage>
-                      {form.formState.errors.horarioInicio?.message}
+                      {form.formState.errors.horario_inicio?.message}
                     </FormMessage>
                   </FormItem>
                 )}
               />
               <FormField
                 control={form.control}
-                name="horarioFim"
+                name="horario_fim"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Horário de Fim *</FormLabel>
@@ -239,7 +239,7 @@ export default function EditarTurma() {
                       <Input {...field} type="time" placeholder="08:00" />
                     </FormControl>
                     <FormMessage>
-                      {form.formState.errors.horarioFim?.message}
+                      {form.formState.errors.horario_fim?.message}
                     </FormMessage>
                   </FormItem>
                 )}
@@ -248,7 +248,7 @@ export default function EditarTurma() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="dataInicio"
+                name="data_inicio"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Data de Início *</FormLabel>
@@ -256,7 +256,7 @@ export default function EditarTurma() {
                       <Input {...field} type="date" />
                     </FormControl>
                     <FormMessage>
-                      {form.formState.errors.dataInicio?.message}
+                      {form.formState.errors.data_inicio?.message}
                     </FormMessage>
                   </FormItem>
                 )}
@@ -341,7 +341,7 @@ export default function EditarTurma() {
               />
               <FormField
                 control={form.control}
-                name="limiteVagas"
+                name="limite_vagas"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Limite de Vagas *</FormLabel>
@@ -353,7 +353,7 @@ export default function EditarTurma() {
                       />
                     </FormControl>
                     <FormMessage>
-                      {form.formState.errors.limiteVagas?.message}
+                      {form.formState.errors.limite_vagas?.message}
                     </FormMessage>
                   </FormItem>
                 )}

@@ -380,7 +380,7 @@ const CriarAgendamento = ({
                                     onSelect={() => {
                                       form.setValue("cliente_id", +item.id);
                                       setClienteSelecionado(item);
-                                      setTipoClienteSelecionada(item.tipo);
+                                      setTipoClienteSelecionada(item.tipoCliente);
                                       fetchConvenios(+item.id);
                                       setOpenSelectClientes(false);
                                       setSearchCliente("");
