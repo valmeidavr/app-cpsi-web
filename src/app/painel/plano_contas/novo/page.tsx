@@ -25,7 +25,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
 import { useRouter, useSearchParams } from "next/navigation";
-import { createPlano } from "@/app/api/plano_contas/action";
 
 import {
   Select,
@@ -57,7 +56,19 @@ export default function NovoPlano() {
   const onSubmit = async (values: z.infer<typeof createPlanosSchema>) => {
     setLoading(true);
     try {
-      await createPlano(values);
+      const response = await fetch("/api/plano_contas", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao salvar plano!");
+      }
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -67,15 +78,11 @@ export default function NovoPlano() {
 
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar plano!";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar plano!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

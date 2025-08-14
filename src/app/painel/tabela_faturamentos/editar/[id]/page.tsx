@@ -26,10 +26,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
 import { updateTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
-import {
-  updateTabelaFaturamento,
-  getTabelaFaturamentoById,
-} from "@/app/api/tabela_faturamentos/action";
 
 export default function EditarTabelaFaturamento() {
   const [loading, setLoading] = useState(false);
@@ -55,14 +51,20 @@ export default function EditarTabelaFaturamento() {
     async function fetchData() {
       try {
         if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
-        const data = await getTabelaFaturamentoById(tabelaFaturamentoId);
-        setTabelaFaturamento(data);
-
-        form.reset({
-          nome: data.nome,
-        });
+        const response = await fetch(`/api/tabela_faturamentos/${tabelaFaturamentoId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setTabelaFaturamento(data);
+          form.reset({
+            nome: data.nome,
+          });
+        } else {
+          console.error("Erro ao carregar tabela de faturamento:", data.error);
+          toast.error("Erro ao carregar dados da tabela de faturamento");
+        }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
+        console.error("Erro ao carregar tabela de faturamento:", error);
       } finally {
         setCarregando(false);
       }
@@ -77,9 +79,21 @@ export default function EditarTabelaFaturamento() {
     try {
       if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
 
-      const data = await updateTabelaFaturamento(tabelaFaturamentoId, values);
-      const queryParams = new URLSearchParams();
+      const response = await fetch(`/api/tabela_faturamentos/${tabelaFaturamentoId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar tabela de faturamento.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Tabela atualizada com sucesso!");
 

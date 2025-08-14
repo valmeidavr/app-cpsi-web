@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Expediente com Agendamentos</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; white-space: pre-wrap; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        input, select { padding: 5px; margin: 5px; border: 1px solid #ccc; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste de Expediente com Geração Automática de Agendamentos</h1>
+    
+    <div class="info">
+        <h3>📋 Funcionalidade Implementada</h3>
+        <p>Agora quando um expediente é criado, ele automaticamente gera os agendamentos correspondentes baseados no intervalo e dias da semana.</p>
+    </div>
+    
+    <div class="test-section">
+        <h3>🔧 Configuração do Teste</h3>
+        <div>
+            <label>Data Início:</label>
+            <input type="date" id="dtinicio" value="2024-12-20">
+        </div>
+        <div>
+            <label>Data Fim:</label>
+            <input type="date" id="dtfinal" value="2024-12-27">
+        </div>
+        <div>
+            <label>Horário Início:</label>
+            <input type="time" id="hinicio" value="08:00">
+        </div>
+        <div>
+            <label>Horário Fim:</label>
+            <input type="time" id="hfinal" value="12:00">
+        </div>
+        <div>
+            <label>Intervalo (minutos):</label>
+            <input type="number" id="intervalo" value="30" min="15" max="120">
+        </div>
+        <div>
+            <label>Dia da Semana:</label>
+            <select id="semana">
+                <option value="Segunda">Segunda</option>
+                <option value="Terça">Terça</option>
+                <option value="Quarta">Quarta</option>
+                <option value="Quinta">Quinta</option>
+                <option value="Sexta">Sexta</option>
+            </select>
+        </div>
+        <div>
+            <label>Alocação ID:</label>
+            <input type="number" id="alocacao_id" value="3" placeholder="ID da alocação">
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h3>🧪 Testar Criação de Expediente</h3>
+        <button onclick="testCreateExpediente()">Criar Expediente com Agendamentos</button>
+        <div id="result-create" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>📊 Verificar Agendamentos Criados</h3>
+        <button onclick="testCheckAgendamentos()">Verificar Agendamentos</button>
+        <div id="result-check" class="result"></div>
+    </div>
+
+    <div class="warning">
+        <h3>⚠️ Pontos de Atenção</h3>
+        <ul>
+            <li><strong>Coluna expediente_id:</strong> Verifique se a tabela agendas tem a coluna expediente_id</li>
+            <li><strong>Datas válidas:</strong> O sistema só gera agendamentos para datas que correspondem ao dia da semana</li>
+            <li><strong>Intervalo:</strong> Os agendamentos são criados respeitando o intervalo definido</li>
+            <li><strong>Status:</strong> Todos os agendamentos são criados com status "LIVRE"</li>
+        </ul>
+    </div>
+
+    <div class="info">
+        <h3>📋 Como Funciona</h3>
+        <ol>
+            <li><strong>Cria o expediente</strong> na tabela expedientes</li>
+            <li><strong>Busca dados da alocação</strong> (unidade, especialidade, prestador)</li>
+            <li><strong>Calcula datas válidas</strong> baseado no dia da semana</li>
+            <li><strong>Gera agendamentos</strong> para cada data válida no intervalo de tempo</li>
+            <li><strong>Insere agendamentos</strong> na tabela agendas</li>
+        </ol>
+    </div>
+
+    <script>
+        async function testCreateExpediente() {
+            const resultDiv = document.getElementById('result-create');
+            resultDiv.textContent = '🔄 Criando expediente...';
+            resultDiv.className = 'result';
+            
+            try {
+                const expedienteData = {
+                    dtinicio: document.getElementById('dtinicio').value,
+                    dtfinal: document.getElementById('dtfinal').value,
+                    hinicio: document.getElementById('hinicio').value,
+                    hfinal: document.getElementById('hfinal').value,
+                    intervalo: document.getElementById('intervalo').value,
+                    semana: document.getElementById('semana').value,
+                    alocacao_id: parseInt(document.getElementById('alocacao_id').value)
+                };
+                
+                console.log("🔍 Dados do expediente:", expedienteData);
+                
+                const response = await fetch('/api/expediente', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(expedienteData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.textContent = `✅ Expediente criado com sucesso!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `ID do Expediente: ${data.expedienteId}\n` +
+                        `Agendamentos Criados: ${data.agendamentosCriados}\n` +
+                        `Mensagem: ${data.message}\n\n` +
+                        `Dados: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Erro ${response.status}:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Erro na requisição:\n${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        async function testCheckAgendamentos() {
+            const resultDiv = document.getElementById('result-check');
+            resultDiv.textContent = '🔄 Verificando agendamentos...';
+            resultDiv.className = 'result';
+            
+            try {
+                const response = await fetch('/api/agendas?limit=20');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const agendamentosComExpediente = data.data.filter((a: any) => a.expediente_id);
+                    const agendamentosSemExpediente = data.data.filter((a: any) => !a.expediente_id);
+                    
+                    resultDiv.textContent = `✅ Agendamentos verificados!\n\n` +
+                        `Status: ${response.status}\n` +
+                        `Total de Agendamentos: ${data.data?.length || 0}\n` +
+                        `Com Expediente: ${agendamentosComExpediente.length}\n` +
+                        `Sem Expediente: ${agendamentosSemExpediente.length}\n\n` +
+                        `Últimos 5 Agendamentos:\n${JSON.stringify(data.data?.slice(0, 5), null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Erro ${response.status}:\n${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Erro na requisição:\n${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html>
+

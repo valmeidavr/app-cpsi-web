@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 //Types
 import { Prestador } from "@/app/types/Prestador";
@@ -58,19 +58,26 @@ export default function Prestadores() {
   const carregarPrestadores = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/prestadores", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '10', // Aumentei para 10 por página
+        search: termoBusca,
       });
 
-      setPrestadores(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalPrestadores(data.total);
+      const response = await fetch(`/api/prestadores?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPrestadores(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalPrestadores(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar prestadores:", data.error);
+        toast.error("Erro ao carregar prestadores");
+      }
     } catch (error) {
       console.error("Erro ao buscar prestadores:", error);
+      toast.error("Erro ao carregar prestadores");
     } finally {
       setCarregando(false);
     }
@@ -82,22 +89,35 @@ export default function Prestadores() {
     const novoStatus =
       prestadorSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
-      await http.patch(`/prestadores/${prestadorSelecionado.id}`, {
-        status: novoStatus,
+      const response = await fetch(`/api/prestadores?id=${prestadorSelecionado.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
       });
-      setPrestadores((prestadores) =>
-        prestadores.map((prestador) =>
-          prestador.id === prestadorSelecionado.id
-            ? { ...prestador, status: novoStatus }
-            : prestador
-        )
-      );
-      novoStatus === "Ativo"
-        ? toast.success(`Status do prestador alterado para ${novoStatus}!`)
-        : toast.error(`Status do prestador alterado para ${novoStatus}!`);
-      setIsDialogOpen(false);
+
+      if (response.ok) {
+        setPrestadores((prestadores) =>
+          prestadores.map((prestador) =>
+            prestador.id === prestadorSelecionado.id
+              ? { ...prestador, status: novoStatus }
+              : prestador
+          )
+        );
+        novoStatus === "Ativo"
+          ? toast.success(`Status do prestador alterado para ${novoStatus}!`)
+          : toast.error(`Status do prestador alterado para ${novoStatus}!`);
+        setIsDialogOpen(false);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Erro ao alterar status");
+      }
     } catch (error) {
       console.error("Erro ao alterar status do prestador:", error);
+      toast.error("Erro ao alterar status do prestador");
     } finally {
       setLoadingInativar(false);
     }
@@ -117,6 +137,18 @@ export default function Prestadores() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
+
+  // Recarregar prestadores quando o termo de busca mudar
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (termoBusca !== '') {
+        setPaginaAtual(0);
+        carregarPrestadores();
+      }
+    }, 500); // Delay de 500ms para evitar muitas requisições
+
+    return () => clearTimeout(timeoutId);
+  }, [termoBusca]);
 
   const handleSearch = () => {
     setPaginaAtual(0);
@@ -296,7 +328,7 @@ export default function Prestadores() {
           {/* Totalizador de Prestadores */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
-              Mostrando {Math.min((paginaAtual + 1) * 5, totalPrestadores)} de{" "}
+              Mostrando {Math.min((paginaAtual + 1) * 10, totalPrestadores)} de{" "}
               {totalPrestadores} prestadores
             </div>
           </div>

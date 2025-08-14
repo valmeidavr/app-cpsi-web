@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 
 //Zod
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,61 +26,50 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import {
-  getPlanoById,
-  getPlanos,
-  updatePlano,
-} from "@/app/api/plano_contas/action";
 import { updatePlanosSchema } from "@/app/api/plano_contas/schema/formSchemaPlanos";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-//Helpers
-import { redirect, useParams } from "next/navigation";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-import { PlanoConta } from "@/app/types/PlanoConta";
-
-export default function EditarPlano() {
+export default function EditarPlanoConta() {
   const [loading, setLoading] = useState(false);
-  const [plano, setPlano] = useState(null);
-  const [carregando, setCarregando] = useState(false);
-  const [planosOptions, setPlanosOptions] = useState<PlanoConta[]>([]);
+  const [planoConta, setPlanoConta] = useState(null);
   const params = useParams();
-  const planoId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const planoContaId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [carregando, setCarregando] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(updatePlanosSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
-      tipo: "",
       categoria: "",
       descricao: "",
     },
   });
 
   const router = useRouter();
+
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
       try {
-        if (!planoId) redirect("/painel/plano_contas");
-        await fetchPlanos();
-        const data = await getPlanoById(planoId);
-        setPlano(data);
-        form.reset({
-          nome: data.nome,
-          tipo: data.tipo,
-          categoria: data.categoria,
-          descricao: data.descricao,
-        });
+        if (!planoContaId) redirect("/painel/plano_contas");
+        const response = await fetch(`/api/plano_contas/${planoContaId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          setPlanoConta(data);
+          form.reset({
+            nome: data.nome,
+            categoria: data.categoria,
+            descricao: data.descricao,
+          });
+        } else {
+          console.error("Erro ao carregar plano de contas:", data.error);
+          toast.error("Erro ao carregar dados do plano de contas");
+        }
       } catch (error) {
-        console.error("Erro ao carregar plano:", error);
+        console.error("Erro ao carregar plano de contas:", error);
       } finally {
         setCarregando(false);
       }
@@ -90,22 +80,32 @@ export default function EditarPlano() {
   const onSubmit = async (values: z.infer<typeof updatePlanosSchema>) => {
     setLoading(true);
     try {
-      if (!planoId) redirect("/painel/plano_contas");
-      await updatePlano(planoId, values)
-      const queryParams = new URLSearchParams();
+      if (!planoContaId) redirect("/painel/plano_contas");
 
+      const response = await fetch(`/api/plano_contas/${planoContaId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar plano de contas.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
-      queryParams.set("message", "Plano salvo com sucesso!");
+      queryParams.set("message", "Plano de contas atualizado com sucesso!");
 
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar plano!";
-      toast.error(errorMessage);
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const tipoOptions = [
@@ -116,8 +116,8 @@ export default function EditarPlano() {
   const fetchPlanos = async () => {
     try {
       const { data } = await getPlanos();
-      setPlanosOptions(data);
-    } catch (error: any) {}
+      setPlanoConta(data);
+    } catch (error: any) { }
   };
 
   return (
@@ -142,104 +142,101 @@ export default function EditarPlano() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {" "}
             {/* Campos do fomulário*/}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-              <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Plano *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          className={`border ${
-                            form.formState.errors.nome
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                    <FormField
-                  control={form.control}
-                  name="categoria"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Categoria *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          className={`border ${
-                            form.formState.errors.categoria
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-              />
-            </div>
-  
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               <FormField
                 control={form.control}
-                name="tipo"
+                name="nome"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl
-                        className={
-                          form.formState.errors.tipo
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {tipoOptions.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage className="text-red-500 text-sm mt-1" />
-                  </FormItem>
-                )}
-              />
-          
-              <FormField
-                control={form.control}
-                name="descricao"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição *</FormLabel>
+                    <FormLabel>Plano *</FormLabel>
                     <FormControl>
-                    <textarea
+                      <Input
                         {...field}
-                        rows={4} // Você pode ajustar o número de linhas conforme necessário
-                        className={`w-full px-3 py-2 rounded-md border ${
-                          form.formState.errors.descricao
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        } focus:ring-2 focus:ring-primary focus:outline-none`}
+                        className={`border ${form.formState.errors.nome
+                          ? "border-red-500"
+                          : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="categoria"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        className={`border ${form.formState.errors.categoria
+                          ? "border-red-500"
+                          : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name="tipo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {tipoOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 text-sm mt-1" />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="descricao"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição *</FormLabel>
+                  <FormControl>
+                    <textarea
+                      {...field}
+                      rows={4} // Você pode ajustar o número de linhas conforme necessário
+                      className={`w-full px-3 py-2 rounded-md border ${form.formState.errors.descricao
+                        ? "border-red-500"
+                        : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary focus:outline-none`}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {/* Botão de Envio */}
             <Button
               type="submit"

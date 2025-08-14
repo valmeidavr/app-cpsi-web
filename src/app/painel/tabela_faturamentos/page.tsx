@@ -36,10 +36,10 @@ import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 //API
-import { createTabelaFaturamento } from "@/app/api/tabela_faturamentos/action";
+import { http } from "@/util/http";
 import { createTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 //Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 
@@ -57,17 +57,22 @@ export default function TabelaFaturamentos() {
   const carregarTabelaFaturamentos = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/tabela-faturamentos", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setTabelaFaturamentos(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalTabelaFaturamentos(data.total);
+      const response = await fetch(`/api/tabela_faturamentos?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setTabelaFaturamentos(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalTabelaFaturamentos(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar tabela de faturamentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar tabelaFaturamentos:", error);
     } finally {
@@ -96,7 +101,7 @@ export default function TabelaFaturamentos() {
   ) => {
     setLoading(true);
     try {
-      await createTabelaFaturamento(values);
+      await http.post("/api/tabela_faturamentos", values);
       carregarTabelaFaturamentos();
       toast.success("Tabela criada com sucesso!");
       form.reset();

@@ -16,7 +16,7 @@ export const createUsuarioSchema = z
       .default(""),
     senha: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
     confirmedsenha: z.string().min(6, "A confirmação de senha é obrigatória"),
-    grupoIds: z.record(z.number().optional()).optional(),
+    grupo_ids: z.record(z.number().optional()).optional(),
   })
   .refine((data) => data.senha === data.confirmedsenha, {
     message: "As senhas não coincidem",

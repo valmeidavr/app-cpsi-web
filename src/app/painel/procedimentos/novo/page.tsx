@@ -32,8 +32,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { createProcedimento } from "@/app/api/procedimentos/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
+// Removido import http - usando fetch direto
 import { createProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
@@ -51,17 +50,29 @@ export default function NovoProcedimento() {
       nome: "",
       codigo: "",
       tipo: "",
-      especialidadeId: 0,
+      especialidade_id: 0,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof createProcedimentoSchema>) => {
     setLoading(true);
     try {
-      await createProcedimento({
-        ...values,
-        especialidadeId: Number(values.especialidadeId),
+      const response = await fetch("/api/procedimentos", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...values,
+          especialidade_id: Number(values.especialidade_id),
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao salvar procedimento");
+      }
+
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
 
@@ -70,23 +81,27 @@ export default function NovoProcedimento() {
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar procedimento";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar procedimento";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchEspecialidade = async () => {
     try {
-      const { data } = await getEspecialidades();
-
-      setEspecialidadeOptions(data);
-    } catch (error: any) {}
+      const response = await fetch("/api/especialidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
+      setEspecialidadeOptions(data.data);
+    } catch (error: any) {
+      console.error("Erro ao carregar especialidades:", error);
+      toast.error("Erro ao carregar lista de especialidades");
+    }
   };
   // Mockup de opçoes de Tipo
   const tipoOptions = [
@@ -189,7 +204,7 @@ export default function NovoProcedimento() {
 
             <FormField
               control={form.control}
-              name="especialidadeId"
+                                name="especialidade_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Especialidade *</FormLabel>
@@ -198,7 +213,7 @@ export default function NovoProcedimento() {
                   >
                     <FormControl
                       className={
-                        form.formState.errors.especialidadeId
+                        form.formState.errors.especialidade_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }

@@ -50,13 +50,9 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { updateExpedienteSchema } from "@/app/api/expediente/schema/formSchemaExpedientes";
-import {
-  finalizarExpediente,
-  updateExpediente,
-} from "@/app/api/expediente/action";
+
 import { formatDate } from "date-fns";
 import { Input } from "@/components/ui/input";
-import { http } from "@/util/http";
 import { Agenda } from "@/app/types/Agenda";
 import { formatDateAsUTC } from "@/app/helpers/format";
 
@@ -93,7 +89,7 @@ const TabelaExpediente = ({
       hfinal: "",
       semana: "",
       intervalo: "",
-      alocacaoId: 0,
+      alocacao_id: 0,
     },
   });
 
@@ -101,27 +97,22 @@ const TabelaExpediente = ({
     try {
       setloading(true);
 
-      const agendamentoExist: Agenda[] = await http.get(
-        `/agendas/expediente?expedienteId=${ExpedienteId}`
-      );
-      if (agendamentoExist) {
-        const agendamentoFeito = agendamentoExist.filter((agendamento) => {
-          agendamento.situacao == "AGENDADO" ||
-            agendamento.situacao == "CONFIRMADO";
-        });
-        if (agendamentoFeito)
-          throw new Error("Existe agendamentos feitos neste expediente");
+      const response = await fetch(`/api/expediente?id=${ExpedienteId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao excluir expediente");
       }
 
-      await finalizarExpediente(ExpedienteId.toString());
-
-      toast.error("Alocação excluida com sucesso");
+      toast.success("Expediente excluído com sucesso!");
       await fetchExpedientes();
     } catch (error: any) {
-      toast.error("Não foi posssivel deletar o expediente: ", error);
+      toast.error(`Não foi possível excluir o expediente: ${error.message}`);
     } finally {
-      setIsDeleteModalOpen(false);
       setloading(false);
+      setIsDeleteModalOpen(false);
     }
   };
 
@@ -137,7 +128,7 @@ const TabelaExpediente = ({
       hfinal: expediente.hfinal,
       semana: expediente.semana.toUpperCase(),
       intervalo: String(expediente.intervalo.split(" ")[0]),
-      alocacaoId: expediente.alocacaoId,
+              alocacao_id: expediente.alocacao_id,
     });
     setIsUpdateModalOpen(true);
   };
@@ -147,12 +138,25 @@ const TabelaExpediente = ({
 
     try {
       setloading(true);
-      await updateExpediente(expedienteSelecionado.id.toString(), values);
+      
+      const response = await fetch(`/api/expediente?id=${expedienteSelecionado.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao atualizar expediente");
+      }
+
       await fetchExpedientes();
       toast.success("Expediente atualizado com sucesso!");
       setIsUpdateModalOpen(false);
-    } catch (error) {
-      toast.error("Não foi possível atualizar o Expediente!");
+    } catch (error: any) {
+      toast.error(`Não foi possível atualizar o Expediente: ${error.message}`);
     } finally {
       setloading(false);
     }
@@ -167,12 +171,13 @@ const TabelaExpediente = ({
             <TableHead className="text-center">Min</TableHead>
             <TableHead className="text-center">Datas</TableHead>
             <TableHead className="text-center">Horário</TableHead>
+            <TableHead className="text-center">Alocação</TableHead>
             <TableHead className="text-center">Opções</TableHead>
           </TableRow>
         </TableHeader>
         {CarregandoDadosExpediente ? (
           <TableRow>
-            <TableCell colSpan={5}>
+            <TableCell colSpan={6}>
               <div className="flex justify-center items-center h-20">
                 <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
                 <span className="ml-2 text-gray-500">Carregando ...</span>
@@ -194,6 +199,13 @@ const TabelaExpediente = ({
                   </TableCell>
                   <TableCell>
                     {row.hinicio} {row.hfinal}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col text-xs">
+                      <p><strong>Unidade:</strong> {row.unidade_nome || 'N/A'}</p>
+                      <p><strong>Prestador:</strong> {row.prestador_nome || 'N/A'}</p>
+                      <p><strong>Especialidade:</strong> {row.especialidade_nome || 'N/A'}</p>
+                    </div>
                   </TableCell>
 
                   <TableCell className="flex justify-center">
@@ -231,10 +243,10 @@ const TabelaExpediente = ({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5}>
+                <TableCell colSpan={6}>
                   <div className="flex justify-center items-center h-20">
                     <span className="ml-2 text-gray-500">
-                      Nenhuma Alocação encontrada ...
+                      Nenhum expediente encontrado ...
                     </span>
                   </div>
                 </TableCell>

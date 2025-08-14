@@ -1,22 +1,12 @@
 // context/AgendaContext.tsx
 "use client";
-import {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
+import { Agenda } from "@/app/types/Agenda";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
-import { Agenda } from "@/app/types/Agenda";
-import { http } from "@/util/http";
-import { format } from "date-fns";
-import { getPrestadors } from "@/app/api/prestadores/action";
-import { getUnidades } from "@/app/api/unidades/action";
-import { getEspecialidades } from "@/app/api/especialidades/action";
 import { toast } from "sonner";
+import { extractTimeFromUTCISO } from "@/app/helpers/dateUtils";
 
 interface AgendaContextType {
   prestador: Prestador | null;
@@ -38,6 +28,8 @@ interface AgendaContextType {
   prestadores: Prestador[];
   unidades: Unidade[];
   especialidades: Especialidade[];
+  currentMonth: Date;
+  setCurrentMonth: (date: Date) => void;
 }
 
 const AgendaContext = createContext<AgendaContextType | undefined>(undefined);
@@ -49,7 +41,7 @@ export const useAgenda = () => {
   return context;
 };
 
-export const AgendaProvider = ({ children }: { children: ReactNode }) => {
+export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   const [prestador, setPrestador] = useState<Prestador | null>(null);
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [especialidade, setEspecialidade] = useState<Especialidade | null>(
@@ -64,34 +56,40 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const [carregarAgenda, setCarregarAgenda] = useState<boolean>(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     
     
     const carregarAgendamentos = async () => {
     setCarregandoDadosAgenda(true);
     try {
       if (!unidade || !prestador || !especialidade) return;
-      const formattedDate = date ? format(date, "yyyy-MM-dd") : undefined;
+      const formattedDate = date ? date.toISOString().slice(0, 10) : undefined;
 
-      const { data } = await http.get("/agendas", {
-        params: {
-          date: formattedDate,
-          unidadesId: unidade.id,
-          prestadoresId: prestador.id,
-          especialidadesId: especialidade.id,
-        },
-      });
+      const params = new URLSearchParams();
+      if (formattedDate) params.append('date', formattedDate);
+      params.append('unidadeId', unidade.id.toString());
+      params.append('prestadorId', prestador.id.toString());
+      params.append('especialidadeId', especialidade.id.toString());
 
-      const novaLista = data.data.map((agenda: Agenda) => {
-        const hora = new Date(agenda.dtagenda).toISOString().slice(11, 16);
-        return {
-          hora,
-          situacao: agenda.situacao,
-          paciente: agenda.clientes?.nome || null,
-          tipo: "procedimento",
-          dadosAgendamento: agenda,
-        };
-      });
-      setHorariosDia(novaLista);
+      const response = await fetch(`/api/agendas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        const novaLista = data.data.map((agenda: Agenda) => {
+          const hora = extractTimeFromUTCISO(agenda.dtagenda);
+          return {
+            hora,
+            situacao: agenda.situacao,
+            paciente: agenda.cliente_nome || null,
+            tipo: "procedimento",
+            dadosAgendamento: agenda,
+          };
+        });
+        console.log("novaLista", novaLista);
+        setHorariosDia(novaLista);
+      } else {
+        console.error("Erro ao buscar agendamentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error);
     } finally {
@@ -103,14 +101,21 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
   const carregarAgendamentosGeral = async () => {
     setCarregandoDadosAgenda(true);
     try {
-      const { data } = await http.get("/agendas", {
-        params: {
-          unidadesId: unidade?.id,
-          prestadoresId: prestador?.id,
-          especialidadesId: especialidade?.id,
-        },
-      });
-      setAgendamentosGeral(data.data);
+      const params = new URLSearchParams();
+      if (unidade?.id) params.append('unidadeId', unidade.id.toString());
+      if (prestador?.id) params.append('prestadorId', prestador.id.toString());
+      if (especialidade?.id) params.append('especialidadeId', especialidade.id.toString());
+      // Definir limite muito alto para buscar todos os agendamentos
+      params.append('limit', '999999');
+
+      const response = await fetch(`/api/agendas?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setAgendamentosGeral(data.data);
+      } else {
+        console.error("Erro ao buscar agendamentos gerais:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar agendamentos gerais:", error);
     } finally {
@@ -120,6 +125,12 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (unidade && prestador && especialidade) {
+      carregarAgendamentosGeral();
+    }
+  }, [unidade, prestador, especialidade]);
+
+  useEffect(() => {
+    if (unidade && prestador && especialidade && date) {
       carregarAgendamentos();
     }
   }, [date, unidade, prestador, especialidade]);
@@ -154,26 +165,55 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchPrestadores = async () => {
     try {
-      const { data } = await getPrestadors();
-      setPrestadores(data);
+      console.log('🔍 Debug - Iniciando busca de prestadores...');
+      const response = await fetch("/api/prestadores?all=true");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar prestadores");
+      }
+      
+      const data = await response.json();
+      console.log('🔍 Debug - Prestadores recebidos:', data.data?.length || 0);
+      setPrestadores(data.data);
     } catch (error: any) {
+      console.error('🔍 Debug - Erro ao buscar prestadores:', error);
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
+  
   const fetchUnidades = async () => {
     try {
-      const { data } = await getUnidades();
-      setUnidades(data);
+      console.log('🔍 Debug - Iniciando busca de unidades...');
+      const response = await fetch("/api/unidades?all=true");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar unidades");
+      }
+      
+      const data = await response.json();
+      console.log('🔍 Debug - Unidades recebidas:', data.data?.length || 0);
+      setUnidades(data.data);
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Unidades");
+      console.error('🔍 Debug - Erro ao buscar unidades:', error);
+      toast.error("Erro ao carregar dados das Unidades");
     }
   };
+  
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
+      console.log('🔍 Debug - Iniciando busca de especialidades...');
+      const response = await fetch("/api/especialidades?all=true");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
+      console.log('🔍 Debug - Especialidades recebidas:', data.data?.length || 0);
+      setEspecialidades(data.data);
     } catch (error: any) {
-      toast.error("Erro ao carregar dados dos Especialidades");
+      console.error('🔍 Debug - Erro ao buscar especialidades:', error);
+      toast.error("Erro ao carregar dados das Especialidades");
     }
   };
   return (
@@ -198,6 +238,8 @@ export const AgendaProvider = ({ children }: { children: ReactNode }) => {
         prestadores,
         unidades,
         especialidades,
+        currentMonth,
+        setCurrentMonth,
       }}
     >
       {children}

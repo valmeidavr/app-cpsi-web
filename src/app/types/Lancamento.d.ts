@@ -8,21 +8,29 @@ export type Lancamento = {
   descricao: string;
   data_lancamento: string;
   tipo: "ENTRADA" | "SAIDA" | "ESTORNO" | "TRANSFERENCIA";
-  clientes_Id?: number | null;
-  plano_contas_id: number;
-  caixas_id: number;
-  lancamentos_original_id?: number | null;
+  cliente_id?: number | null;
+  plano_conta_id: number;
+  caixa_id: number;
+  lancamento_original_id?: number | null;
   id_transferencia?: number | null;
   motivo_estorno?: string | null;
   motivo_transferencia?: string | null;
   forma_pagamento: "DINHEIRO" | "CARTAO" | "CHEQUE" | "BOLETO" | "PIX";
   status_pagamento: "PENDENTE" | "PAGO";
-  agendas_id?: number | null;
+  agenda_id?: number | null;
   usuario_id: number;
-  plano_conta: PlanoConta;
-  caixa: Caixa;
-  usuario: Usuario;
   status?: string;
   created_at: string;
   updated_at: string;
+  
+  // Campos de JOIN para exibição
+  caixa_nome?: string;
+  plano_conta_nome?: string;
+  usuario_nome?: string;
+  cliente_nome?: string;
+  
+  // Relacionamentos (opcionais)
+  plano_conta?: PlanoConta;
+  caixa?: Caixa;
+  usuario?: Usuario;
 };

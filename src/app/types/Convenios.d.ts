@@ -1,9 +1,13 @@
+import { TabelaFaturamento } from "./TabelaFaturamento";
+
 export type Convenio = {
   id: number;
   nome: string;
-  regras: string;
   desconto: number;
-  tabelaFaturamentosId: number;
-  created_at: string;
-  updated_at: string;
+  regras: string;
+  tabela_faturamento_id: number;
+  createdAt: Date;
+  updatedAt: Date;
+  deletedAt?: Date | null;
+  tabelaFaturamento: TabelaFaturamento;
 };

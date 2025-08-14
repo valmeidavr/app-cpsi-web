@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { http } from "@/util/http";
-import { setCookie } from "@/util/cookies";
+import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -21,7 +20,7 @@ import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,23 +31,20 @@ export default function Home() {
     setLoading(true);
   
     try {
-      const { data } = await http.post("auth/login", { email, senha });
-      const user = data.usuario;
-      const cpsiSystem = user.sistemas.find((sistema: any) => sistema.nome === "CPSI");
-  
-      if (!cpsiSystem) {
-        setErrorMessage("Acesso negado. Você não tem permissão para acessar este sistema.");
-        setLoading(false);
-        return;
-      }
-  
-      // 🔥 SALVANDO OS COOKIES CORRETAMENTE
-      setCookie("accessToken", data.access_token, { path: "/" });
-      setCookie("userGroups", JSON.stringify(cpsiSystem.grupos), { path: "/" });
+      const result = await signIn("credentials", {
+        login,
+        password: senha,
+        redirect: false,
+      });
 
-      router.replace("/painel");
+      if (result?.error) {
+        setErrorMessage("Credenciais inválidas. Verifique seu login e senha.");
+      } else if (result?.ok) {
+        // Login bem-sucedido, redirecionar para o painel
+        router.replace("/painel");
+      }
     } catch (err: any) {
-      setErrorMessage(err.response?.status === 401 ? "Não autorizado. Verifique suas credenciais." : "Usuário e/ou senha inválido.");
+      setErrorMessage("Erro interno do servidor. Tente novamente.");
     } finally {
       setLoading(false);
     }
@@ -69,13 +65,27 @@ export default function Home() {
             <div className="space-y-2">
               <div className="relative">
                 <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input type="email" placeholder="Email" className="pl-10" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input 
+                  type="text" 
+                  placeholder="Login ou Email" 
+                  className="pl-10" 
+                  required 
+                  value={login} 
+                  onChange={(e) => setLogin(e.target.value)} 
+                />
               </div>
             </div>
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                <Input type="password" placeholder="Senha" className="pl-10" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+                <Input 
+                  type="password" 
+                  placeholder="Senha" 
+                  className="pl-10" 
+                  required 
+                  value={senha} 
+                  onChange={(e) => setSenha(e.target.value)} 
+                />
               </div>
             </div>
             {errorMessage && (

@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/dialog";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import { toast } from "sonner";
 import { Especialidade } from "@/app/types/Especialidade";
 
@@ -51,17 +51,22 @@ export default function Especialidades() {
   const carregarEspecialidades = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/especialidades", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setEspecialidades(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalEspecialidades(data.total);
+      const response = await fetch(`/api/especialidades?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setEspecialidades(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalEspecialidades(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar especialidades:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar especialidades:", error);
     } finally {
@@ -77,8 +82,14 @@ export default function Especialidades() {
       especialidadeSelecionada.status === "Ativo" ? "Inativo" : "Ativo";
 
     try {
-      await http.patch(`/especialidades/${especialidadeSelecionada.id}`, {
-        status: novoStatus,
+      const response = await fetch(`/api/especialidades/${especialidadeSelecionada.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
       });
       setEspecialidades((especialidades) =>
         especialidades.map((especialidade) =>

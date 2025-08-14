@@ -25,7 +25,6 @@ import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //API
-import { getUnidadeById, updateUnidade } from "@/app/api/unidades/action";
 import { updateUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
 
 //Helpers
@@ -52,14 +51,20 @@ export default function EditarUnidade() {
     async function fetchData() {
       try {
         if (!unidadeId) redirect("/painel/unidades");
-        const data = await getUnidadeById(unidadeId);
-        setUnidade(data);
-
-        form.reset({
-          nome: data.nome,
-        });
+        const response = await fetch(`/api/unidades/${unidadeId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setUnidade(data);
+          form.reset({
+            nome: data.nome,
+          });
+        } else {
+          console.error("Erro ao carregar unidade:", data.error);
+          toast.error("Erro ao carregar dados da unidade");
+        }
       } catch (error) {
-        console.error("Erro ao unidade:", error);
+        console.error("Erro ao carregar unidade:", error);
       } finally {
         setCarregando(false);
       }
@@ -72,9 +77,21 @@ export default function EditarUnidade() {
     try {
       if (!unidadeId) redirect("/painel/unidades");
 
-      const data = await updateUnidade(unidadeId, values);
-      const queryParams = new URLSearchParams();
+      const response = await fetch(`/api/unidades/${unidadeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
 
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar unidade.");
+      }
+
+      const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Unidade atualizada com sucesso!");
 

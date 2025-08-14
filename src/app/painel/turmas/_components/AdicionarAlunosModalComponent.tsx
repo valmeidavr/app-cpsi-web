@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,13 +9,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
-import { Cliente } from "@/app/types/Cliente";
-import { http } from "@/util/http";
-import { getClientes } from "@/app/api/clientes/action";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { FC } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+import { Cliente } from "@/app/types/Cliente";
 import {
   Table,
   TableBody,
@@ -34,11 +43,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  createAlunosTurma,
-  deleteAllAlunoTurma,
-  deleteAlunoTurma,
-} from "@/app/api/alunos_turmas/action";
 import { Label } from "@/components/ui/label";
 import { formatarTelefone } from "@/util/clearData";
 import {
@@ -47,10 +51,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { getTurmaById } from "@/app/api/turmas/action";
 import { Turma } from "@/app/types/Turma";
-import { toast } from "sonner";
+import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
 import AlunoDetalhesModal from "./detalhesAlunoModal";
+import { http } from "@/util/http";
 
 interface Props {
   isOpen: boolean;
@@ -75,7 +79,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   const carregarClientes = async () => {
     try {
       setLoading(true);
-      const { data } = await http.get("/clientes", {
+      const { data } = await http.get("/api/clientes", {
         params: {
           page: paginaAtual + 1,
           limit: 5,
@@ -94,7 +98,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   const deleteAllAlunos = async () => {
     try {
       setLoadingDeleteAll(true);
-      await deleteAllAlunoTurma(turmaSelected);
+      await http.delete(`/api/alunos_turmas/${turmaSelected}`);
       await carregarAlunos();
     } catch (error) {
       console.error("Erro ao deletar todos os alunos:", error);
@@ -102,19 +106,19 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       setLoadingDeleteAll(false);
     }
   };
-  const addAluno = async (clientesId: number, turmasId: number) => {
+  const addAluno = async (cliente_id: number, turma_id: number) => {
     try {
       setLoadingAluno(true);
-      const turma: Turma = await getTurmaById(turmaId);
-      if (alunos.length == turma.limiteVagas) {
+      const { data: turma } = await http.get(`/api/turmas/${turmaId}`);
+      if (alunos.length == turma.limite_vagas) {
         throw new Error("Turma está lotada");
       }
       const payload = {
-        clientesId,
-        turmasId,
-        data_inscricao: new Date().toISOString().split("T")[0],
+        cliente_id,
+        turma_id,
+        data_inscricao: getDateOnlyUTCISO(),
       };
-      await createAlunosTurma(payload);
+      await http.post("/api/alunos_turmas", payload);
       await carregarAlunos();
     } catch (error: any) {
       toast.error(`Erro ao adicionar alunos: ${error.message}`);
@@ -125,7 +129,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   const excluirAluno = async (alunoId: number) => {
     try {
       setLoadingAluno(true);
-      await deleteAlunoTurma(alunoId);
+      await http.delete(`/api/alunos_turmas/${alunoId}`);
       await carregarAlunos();
     } catch (error) {
       console.error("Erro ao deletar alunos:", error);
@@ -138,7 +142,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     try {
       setLoadingAluno(true);
       const { data } = await http.get(
-        "https://api-cpsi.aapvr.com.br//alunos-turmas/",
+        "/api/alunos_turmas",
         {
           params: {
             page: paginaAtual + 1,
@@ -159,6 +163,13 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
   useEffect(() => {
     carregarAlunos();
   }, [paginaAtual]);
+
+  // Adicionar useEffect para carregar clientes quando o modal abre
+  useEffect(() => {
+    if (isOpen) {
+      carregarClientes();
+    }
+  }, [isOpen]);
 
   const handleSearch = () => {
     setPaginaAtual(0);
@@ -232,7 +243,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                       className={`cursor-context-menu text-center 
                         ${
                           alunos.find(
-                            (aluno) => aluno.clientesId == +cliente.id
+                            (aluno) => aluno.cliente_id == +cliente.id
                           )
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"
                             : "hover:bg-blue-100 cursor-pointer"
@@ -264,7 +275,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                             <DropdownMenuItem
                               onSelect={() => {
                                 const alunoCorrespondente = alunos.find(
-                                  (aluno) => aluno.clientesId == +cliente.id
+                                  (aluno) => aluno.cliente_id == +cliente.id
                                 );
                                 if (alunoCorrespondente) {
                                   setAlunoSelecionado(alunoCorrespondente);
@@ -280,7 +291,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             {!alunos.find(
-                              (aluno) => aluno.clientesId == +cliente.id
+                              (aluno) => aluno.cliente_id == +cliente.id
                             ) ? (
                               <DropdownMenuItem
                                 onSelect={() => addAluno(+cliente.id, turmaId)}

@@ -1,0 +1,123 @@
+import { NextRequest, NextResponse } from "next/server";
+import { gestorPool } from "@/lib/mysql";
+import { createAlunoTurmaSchema } from "./schema/formSchemaAlunosTurmas";
+
+// GET - Listar alunos de turmas com paginação e busca
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page') || '1';
+    const limit = searchParams.get('limit') || '10';
+    const search = searchParams.get('search') || '';
+    const turmaId = searchParams.get('turmaId') || '';
+
+    let query = `
+      SELECT 
+        at.id,
+        at.turma_id,
+        at.cliente_id,
+        at.data_inscricao,
+        at.status,
+        at.createdAt,
+        at.updatedAt,
+        JSON_OBJECT(
+          'id', c.id,
+          'nome', c.nome,
+          'cpf', c.cpf,
+          'telefone1', c.telefone1,
+          'dtnascimento', c.dtnascimento,
+          'status', c.status
+        ) as cliente
+      FROM alunos_turmas at
+      LEFT JOIN clientes c ON at.cliente_id = c.id
+      WHERE 1=1
+    `;
+    const params: (string | number)[] = [];
+
+    if (turmaId) {
+      query += ' AND at.turma_id = ?';
+      params.push(parseInt(turmaId));
+    }
+
+    if (search) {
+      query += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    // Adicionar paginação
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    query += ' ORDER BY at.id DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit), offset);
+
+    const [alunoTurmaRows] = await gestorPool.execute(query, params);
+
+    // Buscar total de registros para paginação
+    let countQuery = `
+      SELECT COUNT(*) as total 
+      FROM alunos_turmas at
+      LEFT JOIN clientes c ON at.cliente_id = c.id
+      WHERE 1=1
+    `;
+    const countParams: (string | number)[] = [];
+
+    if (turmaId) {
+      countQuery += ' AND at.turma_id = ?';
+      countParams.push(parseInt(turmaId));
+    }
+
+    if (search) {
+      countQuery += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
+      countParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const total = (countRows as any[])[0]?.total || 0;
+
+    return NextResponse.json({
+      data: alunoTurmaRows,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar alunos de turmas:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// POST - Criar aluno em turma
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    
+    // Validar dados com Zod
+    const validatedData = createAlunoTurmaSchema.parse(body);
+
+    // Inserir aluno em turma
+    const [result] = await gestorPool.execute(
+      `INSERT INTO alunos_turmas (
+        cliente_id, turma_id, data_inscricao, status
+      ) VALUES (?, ?, ?, ?)`,
+      [
+        validatedData.cliente_id, validatedData.turma_id, validatedData.data_inscricao || new Date().toISOString(), 'Ativo'
+      ]
+    );
+
+    return NextResponse.json({ 
+      success: true, 
+      id: (result as any).insertId 
+    });
+  } catch (error) {
+    console.error('Erro ao criar aluno em turma:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+} 

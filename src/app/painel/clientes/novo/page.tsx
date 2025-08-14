@@ -32,12 +32,11 @@ import {
 import { toast } from "sonner";
 
 //API
-import { createCliente } from "@/app/api/clientes/action";
+import { http } from "@/util/http";
 
 //helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
-import { http } from "@/util/http";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
 import {
   Dialog,
@@ -48,7 +47,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Convenio } from "@/app/types/Convenios";
-import { getConvenios } from "@/app/api/convenios/action";
 import {
   Table,
   TableBody,
@@ -88,8 +86,8 @@ export default function CustomerRegistrationForm() {
   useEffect(() => {
     const fetchConvenios = async () => {
       try {
-        const { data } = await getConvenios();
-        setConvenios(data);
+        const { data } = await http.get("/api/convenios");
+        setConvenios(data.data);
       } catch (error) {
         console.error("Error ao buscar convênios:", error);
       }
@@ -163,7 +161,7 @@ export default function CustomerRegistrationForm() {
         desconto: descontosPreenchidos,
       };
 
-      await createCliente(payload);
+      await http.post("/api/clientes", payload);
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -190,11 +188,17 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingEmail(true);
     try {
-      const { data } = await http.get(`/clientes/findByEmail/${email}`);
-      if (data) {
-        setEmailError("Este email já está em uso.");
+      const response = await fetch(`/api/clientes/findByEmail/${encodeURIComponent(email)}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data) {
+          setEmailError("Este email já está em uso.");
+        } else {
+          setEmailError(null);
+        }
       } else {
-        setEmailError(null);
+        console.error("Erro ao verificar email:", data.error);
       }
     } catch (error) {
       console.error("Erro ao verificar email:", error);
@@ -212,13 +216,17 @@ export default function CustomerRegistrationForm() {
 
     setIsCheckingCpf(true);
     try {
-      const data = await http.get(
-        `/clientes/findByCpf/${cpf}`
-      );
-      if (data.data) {
-        setCpfError("Este cpf já está em uso.");
+      const response = await fetch(`/api/clientes/findByCpf/${encodeURIComponent(cpf)}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        if (data.data) {
+          setCpfError("Este cpf já está em uso.");
+        } else {
+          setCpfError(null);
+        }
       } else {
-        setCpfError(null);
+        console.error("Erro ao verificar CPF:", data.error);
       }
     } catch (error) {
       console.error("Erro ao verificar cpf:", error);

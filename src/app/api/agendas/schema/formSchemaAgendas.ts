@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const createAgendaSchema = z.object({
   dtagenda: z.string(),
-
+  horario: z.string({ required_error: "Horário é obrigatório" }), // Campo para seleção de horário no frontend
   situacao: z.enum(
     [
       "AGENDADO",
@@ -18,24 +18,27 @@ export const createAgendaSchema = z.object({
       invalid_type_error: "Situação inválida",
     }
   ),
-  clientesId: z
+  cliente_id: z
     .number()
     .int({ message: "Cliente deve ser um número inteiro" })
     .nullable(),
-  conveniosId: z
+  convenio_id: z
     .number()
     .int({ message: "Convênio deve ser um número inteiro" }),
-  procedimentosId: z
+  tipo_cliente: z.enum(["SOCIO", "NSOCIO", "PARCEIRO", "FUNCIONARIO"], {
+    required_error: "Tipo de cliente é obrigatório",
+  }),
+  procedimento_id: z
     .number()
     .int({ message: "Procedimento deve ser um número inteiro" })
     .nullable(),
-  expedientesId: z.number().optional(),
-  prestadoresId: z.preprocess((val) => Number(val), z.number()),
-  unidadesId: z.preprocess((val) => Number(val), z.number()),
-  especialidadesId: z
+  expediente_id: z.number().optional(),
+  prestador_id: z.preprocess((val) => Number(val), z.number()),
+  unidade_id: z.preprocess((val) => Number(val), z.number()),
+  especialidade_id: z
     .number()
     .int({ message: "Especialidade deve ser um número inteiro" }),
-  horario: z.string().optional().nullable(),
   tipo: z.enum(["PROCEDIMENTO", "ENCAIXE"]),
 });
+
 export const updateAgendaSchema = createAgendaSchema.partial();

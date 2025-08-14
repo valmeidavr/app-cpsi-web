@@ -1,17 +1,14 @@
 import { Procedimento } from "./Procedimento";
 import { TabelaFaturamento } from "./TabelaFaturamento";
-export enum TipoCliente {
-  SOCIO = "SOCIO",
-  NSOCIO = "NSOCIO",
-  PARCEIRO = "PARCEIRO",
-  FUNCIONARIO = "FUNCIONARIO",
-}
+
+export type TipoCliente = "PARTICULAR" | "CONVENIO";
+
 export type ValorProcedimento = {
   id: number;
   valor: string;
   tipo: TipoCliente;
-  tabelaFaturamentosId: number;
-  procedimentosId: number;
+  tabela_faturamento_id: number;
+  procedimento_id: number;
   createdAt: Date;
   updatedAt: Date;
   procedimento: Procedimento;

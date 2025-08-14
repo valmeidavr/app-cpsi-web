@@ -8,28 +8,41 @@ import { Unidade } from "./Unidades";
 
 export interface Agenda {
   id: number;
-  dtagenda: DateTime;
+  dtagenda: string;
   situacao: Situacao;
-  clientesId: number | null;
-  conveniosId: number | null;
-  procedimentosId: number | null;
-  expedientesId: number;
-  prestadoresId: number;
-  unidadesId: number;
-  especialidadesId: number;
+  cliente_id: number | null;
+  convenio_id: number | null;
+  procedimento_id: number | null;
+  expediente_id: number | null;
+  prestador_id: number;
+  unidade_id: number | null;
+  especialidade_id: number | null;
+  tipo: "PROCEDIMENTO" | "ENCAIXE";
+  tipo_cliente: "SOCIO" | "NSOCIO" | "PARCEIRO" | "FUNCIONARIO";
 
-  clientes: Cliente;
-  convenios: Convenio;
-  procedimentos: Procedimento;
-  expediente: Expediente;
-  prestador: Prestador;
-  unidade: Unidade;
-  especialidade: Especialidade;
+  // Campos de JOIN para exibição
+  cliente_nome?: string;
+  convenio_nome?: string;
+  procedimento_nome?: string;
+  expediente_nome?: string;
+  prestador_nome?: string;
+  unidade_nome?: string;
+  especialidade_nome?: string;
+
+  // Relacionamentos (opcionais)
+  clientes?: Cliente;
+  convenios?: Convenio;
+  procedimentos?: Procedimento;
+  expediente?: Expediente;
+  prestador?: Prestador;
+  unidade?: Unidade;
+  especialidade?: Especialidade;
+  
   createdAt: Date;
   updatedAt: Date;
 }
 
-enum Situacao {
+export enum Situacao {
   AGENDADO = "AGENDADO",
   FALTA = "FALTA",
   FINALIZADO = "FINALIZADO",

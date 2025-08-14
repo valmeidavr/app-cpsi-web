@@ -25,7 +25,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
 import { useRouter } from "next/navigation";
-import { createConvenio } from "@/app/api/convenios/action";
 
 import {
   Select,
@@ -34,32 +33,53 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { http } from "@/util/http";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
 
 export default function NovoConvenio() {
   const [loading, setLoading] = useState(false);
-  const [tabelaFaturamentos, setTabelaFaturamento] = useState<
+  const [tabelaFaturamento, setTabelaFaturamento] = useState<
     TabelaFaturamento[]
   >([]);
 
   const router = useRouter();
-  const form = useForm({
+  const form = useForm<z.infer<typeof createConvenioSchema>>({
     resolver: zodResolver(createConvenioSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
       regras: "",
-      desconto: undefined,
-      tabelaFaturamentosId: 0,
+      desconto: 0,
+      tabela_faturamento_id: undefined,
     },
   });
 
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
-      await createConvenio(values);
+      console.log("🔍 Valores do formulário:", values);
+      console.log("🔍 Tipo do tabela_faturamento_id:", typeof values.tabela_faturamento_id);
+      console.log("🔍 Valor do tabela_faturamento_id:", values.tabela_faturamento_id);
+      
+      // Validação adicional
+      if (!values.tabela_faturamento_id || values.tabela_faturamento_id <= 0) {
+        toast.error("Selecione uma tabela de faturamento válida");
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch("/api/convenios", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao salvar convênio');
+      }
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -69,23 +89,26 @@ export default function NovoConvenio() {
 
       router.push(`/painel/convenios?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar convênio";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar convênio";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   const fetchTabelaFaturamento = async () => {
     try {
-      const { data } = await http.get("/tabela-faturamentos", {});
-
-      setTabelaFaturamento(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/tabela_faturamentos");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setTabelaFaturamento(data.data);
+      } else {
+        console.error("Erro ao buscar tabelas de faturamento:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar tabelas de faturamento:", error);
+    }
   };
 
   useEffect(() => {
@@ -203,19 +226,21 @@ export default function NovoConvenio() {
             />
             <FormField
               control={form.control}
-              name="tabelaFaturamentosId"
+              name="tabela_faturamento_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tabela de Faturamento *</FormLabel>
                   <Select
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
-                      field.onChange(Number(value));
+                      const numValue = Number(value);
+                      console.log("🔍 Valor selecionado:", numValue);
+                      field.onChange(numValue);
                     }}
                   >
                     <FormControl
                       className={
-                        form.formState.errors.tabelaFaturamentosId
+                        form.formState.errors.tabela_faturamento_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -225,7 +250,7 @@ export default function NovoConvenio() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {tabelaFaturamentos.map((option) => (
+                      {tabelaFaturamento.map((option) => (
                         <SelectItem
                           key={option.id}
                           value={option.id.toString()}

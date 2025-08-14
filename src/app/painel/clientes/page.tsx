@@ -21,7 +21,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import ReactPaginate from "react-paginate";
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -54,17 +54,22 @@ export default function ClientesPage() {
   const carregarClientes = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/clientes", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setClientes(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalClientes(data.total);
+      const response = await fetch(`/api/clientes?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setClientes(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalClientes(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar clientes:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
     } finally {
@@ -80,8 +85,14 @@ export default function ClientesPage() {
       clienteSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
 
     try {
-      await http.patch(`/clientes/${clienteSelecionado.id}`, {
-        status: novoStatus,
+      const response = await fetch(`/api/clientes/${clienteSelecionado.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
       });
       setClientes((clientes) =>
         clientes.map((cliente) =>

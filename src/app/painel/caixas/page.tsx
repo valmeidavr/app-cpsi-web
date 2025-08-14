@@ -23,7 +23,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 
 //Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 
 //Types
 import { Caixa } from "@/app/types/Caixa";
@@ -39,16 +39,22 @@ export default function Caixas() {
   const carregarCaixas = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/caixas", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
-      setCaixa(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalCaixas(data.total);
+
+      const response = await fetch(`/api/caixa?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setCaixa(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalCaixas(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar caixas:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar Caixa:", error);
     } finally {

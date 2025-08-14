@@ -1,222 +1,130 @@
-"use client";
+'use client'
 
-//React
-import React, { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
-//Zod
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-//Components
-import { Button } from "@/components/ui/button";
-import { Save, Loader2, Eye, EyeOff } from "lucide-react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import Breadcrumb from "@/components/ui/Breadcrumb";
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { useRouter } from 'next/navigation'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { toast } from 'sonner'
+import Breadcrumb from '@/components/ui/Breadcrumb'
+import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
 
-//API
-import { createUsuario } from "@/app/api/usuarios/action";
-import { createUsuarioSchema } from "@/app/api/usuarios/schema/formSchemaUsuarios";
-//Types
-import { SistemaComGrupos } from "@/app/types/Usuario";
-//Helpers
-import { http } from "@/util/http";
+// Schema de validação
+const createUsuarioSchema = z.object({
+  nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  email: z.string().email('Email inválido'),
+  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  confirmedsenha: z.string()
+}).refine((data) => data.senha === data.confirmedsenha, {
+  message: 'As senhas não coincidem',
+  path: ['confirmedsenha']
+})
 
 export default function UsuarioRegistrationForm() {
-  const [loading, setLoading] = useState(false);
-  const [selectedGroups, setSelectedGroups] = useState<Record<number, number>>(
-    {}
-  );
-  const [emailError, setEmailError] = useState<string | null>(null);
-  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
-  const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-  const [sistemas, setSistemas] = useState<SistemaComGrupos[]>([]);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [carregando, setCarregando] = useState(false);
-
-  useEffect(() => {
-    async function fetchSistemas() {
-      setCarregando(true);
-      try {
-        const { data } = await http.get("/sistemas");
-        setSistemas(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error("Erro ao carregar sistemas:", error);
-      } finally {
-        setCarregando(false);
-      }
-    }
-    fetchSistemas();
-  }, []);
-  const router = useRouter();
+  const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const router = useRouter()
 
   const form = useForm({
     resolver: zodResolver(createUsuarioSchema),
-    mode: "onChange",
     defaultValues: {
-      nome: "",
-      email: "",
-      senha: "",
-      confirmedsenha: "",
-      grupoIds: {},
-    },
-  });
-
-  const togglePasswordVisibility = () => {
-    setShowPassword((prev) => !prev); // Alterna a visibilidade da senha
-  };
-
-  const toggleConfirmPasswordVisibility = () => {
-    setShowConfirmPassword((prev) => !prev); // Alterna a visibilidade da confirmação de senha
-  };
-
-  const handleGroupChange = (sistemaId: number, grupoId: number) => {
-    setSelectedGroups((prev) => ({ ...prev, [sistemaId]: grupoId }));
-    form.setValue(`grupoIds.${sistemaId}`, grupoId, { shouldValidate: true });
-  };
+      nome: '',
+      email: '',
+      senha: '',
+      confirmedsenha: ''
+    }
+  })
 
   const onSubmit = async (values: z.infer<typeof createUsuarioSchema>) => {
-    setLoading(true);
-    if (emailError) {
-      toast.error("Corrija os erros antes de enviar o formulário.");
-      return;
-    }
+    setLoading(true)
     try {
-      await createUsuario(values);
+      const response = await fetch('/api/usuarios/criar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      })
 
-      const currentUrl = new URL(window.location.href);
-      const queryParams = new URLSearchParams(currentUrl.search);
-
-      queryParams.set("type", "success");
-      queryParams.set("message", "Usuário salvo com sucesso!");
-
-      router.push(`/painel/usuarios?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar usuário";
-
-      // Exibindo toast de erro
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-
-    setLoading(false);
-  };
-
-  const checkEmail = async (email: string) => {
-    if (!email) {
-      setEmailError(null);
-      return;
-    }
-
-    setIsCheckingEmail(true);
-    try {
-      const { data } = await http.get(`/users/findByEmail/${email}`);
-      if (data) {
-        setEmailError("Este email já está em uso.");
+      if (response.ok) {
+        toast.success('Usuário criado com sucesso!')
+        router.push('/painel/usuarios?type=success&message=Usuário criado com sucesso!')
       } else {
-        setEmailError(null);
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao criar usuário')
       }
-    } catch (error) {
-      console.error("Erro ao verificar email:", error);
-      setEmailError("Erro ao verificar email.");
+    } catch (error: any) {
+      console.error('Erro ao criar usuário:', error)
+      toast.error(error.message || 'Erro ao criar usuário')
     } finally {
-      setIsCheckingEmail(false);
+      setLoading(false)
     }
-  };
+  }
 
-  const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const email = event.target.value;
-    form.setValue("email", email, { shouldValidate: true });
-
-    if (timeoutId) clearTimeout(timeoutId);
-    const newTimeoutId = setTimeout(() => checkEmail(email), 500);
-    setTimeoutId(newTimeoutId);
-  };
   return (
-    <div className="container mx-auto">
+    <div className="container mx-auto p-6">
       <Breadcrumb
         items={[
           { label: "Painel", href: "/painel" },
-          { label: "Gerenciar Usuários", href: "/painel/usuarios" },
+          { label: "Usuários", href: "/painel/usuarios" },
           { label: "Novo Usuário" },
         ]}
       />
 
-      {carregando ? (
-        <div className="flex justify-center items-center w-full h-40">
-          <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-          <span className="ml-2 text-gray-500">Carregando ...</span>
-        </div>
-      ) : (
-        <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Novo Usuário</h1>
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Novo Usuário</CardTitle>
+          <CardDescription>
+            Preencha os dados para criar um novo usuário no sistema
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* Nome */}
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome Completo *</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder="Digite o nome completo"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campos de Nome e Email */}
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome *</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      className={`border ${
-                        form.formState.errors.nome
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email *</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      {...field}
-                      onChange={handleEmailChange}
-                      className={`border ${
-                        emailError || form.formState.errors.email
-                          ? "border-red-500"
-                          : "border-gray-300"
-                      } focus:ring-2 focus:ring-primary`}
-                    />
-                  </FormControl>
-                  {isCheckingEmail && (
-                    <p className="text-gray-500 text-sm">
-                      Verificando email...
-                    </p>
-                  )}
-                  {emailError && (
-                    <p className="text-red-500 text-sm">{emailError}</p>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Email */}
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email *</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        {...field}
+                        placeholder="Digite o email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Senha */}
               <FormField
                 control={form.control}
                 name="senha"
@@ -226,37 +134,31 @@ export default function UsuarioRegistrationForm() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          autoComplete="new-password"
-                          type={showPassword ? "text" : "password"} // Alterna entre "password" e "text"
+                          type={showPassword ? 'text' : 'password'}
                           {...field}
-                          className={`border ${
-                            form.formState.errors.senha
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary pr-10`} // Adiciona espaço para o ícone
+                          placeholder="Digite a senha"
                         />
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon"
-                          className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2" // Posiciona o ícone
-                          onClick={togglePasswordVisibility}
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowPassword(!showPassword)}
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" /> // Ícone para ocultar a senha
+                            <EyeOff className="h-4 w-4" />
                           ) : (
-                            <Eye className="h-4 w-4" /> // Ícone para mostrar a senha
+                            <Eye className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
                     </FormControl>
-                    <FormMessage className="text-red-500 text-sm mt-1">
-                      {form.formState.errors.senha?.message}
-                    </FormMessage>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Confirmar Senha */}
               <FormField
                 control={form.control}
                 name="confirmedsenha"
@@ -266,99 +168,58 @@ export default function UsuarioRegistrationForm() {
                     <FormControl>
                       <div className="relative">
                         <Input
-                          type={showConfirmPassword ? "text" : "password"} // Alterna entre "password" e "text"
+                          type={showConfirmPassword ? 'text' : 'password'}
                           {...field}
-                          className={`border ${
-                            form.formState.errors.confirmedsenha
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary pr-10`} // Adiciona espaço para o ícone
+                          placeholder="Confirme a senha"
                         />
                         <Button
                           type="button"
                           variant="ghost"
-                          size="icon"
-                          className=" h-8 w-8 absolute right-2 top-1/2 transform -translate-y-1/2" // Posiciona o ícone
-                          onClick={toggleConfirmPasswordVisibility}
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         >
                           {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" /> // Ícone para ocultar a senha
+                            <EyeOff className="h-4 w-4" />
                           ) : (
-                            <Eye className="h-4 w-4" /> // Ícone para mostrar a senha
+                            <Eye className="h-4 w-4" />
                           )}
                         </Button>
                       </div>
                     </FormControl>
-                    <FormMessage className="text-red-500 text-sm mt-1">
-                      {form.formState.errors.confirmedsenha?.message}
-                    </FormMessage>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* Seção de Sistemas e Grupos */}
-
-            <h1 className="text-lg font-bold mb-4 mt-5">Definir Credenciais</h1>
-
-            <div className="space-y-4">
-              {sistemas.map((sistema) => (
-                <div key={sistema.id} className="border p-4 rounded-md">
-                  <h3 className="font-bold mb-2">{sistema.nome}</h3>
-                  <RadioGroup
-                    value={selectedGroups[sistema.id]?.toString() || ""}
-                    onValueChange={(value: any) =>
-                      handleGroupChange(sistema.id, Number(value))
-                    }
-                    className="space-y-2"
-                  >
-                    {sistema.grupos.map((grupo) => (
-                      <FormField
-                        key={grupo.id}
-                        control={form.control}
-                        name={`grupoIds.${sistema.id}`}
-                        render={() => (
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem
-                                id={`grupo-${sistema.id}-${grupo.id}`}
-                                value={grupo.id.toString()}
-                              />
-                            </FormControl>
-                            <Label
-                              htmlFor={`grupo-${sistema.id}-${grupo.id}`}
-                              className="cursor-pointer"
-                            >
-                              {grupo.nome}
-                            </Label>
-                          </FormItem>
-                        )}
-                      />
-                    ))}
-                  </RadioGroup>
-                </div>
-              ))}
-            </div>
-
-            {/* Botão de Envio */}
-            <Button
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" /> Salvar
-                </>
-              )}
-            </Button>
-          </form>
-        </Form>
-      )}
+              {/* Botões */}
+              <div className="flex gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                  disabled={loading}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Criar Usuário
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
-  );
+  )
 }

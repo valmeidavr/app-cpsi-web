@@ -37,13 +37,7 @@ import {
 } from "@/components/ui/select";
 
 //API
-import {
-  getLancamentoById,
-  updateLancamento,
-} from "@/app/api/lancamentos/action";
-import { http } from "@/util/http";
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-import { getUsuarios } from "@/app/api/usuarios/action";
 
 //Helpers
 import { formatValor } from "@/app/helpers/format";
@@ -65,7 +59,6 @@ export default function EditarLancamento() {
   const params = useParams();
   const lancamentoId = Array.isArray(params.id) ? params.id[0] : params.id;
   const searchParams = useSearchParams();
-  // const lancamentoId = searchParams.get("id") || undefined;
   const tipo = (
     ["ENTRADA", "SAIDA", "ESTORNO", "TRANSFERENCIA"].includes(
       searchParams.get("tipo") || ""
@@ -82,85 +75,134 @@ export default function EditarLancamento() {
       data_lancamento: "",
       tipo: tipo,
       clientes_Id: undefined,
-      plano_contas_id: 0,
-      caixas_id: 0,
-      lancamentos_original_id: null,
+      plano_conta_id: 0,
+      caixa_id: 0,
+      lancamento_original_id: null,
       id_transferencia: null,
       motivo_estorno: null,
       motivo_transferencia: null,
       forma_pagamento: undefined,
       status_pagamento: undefined,
-      agendas_id: null,
+      agenda_id: null,
       usuario_id: 0,
     },
   });
 
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("/caixas");
-      setCaixas(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/caixa");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setCaixas(data.data);
+      } else {
+        console.error("Erro ao carregar caixas:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar caixas:", error);
+    }
   };
+
   const fetchPlanoContas = async () => {
     try {
-      const { data } = await http.get("/plano-contas");
-      setPlanoConta(data.data);
-    } catch (error: any) {}
+      const response = await fetch("/api/plano_contas");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPlanoConta(data.data);
+      } else {
+        console.error("Erro ao carregar plano de contas:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar plano de contas:", error);
+    }
   };
+
   const fetchUsuario = async () => {
     try {
-      const { data } = await getUsuarios();
-      setUsuarios(data);
-    } catch (error: any) {}
+      const response = await fetch("/api/usuarios");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUsuarios(data.data);
+      } else {
+        console.error("Erro ao carregar usuários:", data.error);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar usuários:", error);
+    }
   };
 
   useEffect(() => {
-    if (!lancamentoId) redirect("/painel/lancamentos");
+    setLoadingData(true);
+    async function fetchData() {
+      try {
+        if (!lancamentoId) redirect("/painel/lancamentos");
+        await fetchCaixas();
+        await fetchPlanoContas();
+        await fetchUsuario();
+        
+        const response = await fetch(`/api/lancamentos/${lancamentoId}`);
+        const data = await response.json();
+        
+        if (response.ok) {
+          setLancamento(data);
+          form.reset({
+            valor: data.valor,
+            descricao: data.descricao,
+            data_lancamento: data.data_lancamento,
+            tipo: data.tipo,
+            clientes_Id: data.clientes_id,
+                    plano_conta_id: data.plano_conta_id,
+        caixa_id: data.caixa_id,
+        lancamento_original_id: data.lancamento_original_id,
+            id_transferencia: data.id_transferencia,
+            motivo_estorno: data.motivo_estorno,
+            motivo_transferencia: data.motivo_transferencia,
+            forma_pagamento: data.forma_pagamento,
+            status_pagamento: data.status_pagamento,
+            agenda_id: data.agenda_id,
+            usuario_id: data.usuario_id,
+          });
+        } else {
+          console.error("Erro ao carregar lancamento:", data.error);
+          toast.error("Erro ao carregar dados do lançamento");
+        }
+      } catch (error) {
+        console.error("Erro ao carregar lancamento:", error);
+      } finally {
+        setLoadingData(false);
+      }
+    }
     fetchData();
   }, []);
-
-  async function fetchData() {
-    try {
-      setLoadingData(true);
-      await Promise.all([fetchCaixas(), fetchPlanoContas(), fetchUsuario()]);
-      const data = await getLancamentoById(lancamentoId as string);
-      setLancamento(data);
-
-      form.reset({
-        valor: formatValor(data.valor) as unknown as number,
-        descricao: data.descricao,
-        data_lancamento: data.data_lancamento,
-        tipo: data.tipo,
-        clientes_Id: data.clientes_Id,
-        plano_contas_id: data.plano_contas_id,
-        caixas_id: data.caixas_id,
-        lancamentos_original_id: data.lancamentos_original_id,
-        id_transferencia: data.id_transferencia,
-        motivo_estorno: data.motivo_estorno,
-        motivo_transferencia: data.motivo_transferencia,
-        forma_pagamento: data.forma_pagamento,
-        status_pagamento: data.status_pagamento,
-        agendas_id: data.agendas_id,
-        usuario_id: data.usuario_id,
-      });
-      setLoadingData(false);
-    } catch (error) {
-      console.error("Erro ao carregar lançamento:", error);
-    } finally {
-      setLoadingData(false);
-    }
-  }
 
   const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
+      if (!lancamentoId) redirect("/painel/lancamentos");
 
-      await updateLancamento(lancamentoId as string, values);
-      router.push(
-        "/painel/lancamentos?type=success&message=Lançamento atualizado com sucesso!"
-      );
-    } catch (error) {
-      toast.error("Erro ao salvar lançamento!");
+      const response = await fetch(`/api/lancamentos/${lancamentoId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar lançamento.");
+      }
+
+      const queryParams = new URLSearchParams();
+      queryParams.set("type", "success");
+      queryParams.set("message", "Lançamento atualizado com sucesso!");
+
+      router.push(`/painel/lancamentos?${queryParams.toString()}`);
+    } catch (error: any) {
+      toast.error(error.message);
     } finally {
       setLoading(false);
     }
@@ -340,7 +382,7 @@ export default function EditarLancamento() {
               />
               <FormField
                 control={form.control}
-                name="plano_contas_id"
+                                  name="plano_conta_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Plano de Conta *</FormLabel>
@@ -350,7 +392,7 @@ export default function EditarLancamento() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.plano_contas_id
+                          form.formState.errors.plano_conta_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }
@@ -404,8 +446,8 @@ export default function EditarLancamento() {
                         </SelectItem>
                         {usuarios.map((usuario) => (
                           <SelectItem
-                            key={usuario.id}
-                            value={usuario.id.toString()}
+                            key={usuario.login}
+                            value={usuario.login.toString()}
                           >
                             {usuario.nome}
                           </SelectItem>
@@ -418,7 +460,7 @@ export default function EditarLancamento() {
               />
               <FormField
                 control={form.control}
-                name="caixas_id"
+                                  name="caixa_id"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Caixa *</FormLabel>
@@ -428,7 +470,7 @@ export default function EditarLancamento() {
                     >
                       <FormControl
                         className={
-                          form.formState.errors.caixas_id
+                          form.formState.errors.caixa_id
                             ? "border-red-500"
                             : "border-gray-300"
                         }

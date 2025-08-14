@@ -25,7 +25,6 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 
 //Helpers
 import { useRouter, useSearchParams } from "next/navigation";
-import { createCaixa } from "@/app/api/caixa/action";
 
 import {
   Select,
@@ -56,7 +55,19 @@ export default function NovoCaixa() {
   const onSubmit = async (values: z.infer<typeof createCaixaSchema>) => {
     setLoading(true);
     try {
-      await createCaixa(values);
+      const response = await fetch("/api/caixa", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(values),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao salvar caixa!");
+      }
 
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
@@ -66,15 +77,11 @@ export default function NovoCaixa() {
 
       router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error: any) {
-      const errorMessage =
-        error.response?.data?.message || "Erro ao salvar caixa!";
-
-      // Exibindo toast de erro
+      const errorMessage = error.message || "Erro ao salvar caixa!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
   return (

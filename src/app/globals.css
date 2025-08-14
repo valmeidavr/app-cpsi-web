@@ -27,14 +27,8 @@ main {
 }
 
 /* 🔹 Remove margens extras e melhora a consistência */
-* {
-  @apply border-border outline-ring/50;
-}
 
 /* 🔹 Garante que o fundo e texto sigam o tema configurado */
-body {
-  @apply bg-background text-foreground;
-}
 
 /* 🔹 Define variáveis de cores para temas claro e escuro */
 @layer base {

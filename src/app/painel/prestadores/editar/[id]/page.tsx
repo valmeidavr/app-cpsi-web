@@ -38,10 +38,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 //API
 import { format, isValid, parse } from "date-fns";
-import {
-  getPrestadorById,
-  updatePrestador,
-} from "@/app/api/prestadores/action";
+import { http } from "@/util/http";
 import { updatePrestadorSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
 //Types
 import { Prestador } from "@/app/types/Prestador";
@@ -52,18 +49,17 @@ const sexOptions = [
 ];
 
 export default function EditarPrestador() {
-  const [prestador, setPrestador] = useState<Prestador | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [carregando, setCarregando] = useState(false);
+  const [loading, setLoading] = useState(false); // Para o botão de submit
+  const [carregando, setCarregando] = useState(true); // Para o loader inicial da página
   const params = useParams();
   const prestadorId = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const router = useRouter();
 
-  //Definindo valores default com os dado do prestador
+  //Formatação dos Campos
   const form = useForm<z.infer<typeof updatePrestadorSchema>>({
     resolver: zodResolver(updatePrestadorSchema),
     mode: "onChange",
+    // Os valores default podem continuar vazios, eles serão preenchidos pelo reset
     defaultValues: {
       nome: "",
       dtnascimento: "",
@@ -82,85 +78,105 @@ export default function EditarPrestador() {
     },
   });
 
-  //Formatação dos Campos
+  // 1. A LÓGICA DE PREENCHIMENTO FOI TOTALMENTE CENTRALIZADA AQUI
   useEffect(() => {
-    if (prestador) {
-      const formattedTelefone = formatTelefoneInput(prestador.telefone || "");
-      const formattedCelular = formatTelefoneInput(prestador.celular || "");
-      const formattedCPF = formatCPFInput(prestador.cpf || "");
-      const formattedRG = formatRGInput(prestador.cpf || "");
+    async function fetchData() {
+      try {
+        if (!prestadorId) {
+          toast.error("ID do prestador não encontrado.");
+          redirect("/painel/prestadores");
+          return;
+        }
 
-      form.setValue("telefone", formattedTelefone);
-      form.setValue("celular", formattedCelular);
-      form.setValue("cpf", formattedCPF);
-      form.setValue("rg", formattedRG);
-      form.setValue("cep", prestador.cep || "");
-      form.setValue("logradouro", prestador.logradouro || "");
-      form.setValue("bairro", prestador.bairro || "");
-      form.setValue("uf", prestador.uf || "");
-      form.setValue("numero", prestador.numero || "");
-      form.setValue("cidade", prestador.cidade || "");
+        const response = await fetch(`/api/prestadores/${prestadorId}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Erro ao carregar dados do prestador");
+        }
+
+        // 2. PREPARE UM OBJETO COM TODOS OS DADOS JÁ FORMATADOS
+        let formattedBirthDate = "";
+        
+        if (data.dtnascimento) {
+          // Tentar diferentes formatos de data
+          let birthDate = null;
+          
+          // Se for string no formato YYYY-MM-DD
+          if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('-')) {
+            birthDate = new Date(data.dtnascimento);
+          }
+          // Se for string no formato DD/MM/YYYY
+          else if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('/')) {
+            birthDate = parse(data.dtnascimento, 'dd/MM/yyyy', new Date());
+          }
+          // Se for Date object
+          else if (data.dtnascimento instanceof Date) {
+            birthDate = data.dtnascimento;
+          }
+          
+          console.log('🔍 Debug - Data original:', data.dtnascimento);
+          console.log('🔍 Debug - Data parseada:', birthDate);
+          console.log('🔍 Debug - Data válida?', isValid(birthDate));
+          
+          if (birthDate && isValid(birthDate)) {
+            formattedBirthDate = format(birthDate, "dd/MM/yyyy");
+          }
+        }
+
+        const formattedData = {
+          ...data,
+          // 3. CORREÇÃO: Formatar a data corretamente do formato YYYY-MM-DD para DD/MM/YYYY
+          dtnascimento: formattedBirthDate,
+          cpf: formatCPFInput(data.cpf || ""),
+          rg: formatRGInput(data.rg || ""),
+          celular: formatTelefoneInput(data.celular || ""),
+          telefone: formatTelefoneInput(data.telefone || ""),
+          cep: data.cep ? data.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2") : "",
+        };
+
+        console.log('🔍 Debug - Data formatada:', formattedData.dtnascimento);
+        // 3. CHAME O form.reset() UMA ÚNICA VEZ com os dados prontos
+        form.reset(formattedData);
+      } catch (error: any) {
+        console.error("Erro ao carregar prestador:", error);
+        toast.error(error.message);
+      } finally {
+        setCarregando(false); // Desativa o loader da página
+      }
     }
-  }, [prestador, form]);
+    fetchData();
+  }, [prestadorId, form]); // A dependência no form.reset é importante
 
-  //Função de submeter os dados
+  // A função de submit continua a mesma
   const onSubmit = async (values: z.infer<typeof updatePrestadorSchema>) => {
     setLoading(true);
-
     try {
-      if (prestadorId) await updatePrestador(prestadorId, values);
+      if (!prestadorId) throw new Error("ID do prestador não encontrado.");
 
-      const queryParams = new URLSearchParams();
+      const response = await fetch(`/api/prestadores/${prestadorId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
 
-      queryParams.set("type", "success");
-      queryParams.set("message", "Prestador atualizado com sucesso!");
+      const responseData = await response.json();
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao atualizar prestador.");
+      }
 
-      router.push(`/painel/prestadores?${queryParams.toString()}`);
+      toast.success("Prestador atualizado com sucesso!");
+      router.push(`/painel/prestadores`);
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setLoading(false);
     }
-    setLoading(false);
   };
 
-  //Função de buscar endereco com o CEP
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, form);
   };
-
-  useEffect(() => {
-    setCarregando(true);
-    async function fetchData() {
-      try {
-        if (!prestadorId) redirect("painel/prestadors");
-        const data = await getPrestadorById(prestadorId);
-        setPrestador(data);
-
-        form.reset({
-          nome: data.nome,
-          dtnascimento: data.dtnascimento,
-          rg: data.rg,
-          cpf: data.cpf,
-          sexo: data.sexo,
-          cep: data.cep.replace(/^(\d{5})(\d{0,3})/, "$1-$2"),
-          logradouro: data.logradouro,
-          numero: data.numero,
-          bairro: data.bairro,
-          cidade: data.cidade,
-          uf: data.uf,
-          telefone: data.telefone,
-          celular: data.celular,
-          complemento: data.complemento,
-        });
-      } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
-      } finally {
-        setCarregando(false);
-      }
-    }
-    fetchData();
-  }, []);
 
   return (
     <div>
@@ -214,74 +230,54 @@ export default function EditarPrestador() {
                 <FormField
                   control={form.control}
                   name="dtnascimento"
-                  render={({ field }) => {
-                    useEffect(() => {
-                      if (field.value) {
-                        const parsedDate = parse(
-                          field.value,
-                          "yyyy-MM-dd",
-                          new Date()
-                        );
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Nascimento *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          maxLength={10}
+                          value={field.value || ""}
+                          className={`border ${
+                            form.formState.errors.dtnascimento
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                          onChange={(e) => {
+                            let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
+                            let formatted = inputDate
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .slice(0, 10); // Garante que não haja mais de 10 caracteres
 
-                        if (isValid(parsedDate)) {
-                          const formattedDate = format(
-                            parsedDate,
-                            "dd/MM/yyyy"
-                          );
-                          field.onChange(formattedDate);
-                        }
-                      }
-                    }, [field.value]);
+                            field.onChange(formatted);
+                          }}
+                          onBlur={() => {
+                            const parsedDate = parse(
+                              field.value as string,
+                              "dd/MM/yyyy",
+                              new Date()
+                            );
+                            const currentDate = new Date();
+                            const minYear = 1920;
 
-                    return (
-                      <FormItem>
-                        <FormLabel>Data de Nascimento *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="DD/MM/AAAA"
-                            maxLength={10}
-                            value={field.value || ""}
-                            className={`border ${
-                              form.formState.errors.dtnascimento
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            } focus:ring-2 focus:ring-primary`}
-                            onChange={(e) => {
-                              let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
-                              let formatted = inputDate
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .slice(0, 10); // Garante que não haja mais de 10 caracteres
+                            const year = parseInt(
+                              field.value ? field.value.split("/")[2] : ""
+                            );
 
-                              field.onChange(formatted);
-                            }}
-                            onBlur={() => {
-                              const parsedDate = parse(
-                                field.value as string,
-                                "dd/MM/yyyy",
-                                new Date()
-                              );
-                              const currentDate = new Date();
-                              const minYear = 1920;
-
-                              const year = parseInt(
-                                field.value ? field.value.split("/")[2] : ""
-                              );
-
-                              if (
-                                !isValid(parsedDate) ||
-                                parsedDate > currentDate ||
-                                year < minYear
-                              ) {
-                                field.onChange("");
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500 mt-1 font-light" />
-                      </FormItem>
-                    );
-                  }}
+                            if (
+                              !isValid(parsedDate) ||
+                              parsedDate > currentDate ||
+                              year < minYear
+                            ) {
+                              field.onChange("");
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={form.control}
@@ -404,7 +400,7 @@ export default function EditarPrestador() {
                             /^(\d{5})(\d{0,3})/,
                             "$1-$2"
                           );
-                      
+
                           field.onChange(formattedValue);
                         }
                       }

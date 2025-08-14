@@ -33,9 +33,8 @@ import {
 } from "@/components/ui/select";
 
 //API
-import { getUsuarios } from "@/app/api/usuarios/action";
+import { getUsuarios } from "@/app/api/usuarios/route";
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-import { createLancamento } from "@/app/api/lancamentos/action";
 
 //helpers
 import { http } from "@/util/http";
@@ -77,38 +76,38 @@ export default function NovoLancamento() {
       data_lancamento: "",
       tipo: tipo,
       clientes_Id: undefined,
-      plano_contas_id: 0,
-      caixas_id: 0,
-      lancamentos_original_id: null,
+      plano_conta_id: 0,
+      caixa_id: 0,
+      lancamento_original_id: null,
       id_transferencia: null,
       motivo_estorno: null,
       motivo_transferencia: null,
       forma_pagamento: undefined,
       status_pagamento: undefined,
-      agendas_id: null,
+      agenda_id: null,
       usuario_id: 0,
     },
   });
 
   const fetchCaixas = async () => {
     try {
-      const { data } = await http.get("https://api-cpsi.aapvr.com.br//caixas");
+      const { data } = await http.get("/api/caixa");
       setCaixas(data.data);
-    } catch (error: any) {}
+    } catch (error: any) { }
   };
   const fetchPlanoContas = async () => {
     try {
       const { data } = await http.get(
-        "https://api-cpsi.aapvr.com.br//plano-contas"
+        "/api/plano_contas"
       );
       setPlanoConta(data.data);
-    } catch (error: any) {}
+    } catch (error: any) { }
   };
   const fetchUsuario = async () => {
     try {
-      const { data } = await getUsuarios();
-      setUsuarios(data);
-    } catch (error: any) {}
+      const response = await http.get("/api/usuarios?all=true");
+      setUsuarios(response.data.data);
+    } catch (error: any) { }
   };
 
   useEffect(() => {
@@ -119,7 +118,7 @@ export default function NovoLancamento() {
   const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
-      await createLancamento(values);
+      await http.post("/api/lancamentos", values);
       router.push("/painel/lancamentos?type=success&message=salvo com sucesso");
     } catch (error) {
       toast.error("Erro ao salvar lancamento");
@@ -294,7 +293,7 @@ export default function NovoLancamento() {
             />
             <FormField
               control={form.control}
-              name="plano_contas_id"
+                                name="plano_conta_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Plano de Conta *</FormLabel>
@@ -304,7 +303,7 @@ export default function NovoLancamento() {
                   >
                     <FormControl
                       className={
-                        form.formState.errors.plano_contas_id
+                        form.formState.errors.plano_conta_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -355,8 +354,8 @@ export default function NovoLancamento() {
                       </SelectItem>
                       {usuarios.map((usuario) => (
                         <SelectItem
-                          key={usuario.id}
-                          value={usuario.id.toString()}
+                          key={usuario.login}
+                          value={usuario.login.toString()}
                         >
                           {usuario.nome}
                         </SelectItem>
@@ -369,7 +368,7 @@ export default function NovoLancamento() {
             />
             <FormField
               control={form.control}
-              name="caixas_id"
+                                name="caixa_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Caixa *</FormLabel>
@@ -379,7 +378,7 @@ export default function NovoLancamento() {
                   >
                     <FormControl
                       className={
-                        form.formState.errors.caixas_id
+                        form.formState.errors.caixa_id
                           ? "border-red-500"
                           : "border-gray-300"
                       }
@@ -415,11 +414,10 @@ export default function NovoLancamento() {
                   <textarea
                     {...field}
                     rows={4} // Você pode ajustar o número de linhas conforme necessário
-                    className={`w-full px-3 py-2 rounded-md border ${
-                      form.formState.errors.descricao
+                    className={`w-full px-3 py-2 rounded-md border ${form.formState.errors.descricao
                         ? "border-red-500"
                         : "border-gray-300"
-                    } focus:ring-2 focus:ring-primary focus:outline-none`}
+                      } focus:ring-2 focus:ring-primary focus:outline-none`}
                   />
                 </FormControl>
                 <FormMessage />

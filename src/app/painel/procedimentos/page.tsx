@@ -30,9 +30,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 //API
-import { getEspecialidades } from "@/app/api/especialidades/action";
-//Helpers
-import { http } from "@/util/http";
+// Removido import http - usando fetch direto
 //Types
 import { Especialidade } from "@/app/types/Especialidade";
 import { Procedimento } from "@/app/types/Procedimento";
@@ -52,17 +50,22 @@ export default function Procedimentos() {
   const carregarProcedimentos = async () => {
     setCarregando(true);
     try {
-      const { data } = await http.get("/procedimentos", {
-        params: {
-          page: paginaAtual + 1,
-          limit: 5,
-          search: termoBusca,
-        },
+      const params = new URLSearchParams({
+        page: (paginaAtual + 1).toString(),
+        limit: '5',
+        search: termoBusca,
       });
 
-      setProcedimentos(data.data);
-      setTotalPaginas(data.totalPages);
-      setTotalProcedimentos(data.total);
+      const response = await fetch(`/api/procedimentos?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setProcedimentos(data.data);
+        setTotalPaginas(data.pagination.totalPages);
+        setTotalProcedimentos(data.pagination.total);
+      } else {
+        console.error("Erro ao buscar procedimentos:", data.error);
+      }
     } catch (error) {
       console.error("Erro ao buscar procedimentos:", error);
     } finally {
@@ -72,9 +75,18 @@ export default function Procedimentos() {
 
   const fetchEspecialidades = async () => {
     try {
-      const { data } = await getEspecialidades();
-      setEspecialidades(data);
-    } catch (error: any) {}
+      const response = await fetch("/api/especialidades");
+      
+      if (!response.ok) {
+        throw new Error("Erro ao carregar especialidades");
+      }
+      
+      const data = await response.json();
+      setEspecialidades(data.data);
+    } catch (error: any) {
+      console.error("Erro ao carregar especialidades:", error);
+      toast.error("Erro ao carregar lista de especialidades");
+    }
   };
 
   const alterarStatusProcedimento = async () => {
@@ -83,8 +95,14 @@ export default function Procedimentos() {
     const novoStatus =
       procedimentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
     try {
-      await http.patch(`/procedimentos/${procedimentoSelecionado.id}`, {
-        status: novoStatus,
+      const response = await fetch(`/api/procedimentos/${procedimentoSelecionado.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: novoStatus,
+        }),
       });
       setProcedimentos((procedimentos) =>
         procedimentos.map((procedimento) =>
@@ -201,7 +219,7 @@ export default function Procedimentos() {
                       {especialidades
                         .filter(
                           (especialidade) =>
-                            especialidade.id == procedimento.especialidadeId
+                            especialidade.id == procedimento.especialidade_id
                         )
                         .map((especialidade) => (
                           <div key={especialidade.id}>{especialidade.nome}</div>
