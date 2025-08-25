@@ -18,19 +18,67 @@ export async function GET(request: NextRequest) {
     // Se for para retornar todas as especialidades (sem paginação)
     if (all === 'true' || limit === '1000') {
       console.log('🔍 Debug - Buscando todas as especialidades ativas');
-      const [rows] = await gestorPool.execute(
-        'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
-      );
-      console.log('🔍 Debug - Especialidades encontradas:', (rows as any[]).length);
-      return NextResponse.json({
-        data: rows,
-        pagination: {
-          page: 1,
-          limit: (rows as any[]).length,
-          total: (rows as any[]).length,
-          totalPages: 1
+      
+      try {
+        // Primeiro, tentar buscar com filtro de status
+        const [rows] = await gestorPool.execute(
+          'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
+        );
+        console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as any[]).length);
+        
+        if ((rows as any[]).length > 0) {
+          return NextResponse.json({
+            data: rows,
+            pagination: {
+              page: 1,
+              limit: (rows as any[]).length,
+              total: (rows as any[]).length,
+              totalPages: 1
+            }
+          });
         }
-      });
+        
+        // Se não encontrar especialidades ativas, buscar todas
+        console.log('🔍 Debug - Nenhuma especialidade ativa encontrada, buscando todas...');
+        const [allRows] = await gestorPool.execute(
+          'SELECT * FROM especialidades ORDER BY nome ASC'
+        );
+        console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as any[]).length);
+        
+        return NextResponse.json({
+          data: allRows,
+          pagination: {
+            page: 1,
+            limit: (allRows as any[]).length,
+            total: (allRows as any[]).length,
+            totalPages: 1
+          }
+        });
+        
+      } catch (queryError) {
+        console.error('🔍 Debug - Erro na query de especialidades:', queryError);
+        
+        // Tentar query mais simples como fallback
+        try {
+          const [simpleRows] = await gestorPool.execute(
+            'SELECT id, nome FROM especialidades ORDER BY nome ASC'
+          );
+          console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as any[]).length);
+          
+          return NextResponse.json({
+            data: simpleRows,
+            pagination: {
+              page: 1,
+              limit: (simpleRows as any[]).length,
+              total: (simpleRows as any[]).length,
+              totalPages: 1
+            }
+          });
+        } catch (fallbackError) {
+          console.error('🔍 Debug - Erro no fallback:', fallbackError);
+          throw queryError; // Re-throw o erro original
+        }
+      }
     }
 
     // 1. Construir a cláusula WHERE dinamicamente

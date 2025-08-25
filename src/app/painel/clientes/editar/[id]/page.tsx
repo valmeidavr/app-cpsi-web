@@ -221,31 +221,57 @@ export default function EditarCliente() {
         
         if (response.ok) {
           setCliente(data);
-          if (data.convenios) {
+          
+          // Formatar a data de nascimento do formato ISO para DD/MM/AAAA
+          let dataFormatada = "";
+          if (data.dtnascimento) {
+            try {
+              const dataISO = new Date(data.dtnascimento);
+              if (!isNaN(dataISO.getTime())) {
+                dataFormatada = format(dataISO, "dd/MM/yyyy");
+              }
+            } catch (error) {
+              console.error("Erro ao formatar data:", error);
+            }
+          }
+
+          // Mapear os campos corretamente baseado na estrutura do banco
+          const formData = {
+            nome: data.nome || "",
+            email: data.email || "",
+            dtnascimento: dataFormatada,
+            sexo: data.sexo || "",
+            tipo: data.tipo || data.tipoCliente || TipoCliente.SOCIO, // Usar tipo ou tipoCliente
+            cpf: data.cpf || "",
+            cep: data.cep || "",
+            logradouro: data.logradouro || "",
+            numero: data.numero || "",
+            bairro: data.bairro || "",
+            cidade: data.cidade || "",
+            uf: data.uf || "",
+            telefone1: data.telefone1 || "",
+            telefone2: data.telefone2 || data.telefone || "", // Usar telefone2 ou telefone
+            convenios: [],
+            desconto: {},
+          };
+
+          // Log para debug dos dados recebidos
+          console.log('🔍 Dados recebidos da API:', data);
+          console.log('🔍 Dados mapeados para o formulário:', formData);
+
+          // Se há convênios, mapear corretamente
+          if (data.convenios && Array.isArray(data.convenios)) {
             const conveniosIds = data.convenios.map((item: any) => item.convenioId);
             const descontos = data.convenios.reduce((acc: any, item: any) => {
               acc[item.convenioId] = item.desconto;
               return acc;
             }, {} as Record<number, number>);
 
-            form.reset({
-              nome: data.nome,
-              email: data.email,
-              dtnascimento: data.dtnascimento,
-              sexo: data.sexo,
-              cpf: data.cpf,
-              cep: data.cep,
-              logradouro: data.logradouro,
-              numero: data.numero,
-              bairro: data.bairro,
-              cidade: data.cidade,
-              uf: data.uf,
-              telefone1: data.telefone1,
-              telefone2: data.telefone2,
-              convenios: conveniosIds,
-              desconto: descontos,
-            });
+            formData.convenios = conveniosIds;
+            formData.desconto = descontos;
           }
+
+          form.reset(formData);
         } else {
           console.error("Erro ao carregar cliente:", data.error);
           toast.error("Erro ao carregar dados do cliente");
@@ -280,7 +306,22 @@ export default function EditarCliente() {
           {" "}
           {/* overflow-hidden */}
           <Form {...form}>
-            <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
+              <div className="space-x-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    console.log('🔍 Dados do formulário:', form.getValues());
+                    console.log('🔍 Cliente carregado:', cliente);
+                    console.log('🔍 Erros do formulário:', form.formState.errors);
+                  }}
+                >
+                  🐛 Debug
+                </Button>
+              </div>
+            </div>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
               className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -338,71 +379,52 @@ export default function EditarCliente() {
                 <FormField
                   control={form.control}
                   name="dtnascimento"
-                  render={({ field }) => {
-                    useEffect(() => {
-                      if (field.value) {
-                        const parsedDate = parse(
-                          field.value,
-                          "yyyy-MM-dd",
-                          new Date()
-                        );
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Nascimento *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="DD/MM/AAAA"
+                          maxLength={10}
+                          value={field.value || ""}
+                          className={`border ${
+                            form.formState.errors.dtnascimento
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                          onChange={(e) => {
+                            let inputDate = e.target.value.replace(/\D/g, "");
+                            let formatted = inputDate
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .replace(/(\d{2})(\d)/, "$1/$2")
+                              .slice(0, 10);
 
-                        if (isValid(parsedDate)) {
-                          const formattedDate = format(
-                            parsedDate,
-                            "dd/MM/yyyy"
-                          );
-                          field.onChange(formattedDate);
-                        }
-                      }
-                    }, [field.value]);
-                    return (
-                      <FormItem>
-                        <FormLabel>Data de Nascimento *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="DD/MM/AAAA"
-                            maxLength={10}
-                            value={field.value || ""}
-                            className={`border ${
-                              form.formState.errors.dtnascimento
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            } focus:ring-2 focus:ring-primary`}
-                            onChange={(e) => {
-                              let inputDate = e.target.value.replace(/\D/g, "");
-                              let formatted = inputDate
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .replace(/(\d{2})(\d)/, "$1/$2")
-                                .slice(0, 10);
+                            field.onChange(formatted);
+                          }}
+                          onBlur={() => {
+                            const parsedDate = parse(
+                              field.value,
+                              "dd/MM/yyyy",
+                              new Date()
+                            );
+                            const currentDate = new Date();
+                            const minYear = 1920;
 
-                              field.onChange(formatted);
-                            }}
-                            onBlur={() => {
-                              const parsedDate = parse(
-                                field.value,
-                                "dd/MM/yyyy",
-                                new Date()
-                              );
-                              const currentDate = new Date();
-                              const minYear = 1920;
+                            const year = parseInt(field.value.split("/")[2]);
 
-                              const year = parseInt(field.value.split("/")[2]);
-
-                              if (
-                                !isValid(parsedDate) ||
-                                parsedDate > currentDate ||
-                                year < minYear
-                              ) {
-                                field.onChange("");
-                              }
-                            }}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500 mt-1 font-light" />
-                      </FormItem>
-                    );
-                  }}
+                            if (
+                              !isValid(parsedDate) ||
+                              parsedDate > currentDate ||
+                              year < minYear
+                            ) {
+                              field.onChange("");
+                            }
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
                 />
                 <FormField
                   control={form.control}
@@ -445,10 +467,8 @@ export default function EditarCliente() {
                     <FormItem>
                       <FormLabel>Tipo de Cliente *</FormLabel>
                       <Select
-                        onValueChange={(value) => {
-                          field.onChange(Number(value));
-                        }}
-                        value={String(field.value)}
+                        onValueChange={field.onChange}
+                        value={field.value || ""}
                       >
                         <FormControl
                           className={
@@ -462,13 +482,9 @@ export default function EditarCliente() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="0" disabled>
-                            Selecione
-                          </SelectItem>
-
                           {Object.values(TipoCliente).map((item) => {
                             return (
-                              <SelectItem key={item} value={String(item)}>
+                              <SelectItem key={item} value={item}>
                                 {item}
                               </SelectItem>
                             );
@@ -706,50 +722,30 @@ export default function EditarCliente() {
                 <FormField
                   control={form.control}
                   name="telefone1"
-                  render={({ field }) => {
-                    useEffect(() => {
-                      if (field.value) {
-                        const parsedDate = parse(
-                          field.value,
-                          "yyyy-MM-dd",
-                          new Date()
-                        );
-
-                        if (isValid(parsedDate)) {
-                          const formattedDate = format(
-                            parsedDate,
-                            "dd/MM/yyyy"
-                          );
-                          field.onChange(formattedDate);
-                        }
-                      }
-                    }, [field.value]);
-
-                    return (
-                      <FormItem>
-                        <FormLabel>Telefone 1 *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Telefone"
-                            maxLength={15}
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              const formattedPhone = formatTelefoneInput(
-                                e.target.value
-                              );
-                              field.onChange(formattedPhone);
-                            }}
-                            className={`border ${
-                              form.formState.errors.telefone1
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            } focus:ring-2 focus:ring-primary`}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500 mt-1 font-light" />
-                      </FormItem>
-                    );
-                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone 1 *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Telefone"
+                          maxLength={15}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const formattedPhone = formatTelefoneInput(
+                              e.target.value
+                            );
+                            field.onChange(formattedPhone);
+                          }}
+                          className={`border ${
+                            form.formState.errors.telefone1
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          } focus:ring-2 focus:ring-primary`}
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
                 />
 
                 <FormField

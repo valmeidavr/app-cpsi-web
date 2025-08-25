@@ -5,12 +5,10 @@ import { gestorPool } from "@/lib/mysql";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const clienteId = searchParams.get("clienteId");
+    const clienteId = searchParams.get("cliente_id");
     if (!clienteId) {
-      return NextResponse.json({ error: "clienteId é obrigatório" }, { status: 400 });
+      return NextResponse.json({ error: "cliente_id é obrigatório" }, { status: 400 });
     }
-
-    console.log("🔍 Buscando convênios para cliente ID:", clienteId);
 
     // Primeiro verificar se a tabela convenios_clientes existe
     try {
@@ -19,27 +17,25 @@ export async function GET(request: NextRequest) {
       );
       
       if ((tableCheck as any[]).length === 0) {
-        console.log("⚠️ Tabela convenios_clientes não existe, buscando todos os convênios");
         // Fallback: buscar todos os convênios
         const [allConvenios] = await gestorPool.execute(
-          "SELECT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios"
+          "SELECT DISTINCT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios ORDER BY nome ASC"
         );
         return NextResponse.json({ data: allConvenios });
       }
     } catch (tableError) {
-      console.log("⚠️ Erro ao verificar tabela convenios_clientes:", tableError);
+      // Tabela não existe, continuar com fallback
     }
 
     // Buscar convênios específicos do cliente
     const [rows] = await gestorPool.execute(
-      `SELECT cc.id, cc.desconto, c.id as convenioId, c.nome, c.regras, c.tabelaFaturamentosId as tabela_faturamento_id
+      `SELECT DISTINCT cc.id, cc.desconto, c.id as convenioId, c.nome, c.regras, c.tabelaFaturamentosId as tabela_faturamento_id
        FROM convenios_clientes cc
        INNER JOIN convenios c ON cc.convenio_id = c.id
-       WHERE cc.cliente_id = ?`,
+       WHERE cc.cliente_id = ?
+       ORDER BY c.nome ASC`,
       [clienteId]
     );
-
-    console.log("✅ Convênios encontrados:", rows);
 
     return NextResponse.json({ data: rows });
   } catch (error) {
@@ -47,9 +43,8 @@ export async function GET(request: NextRequest) {
     
     // Fallback: buscar todos os convênios em caso de erro
     try {
-      console.log("🔄 Tentando fallback: buscar todos os convênios");
       const [fallbackRows] = await gestorPool.execute(
-        "SELECT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios"
+        "SELECT DISTINCT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios ORDER BY nome ASC"
       );
       return NextResponse.json({ data: fallbackRows });
     } catch (fallbackError) {

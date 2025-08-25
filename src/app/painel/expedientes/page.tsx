@@ -144,6 +144,13 @@ export default function ExpedientePage() {
     const fetchEspecialidadesByPrestadores = async () => {
       try {
         if (!unidade || !prestador) return;
+        
+        console.log('🔍 Debug - Buscando especialidades para:', {
+          unidade: unidade.nome,
+          prestador: prestador.nome,
+          totalAlocacoes: alocacoes.length
+        });
+        
         const listaEspecialidades: Especialidade[] = alocacoes
           .filter((item: Alocacao) => 
             item.unidade_id === unidade.id && 
@@ -151,15 +158,46 @@ export default function ExpedientePage() {
           )
           .map((item: Alocacao) => item.especialidade)
           .filter((especialidade, index, array) => 
-            array.findIndex(e => e.id === especialidade.id) === index
-          ); // Remove duplicatas
-        setEspecialidades(listaEspecialidades);
+            especialidade && especialidade.id && 
+            array.findIndex(e => e && e.id === especialidade.id) === index
+          ); // Remove duplicatas e valores nulos
+        
+        console.log('🔍 Debug - Especialidades filtradas:', listaEspecialidades.length);
+        
+        if (listaEspecialidades.length === 0) {
+          console.log('⚠️ Nenhuma especialidade encontrada para os filtros selecionados');
+          // Tentar buscar especialidades diretamente como fallback
+          try {
+            const response = await fetch("/api/especialidades?all=true");
+            if (response.ok) {
+              const data = await response.json();
+              setEspecialidades(data.data || []);
+              console.log('🔍 Debug - Especialidades carregadas via fallback:', data.data?.length || 0);
+            }
+          } catch (fallbackError) {
+            console.error('🔍 Debug - Erro no fallback:', fallbackError);
+          }
+        } else {
+          setEspecialidades(listaEspecialidades);
+        }
         
         // Limpar campos quando mudar prestador
         limparCamposExpediente();
       } catch (error: any) {
-        toast.error("Erro ao carregar dados das Especialidades");
-        console.error("Erro ao carregar especialidades:", error);
+        console.error("❌ Erro ao carregar especialidades:", error);
+        
+        // Tentar buscar especialidades diretamente como último recurso
+        try {
+          const response = await fetch("/api/especialidades?all=true");
+          if (response.ok) {
+            const data = await response.json();
+            setEspecialidades(data.data || []);
+            console.log('🔍 Debug - Especialidades carregadas via último recurso:', data.data?.length || 0);
+          }
+        } catch (lastResortError) {
+          console.error('🔍 Debug - Erro no último recurso:', lastResortError);
+          toast.error("Erro ao carregar dados das Especialidades");
+        }
       }
     };
     fetchEspecialidadesByPrestadores();

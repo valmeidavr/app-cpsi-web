@@ -14,10 +14,9 @@ export const createAgendaSchema = z.object({
       "CONFIRMADO",
     ],
     {
-      required_error: "Situação é obrigatória",
       invalid_type_error: "Situação inválida",
     }
-  ),
+  ).optional().default("AGENDADO"), // Opcional, padrão AGENDADO
   cliente_id: z
     .number()
     .int({ message: "Cliente deve ser um número inteiro" })

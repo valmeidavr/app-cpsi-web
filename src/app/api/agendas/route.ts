@@ -27,8 +27,11 @@ export async function GET(request: NextRequest) {
       SELECT 
         a.*,
         c.nome as cliente_nome,
+        c.cpf as cliente_cpf,
+        c.email as cliente_email,
         cv.nome as convenio_nome,
         p.nome as procedimento_nome,
+        p.codigo as procedimento_codigo,
         pr.nome as prestador_nome,
         u.nome as unidade_nome,
         esp.nome as especialidade_nome
@@ -83,6 +86,8 @@ export async function GET(request: NextRequest) {
       FROM agendas a
       LEFT JOIN clientes c ON a.cliente_id = c.id
       LEFT JOIN prestadores pr ON a.prestador_id = pr.id
+      LEFT JOIN unidades u ON a.unidade_id = u.id
+      LEFT JOIN especialidades esp ON a.especialidade_id = esp.id
       WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
@@ -113,12 +118,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug: log da query de contagem
-    console.log("Query de contagem agendas:", countQuery);
-    console.log("Parâmetros de contagem agendas:", countParams);
-
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as any[])[0]?.total || 0;
-    console.log("agendaRows", agendaRows);
+    
     return NextResponse.json({
       data: agendaRows,
       pagination: {
@@ -150,7 +152,7 @@ export async function POST(request: NextRequest) {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
-        body.procedimento_id, body.expediente_id, body.prestador_id,
+        body.procedimento_id, body.expediente_id || null, body.prestador_id,
         body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente
       ]
     );
@@ -213,7 +215,7 @@ export async function POST(request: NextRequest) {
           usuarioId = (usuarioRows as any[])[0].login;
         }
       } catch (usuarioError) {
-        console.log('⚠️ Usando usuário padrão:', usuarioId);
+        // Usando usuário padrão
       }
 
       // Criar o lançamento
@@ -242,7 +244,7 @@ export async function POST(request: NextRequest) {
         ]
       );
 
-      console.log(`✅ Lançamento criado automaticamente para agenda ID: ${agendaId}`);
+      // Lançamento criado automaticamente
     } catch (lancamentoError) {
       console.error('⚠️ Erro ao criar lançamento automático:', lancamentoError);
       // Não falhar a criação da agenda por causa do lançamento
@@ -282,12 +284,12 @@ export async function PUT(request: NextRequest) {
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?,
         procedimento_id = ?, expediente_id = ?, prestador_id = ?,
-        unidade_id = ?, especialidade_id = ?, tipo = ?
+        unidade_id = ?, especialidade_id = ?, tipo = ?, tipo_cliente = ?
        WHERE id = ?`,
       [
         body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
-        body.procedimento_id, body.expediente_id, body.prestador_id,
-        body.unidade_id, body.especialidade_id, body.tipo, id
+        body.procedimento_id, body.expediente_id || null, body.prestador_id,
+        body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente, id
       ]
     );
 

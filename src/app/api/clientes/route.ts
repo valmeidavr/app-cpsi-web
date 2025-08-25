@@ -19,8 +19,6 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
 
-    console.log('🔍 API Debug - Parâmetros recebidos:', { page, limit, search });
-
     // 1. Construir a cláusula WHERE dinamicamente
     let whereClause = '';
     const queryParams: (string | number)[] = [];
@@ -35,13 +33,9 @@ export async function GET(request: NextRequest) {
 
     // 2. Query para contar o total de registros (usando a cláusula WHERE)
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
-    console.log('🔍 API Debug - Query de contagem:', countQuery);
-    console.log('🔍 API Debug - Parâmetros de contagem:', queryParams);
     
     const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
     const total = (countRows as any[])[0]?.total || 0;
-
-    console.log('🔍 API Debug - Total de clientes:', total);
 
     // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -54,15 +48,7 @@ export async function GET(request: NextRequest) {
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
     
-    // Debug logs removidos para evitar spam
-    
-    const clienteRows = await gestorPool.execute(dataQuery, dataParams);
-
-    // Debug: verificar dados retornados
-    console.log('🔍 API Debug - Clientes encontrados:', (clienteRows as any[])[0]?.length || 0);
-    console.log('🔍 API Debug - Primeiro cliente:', (clienteRows as any[])[0]?.[0]);
-    console.log('🔍 API Debug - Query executada:', dataQuery);
-    console.log('🔍 API Debug - Parâmetros:', dataParams);
+    const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: (clienteRows as any[])[0],

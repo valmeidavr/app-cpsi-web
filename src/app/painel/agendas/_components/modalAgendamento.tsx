@@ -77,7 +77,6 @@ const ModalAgendamento = ({
     resolver: zodResolver(schema),
     mode: "onChange",
     defaultValues: {
-      situacao: "AGENDADO",
       cliente_id: 0,
       convenio_id: 0,
       procedimento_id: 0,
@@ -87,7 +86,7 @@ const ModalAgendamento = ({
       dtagenda: "",
       horario: "",
       tipo: "PROCEDIMENTO",
-      tipo_cliente: "NSOCIO",
+      tipo_cliente: undefined, // Inicialmente undefined
     },
   });
 
@@ -104,9 +103,7 @@ const ModalAgendamento = ({
   const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(
     null
   );
-  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoCliente | null>(
-    null
-  );
+  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoCliente | null>(null); // Inicialmente null
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
   const [openSelectConvenios, setOpenSelectConvenios] = useState(false);
@@ -119,7 +116,7 @@ const ModalAgendamento = ({
       fetchClientes();
       // Resetar o tipo de cliente quando o modal é aberto
       setTipoClienteSelecionado(null);
-      form.setValue("tipo_cliente", "NSOCIO");
+      form.setValue("tipo_cliente", undefined);
     }
   }, [open]);
 
@@ -169,7 +166,7 @@ const ModalAgendamento = ({
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
-      const response = await fetch(`/api/convenios-clientes?clienteId=${clienteId}`);
+      const response = await fetch(`/api/convenios-clientes?cliente_id=${clienteId}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -192,6 +189,7 @@ const ModalAgendamento = ({
         }
       }
       
+      // Fallback: buscar todos os convênios se não houver convênios específicos do cliente
       const fallbackResponse = await fetch("/api/convenios?limit=1000");
       
       if (fallbackResponse.ok) {
@@ -206,7 +204,7 @@ const ModalAgendamento = ({
       }
       
     } catch (error) {
-      console.error("Erro ao carregar convênios:", error);
+      console.error("❌ Erro ao carregar convênios:", error);
       toast.error("Erro ao carregar convênios para este cliente.");
       setConvenios([]);
       setConvenioSelecionado(null);
@@ -227,12 +225,56 @@ const ModalAgendamento = ({
       
       if (response.ok) {
         const data = await response.json();
-        setProcedimentos(data.data || []);
+        
+        // A API retorna um array diretamente, não data.data
+        if (Array.isArray(data)) {
+          // Mapear os dados corretamente baseado na estrutura real retornada
+          const procedimentosMapeados = data.map((item: any) => ({
+            id: item.id,
+            valor: item.valor,
+            tipo: item.tipo as any, // Usar o tipo retornado pela API
+            tabela_faturamento_id: item.tabela_faturamento_id || 1,
+            procedimento_id: item.procedimento_id,
+            createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
+            updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
+            // A API já retorna o procedimento com nome e código
+            procedimento: {
+              id: item.procedimento.id,
+              nome: item.procedimento.nome,
+              codigo: item.procedimento.codigo,
+              tipo: item.procedimento.tipo || "PROCEDIMENTO",
+              especialidade_id: item.procedimento.especialidade_id || 1,
+              especialidade: {
+                id: item.procedimento.especialidade_id || 1,
+                nome: "Especialidade Padrão",
+                codigo: "ESP001",
+                status: "Ativo",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              },
+              status: item.procedimento.status || "Ativo",
+              createdAt: item.procedimento.createdAt ? new Date(item.procedimento.createdAt) : new Date(),
+              updatedAt: item.procedimento.updatedAt ? new Date(item.procedimento.updatedAt) : new Date(),
+              Turma: [],
+              Agenda: []
+            },
+            tabelaFaturamento: {
+              id: item.tabela_faturamento_id || 1,
+              nome: "Tabela Padrão",
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          }));
+          
+          setProcedimentos(procedimentosMapeados);
+        } else {
+          setProcedimentos([]);
+        }
       } else {
         throw new Error("Erro ao carregar procedimentos");
       }
     } catch (e) {
-      console.error("Erro ao carregar procedimentos:", e);
+      console.error("❌ Erro ao carregar procedimentos:", e);
       toast.error("Nenhum procedimento encontrado");
       setProcedimentos([]);
     }
@@ -253,55 +295,84 @@ const ModalAgendamento = ({
 
   const onSubmit = async (values: any) => {
     setLoading(true);
+
     try {
-      if (!procedimentoSelecionado)
-        return toast.error("Selecione um procedimento válido");
-      
-      if (!tipoClienteSelecionado)
-        return toast.error("O Tipo de Cliente é obrigatório");
-      
-      // Adicionar o tipo_cliente aos dados
+      if (!unidade?.id || !prestador?.id || !especialidade?.id) {
+        toast.error("Unidade, Prestador e Especialidade devem ser selecionados na tela principal antes de agendar.");
+        setLoading(false);
+        return;
+      }
+      if (!dataSelecionada || !horaSelecionada) {
+        toast.error("Data e horário são obrigatórios para editar o agendamento.");
+        setLoading(false);
+        return;
+      }
+      if (!values.cliente_id || !values.convenio_id || !values.procedimento_id) {
+        toast.error("Cliente, Convênio e Procedimento são obrigatórios.");
+        setLoading(false);
+        return;
+      }
+      if (!tipoClienteSelecionado) {
+        toast.error("Tipo de cliente é obrigatório.");
+        setLoading(false);
+        return;
+      }
+
+      // Formatar a data para UTC ISO
+      const dataFormatada = localDateToUTCISO(dataSelecionada);
+      const dataComHorario = new Date(dataFormatada);
+      const [horas, minutos] = horaSelecionada.split(':');
+      dataComHorario.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+
+      // Preparar dados para envio
       const dadosParaEnviar = {
         ...values,
-        tipo_cliente: tipoClienteSelecionado || values.tipo_cliente
+        dtagenda: dataComHorario.toISOString(),
+        prestador_id: prestador?.id,
+        unidade_id: unidade?.id,
+        especialidade_id: especialidade?.id,
+        situacao: "AGENDADO",
       };
-      
-      const response = await fetch(
-        `/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(dadosParaEnviar),
-        }
-      );
 
-      if (!response.ok) {
+      // Enviar para a API
+      const response = await fetch(`/api/agendas?id=${agendamentoSelecionado.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dadosParaEnviar),
+      });
+
+      if (response.ok) {
+        toast.success("Agendamento atualizado com sucesso!");
+        setOpen(false);
+        carregarAgendamentos();
+      } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao atualizar agendamento");
       }
-
-      toast.success("Agendamento atualizado com sucesso!");
-      await carregarAgendamentos();
-      setOpen(false);
-    } catch (err: any) {
-      toast.error(`Erro ao salvar agendamento: ${err.message || "Erro desconhecido"}`);
+    } catch (error) {
+      console.error("❌ Erro ao atualizar agendamento:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar agendamento");
     } finally {
       setLoading(false);
-      setClienteSelecionado(null);
-      setConvenioSelecionado(null);
-      form.setValue("convenio_id", 0);
-      setProcedimentos([]);
-      form.setValue("procedimento_id", 0);
-      form.setValue("cliente_id", 0);
-      setTipoClienteSelecionado(null);
-      form.setValue("tipo_cliente", "NSOCIO");
-      setSearchCliente("");
-      setSearchProcedimento("");
-      setSearchConvenio("");
     }
   };
+
+  // Filtrar clientes baseado na pesquisa
+  const filteredClientes = clientes.filter(cliente => {
+    const searchLower = searchCliente.toLowerCase();
+    const nomeLower = cliente.nome.toLowerCase();
+    const emailLower = cliente.email?.toLowerCase() || '';
+    const cpfLower = cliente.cpf?.toLowerCase() || '';
+    
+    // Busca mais específica para evitar seleções múltiplas
+    if (searchLower.length < 2) return true; // Mostrar todos se busca muito curta
+    
+    return nomeLower.includes(searchLower) || 
+           emailLower.includes(searchLower) || 
+           cpfLower.includes(searchLower);
+  });
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -317,7 +388,44 @@ const ModalAgendamento = ({
         <Form {...form}>
           <div className="flex flex-col">
             <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="tipo_cliente"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Tipo Cliente *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setTipoClienteSelecionado(value as TipoCliente);
+                          // Limpar procedimento selecionado quando tipo mudar
+                          setProcedimentoSelecionado(null);
+                          form.setValue("procedimento_id", 0);
+                          // Recarregar procedimentos se já há convênio selecionado
+                          if (convenioSelecionado) {
+                            fetchProcedimentos(value as TipoCliente, convenioSelecionado.id);
+                          }
+                        }}
+                        value={field.value || tipoClienteSelecionado || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="SOCIO">SOCIO</SelectItem>
+                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
+                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
+                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -355,25 +463,36 @@ const ModalAgendamento = ({
                             <CommandList>
                               <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                               <CommandGroup>
-                                {clientes
-                                  .filter((cliente) =>
-                                    cliente.nome.toLowerCase().includes(searchCliente.toLowerCase()) ||
-                                    cliente.cpf?.includes(searchCliente) ||
-                                    cliente.email?.toLowerCase().includes(searchCliente.toLowerCase())
-                                  )
-                                  .map((cliente) => (
-                                    <CommandItem
-                                      key={cliente.id}
-                                      value={cliente.nome}
-                                      onSelect={() => {
-                                        field.onChange(cliente.id);
-                                        setClienteSelecionado(cliente);
-                                        setTipoClienteSelecionado(cliente.tipoCliente);
-                                        fetchConvenios(cliente.id);
-                                        setOpenSelectClientes(false);
-                                        setSearchCliente("");
-                                      }}
-                                    >
+                                {filteredClientes.map((cliente) => (
+                                  <CommandItem
+                                    value={`${cliente.id}-${cliente.nome}`}
+                                    key={`cliente-${cliente.id}-${cliente.nome}`}
+                                    onSelect={() => {
+                                      console.log("🔍 Cliente selecionado:", cliente.id, cliente.nome);
+                                      
+                                      // Limpar seleções anteriores
+                                      setClienteSelecionado(null);
+                                      setConvenioSelecionado(null);
+                                      setProcedimentoSelecionado(null);
+                                      setConvenios([]);
+                                      setProcedimentos([]);
+                                      
+                                      // Definir novo cliente
+                                      field.onChange(cliente.id);
+                                      form.setValue("convenio_id", 0);
+                                      form.setValue("procedimento_id", 0);
+                                      
+                                      setClienteSelecionado(cliente);
+                                      setTipoClienteSelecionado(cliente.tipoCliente);
+                                      form.setValue("tipo_cliente", cliente.tipoCliente || undefined);
+                                      
+                                      // Buscar convênios do cliente
+                                      fetchConvenios(cliente.id);
+                                      
+                                      setOpenSelectClientes(false);
+                                      setSearchCliente("");
+                                    }}
+                                  >
                                       <Check
                                         className={cn(
                                           "mr-2 h-4 w-4",
@@ -472,7 +591,7 @@ const ModalAgendamento = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-6">
                 <FormField
                   control={form.control}
                   name="procedimento_id"
@@ -551,73 +670,6 @@ const ModalAgendamento = ({
                           </Command>
                         </PopoverContent>
                       </Popover>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="tipo_cliente"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Tipo Cliente *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setTipoClienteSelecionado(value as TipoCliente);
-                          // Limpar procedimento selecionado quando tipo mudar
-                          setProcedimentoSelecionado(null);
-                          form.setValue("procedimento_id", 0);
-                          // Recarregar procedimentos se já há convênio selecionado
-                          if (convenioSelecionado) {
-                            fetchProcedimentos(value as TipoCliente, convenioSelecionado.id);
-                          }
-                        }}
-                        value={field.value || tipoClienteSelecionado || "NSOCIO"}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="SOCIO">SOCIO</SelectItem>
-                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
-                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
-                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="situacao"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Situação</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
-                            <SelectValue placeholder="Selecione a situação" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="LIVRE">Livre</SelectItem>
-                          <SelectItem value="AGENDADO">Agendado</SelectItem>
-                          <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
-                          <SelectItem value="FINALIZADO">Finalizado</SelectItem>
-                          <SelectItem value="FALTA">Falta</SelectItem>
-                          <SelectItem value="BLOQUEADO">Bloqueado</SelectItem>
-                          <SelectItem value="INATIVO">Inativo</SelectItem>
-                        </SelectContent>
-                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}

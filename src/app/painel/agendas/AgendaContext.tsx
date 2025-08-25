@@ -85,7 +85,6 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
             dadosAgendamento: agenda,
           };
         });
-        console.log("novaLista", novaLista);
         setHorariosDia(novaLista);
       } else {
         console.error("Erro ao buscar agendamentos:", data.error);
@@ -165,55 +164,65 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchPrestadores = async () => {
     try {
-      console.log('🔍 Debug - Iniciando busca de prestadores...');
-      const response = await fetch("/api/prestadores?all=true");
-      
-      if (!response.ok) {
-        throw new Error("Erro ao carregar prestadores");
+      const response = await fetch("/api/prestadores?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        setPrestadores(data.data || []);
       }
-      
-      const data = await response.json();
-      console.log('🔍 Debug - Prestadores recebidos:', data.data?.length || 0);
-      setPrestadores(data.data);
-    } catch (error: any) {
-      console.error('🔍 Debug - Erro ao buscar prestadores:', error);
-      toast.error("Erro ao carregar dados dos Prestadores");
+    } catch (error) {
+      console.error("Erro ao carregar prestadores:", error);
     }
   };
-  
+
   const fetchUnidades = async () => {
     try {
-      console.log('🔍 Debug - Iniciando busca de unidades...');
-      const response = await fetch("/api/unidades?all=true");
-      
-      if (!response.ok) {
-        throw new Error("Erro ao carregar unidades");
+      const response = await fetch("/api/unidades?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        setUnidades(data.data || []);
       }
-      
-      const data = await response.json();
-      console.log('🔍 Debug - Unidades recebidas:', data.data?.length || 0);
-      setUnidades(data.data);
-    } catch (error: any) {
-      console.error('🔍 Debug - Erro ao buscar unidades:', error);
-      toast.error("Erro ao carregar dados das Unidades");
+    } catch (error) {
+      console.error("Erro ao carregar unidades:", error);
     }
   };
-  
+
   const fetchEspecialidades = async () => {
     try {
-      console.log('🔍 Debug - Iniciando busca de especialidades...');
-      const response = await fetch("/api/especialidades?all=true");
-      
-      if (!response.ok) {
-        throw new Error("Erro ao carregar especialidades");
+      const response = await fetch("/api/especialidades?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        setEspecialidades(data.data || []);
+        return;
       }
-      
-      const data = await response.json();
-      console.log('🔍 Debug - Especialidades recebidas:', data.data?.length || 0);
-      setEspecialidades(data.data);
-    } catch (error: any) {
-      console.error('🔍 Debug - Erro ao buscar especialidades:', error);
-      toast.error("Erro ao carregar dados das Especialidades");
+    } catch (error) {
+      // API de especialidades falhou, tentar via alocações
+    }
+
+    // Fallback: buscar especialidades via alocações
+    try {
+      const response = await fetch("/api/alocacoes?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        const especialidadesArray = data.data?.map((alocacao: any) => alocacao.especialidade) || [];
+        const especialidadesUnicas = especialidadesArray.filter((esp: any, index: number, arr: any[]) => 
+          arr.findIndex(e => e.id === esp.id) === index
+        );
+        setEspecialidades(especialidadesUnicas);
+        return;
+      }
+    } catch (error) {
+      // Tentar busca de emergência
+    }
+
+    // Último recurso: buscar especialidades diretamente
+    try {
+      const response = await fetch("/api/especialidades?limit=1000");
+      if (response.ok) {
+        const data = await response.json();
+        setEspecialidades(data.data || []);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar especialidades:", error);
     }
   };
   return (

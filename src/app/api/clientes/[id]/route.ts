@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gestorPool } from "@/lib/mysql";
+import { TipoCliente } from "@/app/types/Cliente";
 
 // GET - Buscar cliente por ID
 export async function GET(
@@ -22,13 +23,33 @@ export async function GET(
     }
 
     const cliente = (rows as any[])[0];
+    
+    // Log para debug
+    console.log('🔍 Cliente encontrado:', {
+      id: cliente.id,
+      nome: cliente.nome,
+      sexo: cliente.sexo,
+      tipo: cliente.tipo,
+      tipoCliente: cliente.tipoCliente,
+      dtnascimento: cliente.dtnascimento
+    });
+
+    // Garantir que o campo tipo seja mapeado corretamente
+    // Se tipo for um número, converter para o valor do enum
+    if (cliente.tipo !== undefined && cliente.tipo !== null) {
+      // Se tipo for número, manter como está (será tratado no frontend)
+      // Se tipo for string, verificar se é válido
+      if (typeof cliente.tipo === 'string' && !Object.values(TipoCliente).includes(cliente.tipo as TipoCliente)) {
+        console.warn('⚠️ Tipo inválido encontrado:', cliente.tipo);
+      }
+    }
 
     // Buscar convênios do cliente
     const [conveniosRows] = await gestorPool.execute(
       'SELECT convenio_id, desconto FROM convenios_clientes WHERE cliente_id = ?',
       [id]
     );
-    console.log(cliente);
+    
     cliente.convenios = (conveniosRows as any[]).map((row: any) => ({
       convenioId: row.convenio_id,
       desconto: row.desconto

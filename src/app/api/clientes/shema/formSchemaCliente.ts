@@ -42,9 +42,24 @@ export const createClienteSchema = z.object({
   }),
 
   cep: z.string().optional(),
-  tipo: z.nativeEnum(TipoCliente, {
+  tipo: z.union([
+    z.nativeEnum(TipoCliente),
+    z.string().refine((val) => Object.values(TipoCliente).includes(val as TipoCliente), {
+      message: "Tipo de cliente inválido"
+    }),
+    z.number().refine((val) => val >= 0 && val < Object.keys(TipoCliente).length, {
+      message: "Tipo de cliente inválido"
+    })
+  ], {
     required_error: "Tipo de cliente é obrigatório",
     invalid_type_error: "Tipo de cliente inválido",
+  }).transform((val) => {
+    // Se for número, converter para string do enum
+    if (typeof val === 'number') {
+      const enumValues = Object.values(TipoCliente);
+      return enumValues[val] || TipoCliente.SOCIO;
+    }
+    return val;
   }),
   logradouro: z.string().optional(),
   numero: z.string().optional(),

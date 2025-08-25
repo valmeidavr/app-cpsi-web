@@ -20,10 +20,8 @@ export async function GET(request: NextRequest) {
 
     // Se for busca específica por convênio e tipo de cliente
     if (convenioId && tipoCliente) {
-      console.log("🔍 Buscando procedimentos para:", { convenioId, tipoCliente });
-      
       const query = `
-        SELECT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
+        SELECT DISTINCT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
         FROM valor_procedimentos vp
         INNER JOIN procedimentos p ON vp.procedimento_id = p.id
         INNER JOIN tabela_faturamentos tf ON vp.tabela_faturamento_id = tf.id
@@ -32,12 +30,7 @@ export async function GET(request: NextRequest) {
         ORDER BY p.nome ASC
       `;
       
-      console.log("🔍 Query SQL:", query);
-      console.log("🔍 Parâmetros:", [convenioId, tipoCliente]);
-      
       const valorRows = await executeWithRetry(gestorPool, query, [convenioId, tipoCliente]);
-      
-      console.log("🔍 Resultados brutos:", valorRows);
       
       // Transformar os dados para o formato esperado pelo frontend
       const valorProcedimentosFormatados = (valorRows as any[]).map(row => ({
@@ -57,14 +50,10 @@ export async function GET(request: NextRequest) {
         }
       }));
       
-      console.log("🔍 Dados formatados:", valorProcedimentosFormatados);
-      
       // Verificar se os dados são válidos
       const dadosValidos = valorProcedimentosFormatados.filter(item => 
         item && item.id && item.procedimento && item.procedimento.nome
       );
-      
-      console.log("🔍 Dados válidos:", dadosValidos);
       
       return NextResponse.json(dadosValidos);
     }

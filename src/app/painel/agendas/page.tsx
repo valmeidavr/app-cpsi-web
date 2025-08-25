@@ -51,7 +51,6 @@ export default function Agendas() {
   } = useAgenda();
 
   useEffect(() => {
-    console.log('🔍 Debug - Estado atual:', { unidade: unidade?.nome, prestador: prestador?.nome, especialidade: especialidade?.nome });
     if (unidade && prestador && especialidade) {
       carregarAgendamentosGeral();
     }
