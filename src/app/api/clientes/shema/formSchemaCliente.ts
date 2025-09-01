@@ -1,6 +1,7 @@
 import * as z from "zod";
 import { parse, isValid, format } from "date-fns";
 import { TipoCliente } from "@/app/types/Cliente";
+import { validarCPF } from "@/app/helpers/cpfValidator";
 
 export const createClienteSchema = z.object({
   nome: z
@@ -37,9 +38,13 @@ export const createClienteSchema = z.object({
 
   sexo: z.string().min(1, { message: "Sexo é obrigatório" }).default(""),
 
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
-    message: "Formato de CPF inválido",
-  }),
+  cpf: z.string()
+    .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
+      message: "Formato de CPF inválido",
+    })
+    .refine((value) => validarCPF(value), {
+      message: "CPF inválido - dígitos verificadores incorretos",
+    }),
 
   cep: z.string().optional(),
   tipo: z.union([

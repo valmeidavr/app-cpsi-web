@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         tipo: string;
         createdAt: Date;
         updatedAt: Date;
-      }>)[0],
+      }>),
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),

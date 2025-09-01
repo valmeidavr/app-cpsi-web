@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { validarCPF } from "@/app/helpers/cpfValidator";
 
 export const createPrestadorSchema = z.object({
   nome: z
@@ -31,6 +32,15 @@ export const createPrestadorSchema = z.object({
         return true;
       },
       { message: "Formato de CPF inválido" }
+    )
+    .refine(
+      (value) => {
+        if (value) {
+          return validarCPF(value);
+        }
+        return true;
+      },
+      { message: "CPF inválido - dígitos verificadores incorretos" }
     ),
 
   sexo: z.string().min(1, { message: "O campo sexo é obrigatório" }).optional(),

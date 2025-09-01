@@ -54,7 +54,7 @@ export async function authenticateUser(login: string, password: string): Promise
       }
       
       console.log('🔐 Verificando senha...')
-      isPasswordValid = true
+      isPasswordValid = await bcrypt.compare(password, hashToCompare)
       console.log('✅ Resultado da verificação:', isPasswordValid)
     } catch (error) {
       console.error('❌ Erro ao verificar senha:', error)
