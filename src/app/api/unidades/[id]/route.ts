@@ -14,14 +14,26 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Unidade não encontrada' },
         { status: 404 }
       );
     }
 
-    const unidade = (rows as any[])[0];
+    const unidade = (rows as Array<{
+      id: number;
+      nome: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(unidade);
   } catch (error) {

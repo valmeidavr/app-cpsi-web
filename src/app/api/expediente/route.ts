@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createExpedienteSchema, updateExpedienteSchema } from "./schema/formSchemaExpedientes";
-import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
 
 export type CreateExpedienteDTO = z.infer<typeof createExpedienteSchema>;
 export type UpdateExpedienteDTO = z.infer<typeof updateExpedienteSchema>;
@@ -66,8 +65,30 @@ export async function GET(request: NextRequest) {
     // Debug: verificar dados retornados
     console.log("🔍 Query executada:", query);
     console.log("🔍 Parâmetros:", params);
-    console.log("✅ Expedientes encontrados:", (expedienteRows as any[])?.length || 0);
-    console.log("🔍 Primeiro expediente:", (expedienteRows as any[])?.[0]);
+    console.log("✅ Expedientes encontrados:", (expedienteRows as Array<{
+      id: number;
+      dtinicio: string;
+      dtfinal: string;
+      hinicio: string;
+      hfinal: string;
+      intervalo: number;
+      semana: string;
+      alocacao_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)?.length || 0);
+    console.log("🔍 Primeiro expediente:", (expedienteRows as Array<{
+      id: number;
+      dtinicio: string;
+      dtfinal: string;
+      hinicio: string;
+      hfinal: string;
+      intervalo: number;
+      semana: string;
+      alocacao_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)?.[0]);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -88,7 +109,7 @@ export async function GET(request: NextRequest) {
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     
     // Debug: verificar contagem
     console.log("🔍 Query de contagem:", countQuery);
@@ -131,7 +152,7 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    const expedienteId = (expedienteResult as any).insertId;
+    const expedienteId = (expedienteResult as { insertId: number }).insertId;
     console.log("✅ Expediente criado com ID:", expedienteId);
 
     // 2. Buscar dados da alocação
@@ -145,11 +166,19 @@ export async function POST(request: NextRequest) {
       [body.alocacao_id]
     );
 
-    if (!alocacaoRows || (alocacaoRows as any[]).length === 0) {
+    if (!alocacaoRows || (alocacaoRows as Array<{
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+    }>).length === 0) {
       throw new Error(`Alocação com ID ${body.alocacao_id} não encontrada`);
     }
 
-    const alocacao = (alocacaoRows as any[])[0];
+    const alocacao = (alocacaoRows as Array<{
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+    }>)[0];
     console.log("✅ Dados da alocação:", alocacao);
 
     // 3. Mapear dias da semana
@@ -200,7 +229,15 @@ export async function POST(request: NextRequest) {
     console.log("✅ Datas válidas encontradas:", datasValidas.length);
 
     // 5. Gerar agendamentos
-    const agendasToCreate: any[] = [];
+    const agendasToCreate: Array<{
+      dtagenda: Date;
+      situacao: string;
+      expediente_id: number;
+      prestador_id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      tipo: string;
+    }> = [];
     const intervaloMin = parseInt(body.intervalo, 10);
 
     for (const data of datasValidas) {

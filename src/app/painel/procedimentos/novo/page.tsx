@@ -80,8 +80,8 @@ export default function NovoProcedimento() {
       queryParams.set("message", "Procedimento salvo com sucesso!");
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar procedimento";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar procedimento";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -98,7 +98,7 @@ export default function NovoProcedimento() {
       
       const data = await response.json();
       setEspecialidadeOptions(data.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar lista de especialidades");
     }

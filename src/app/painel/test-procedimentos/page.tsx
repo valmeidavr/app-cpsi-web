@@ -95,11 +95,11 @@ export default function TestProcedimentos() {
       } else {
         throw new Error("Erro ao carregar clientes");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar clientes:", error);
       setTestInfo(prev => ({ 
         ...prev, 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Erro ao carregar clientes',
         loading: false 
       }));
     }
@@ -121,7 +121,7 @@ export default function TestProcedimentos() {
         
         if (data.data && Array.isArray(data.data)) {
           // Mapear baseado na estrutura real retornada pela API
-          conveniosMapeados = data.data.map((item: any) => {
+          conveniosMapeados = data.data.map((item: { convenioId: number; nome: string; desconto?: number }) => {
             console.log('🔍 Mapeando item:', item);
             
             // A API retorna: convenioId, nome, desconto
@@ -181,7 +181,7 @@ export default function TestProcedimentos() {
         console.error("❌ Erro ao carregar procedimentos:", errorData);
         throw new Error("Erro ao carregar procedimentos");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("❌ Erro ao carregar procedimentos:", error);
       setTestInfo(prev => ({ 
         ...prev, 
@@ -300,9 +300,9 @@ export default function TestProcedimentos() {
                     
                     // Testar o mapeamento
                     if (data.data && Array.isArray(data.data)) {
-                      const conveniosMapeados = data.data.map((item: any) => ({
-                        id: item.convenioId || item.id,
-                        nome: item.nome || item.convenio_nome,
+                      const conveniosMapeados = data.data.map((item: { convenioId?: number; id?: number; nome?: string; convenio_nome?: string; desconto?: number }) => ({
+                        id: item.convenioId || item.id || 0,
+                        nome: item.nome || item.convenio_nome || '',
                         desconto: item.desconto
                       }));
                       console.log('🔍 Convênios mapeados no debug:', conveniosMapeados);

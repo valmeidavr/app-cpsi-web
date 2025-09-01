@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
 
     // Debug: log da query de contagem
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     
     return NextResponse.json({
       data: agendaRows,
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    const agendaId = (result as any).insertId;
+    const agendaId = (result as { insertId: number }).insertId;
 
     // Criar automaticamente um lançamento de caixa para o agendamento
     try {
@@ -168,8 +168,8 @@ export async function POST(request: NextRequest) {
           'SELECT nome FROM clientes WHERE id = ?',
           [body.cliente_id]
         );
-        if ((clienteRows as any[]).length > 0) {
-          clienteNome = (clienteRows as any[])[0].nome;
+        if ((clienteRows as Array<{ nome: string }>).length > 0) {
+          clienteNome = (clienteRows as Array<{ nome: string }>)[0].nome;
         }
       }
 
@@ -180,8 +180,8 @@ export async function POST(request: NextRequest) {
           'SELECT nome FROM procedimentos WHERE id = ?',
           [body.procedimento_id]
         );
-        if ((procedimentoRows as any[]).length > 0) {
-          procedimentoNome = (procedimentoRows as any[])[0].nome;
+        if ((procedimentoRows as Array<{ nome: string }>).length > 0) {
+          procedimentoNome = (procedimentoRows as Array<{ nome: string }>)[0].nome;
         }
       }
 
@@ -191,8 +191,8 @@ export async function POST(request: NextRequest) {
       );
       
       let caixaId = 1; // Caixa padrão se não houver nenhum
-      if ((caixaRows as any[]).length > 0) {
-        caixaId = (caixaRows as any[])[0].id;
+      if ((caixaRows as Array<{ id: number }>).length > 0) {
+        caixaId = (caixaRows as Array<{ id: number }>)[0].id;
       }
 
       // Buscar o primeiro plano de conta ativo disponível
@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
       );
       
       let planoContaId = 1; // Plano de conta padrão se não houver nenhum
-      if ((planoContaRows as any[]).length > 0) {
-        planoContaId = (planoContaRows as any[])[0].id;
+      if ((planoContaRows as Array<{ id: number }>).length > 0) {
+        planoContaId = (planoContaRows as Array<{ id: number }>)[0].id;
       }
 
       // Buscar o primeiro usuário ativo disponível (usuário da sessão)
@@ -211,10 +211,10 @@ export async function POST(request: NextRequest) {
         const [usuarioRows] = await accessPool.execute(
           'SELECT login FROM usuarios WHERE status = "Ativo" LIMIT 1'
         );
-        if ((usuarioRows as any[]).length > 0) {
-          usuarioId = (usuarioRows as any[])[0].login;
+        if ((usuarioRows as Array<{ login: string }>).length > 0) {
+          usuarioId = (usuarioRows as Array<{ login: string }>)[0].login;
         }
-      } catch (usuarioError) {
+      } catch {
         // Usando usuário padrão
       }
 

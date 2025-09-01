@@ -14,14 +14,28 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Alocação não encontrada' },
         { status: 404 }
       );
     }
 
-    const alocacao = (rows as any[])[0];
+    const alocacao = (rows as Array<{
+      id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(alocacao);
   } catch (error) {

@@ -14,14 +14,40 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      descricao: string;
+      valor: number;
+      data_lancamento: string;
+      forma_pagamento: string;
+      status_pagamento: string;
+      clientes_id: number;
+      plano_contas_id: number;
+      caixas_id: number;
+      usuario_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Lançamento não encontrado' },
         { status: 404 }
       );
     }
 
-    const lancamento = (rows as any[])[0];
+    const lancamento = (rows as Array<{
+      id: number;
+      descricao: string;
+      valor: number;
+      data_lancamento: string;
+      forma_pagamento: string;
+      status_pagamento: string;
+      clientes_id: number;
+      plano_contas_id: number;
+      caixas_id: number;
+      usuario_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(lancamento);
   } catch (error) {

@@ -19,7 +19,12 @@ export async function GET(
       [id]
     );
     
-    const usuarios = rows as any[];
+    const usuarios = rows as Array<{
+      login: string;
+      nome: string;
+      email: string;
+      status: string;
+    }>;
     const usuario = usuarios[0];
     
     if (!usuario) {
@@ -59,7 +64,7 @@ export async function PUT(
     const validatedData = updateUsuarioSchema.parse(body);
     
     let query = 'UPDATE usuarios SET ';
-    const queryParams: any[] = [];
+    const queryParams: (string | number)[] = [];
     
     if (validatedData.nome) {
       query += 'nome = ?, ';

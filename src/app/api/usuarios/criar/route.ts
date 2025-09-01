@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       [validatedData.email]
     );
     
-    if ((existingUser as any[]).length > 0) {
+    if ((existingUser as Array<{ login: string }>).length > 0) {
       return NextResponse.json(
         { error: 'Usuário já existe com este email' },
         { status: 400 }
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const userLogin = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     
     // Inserir usuário
-    const [result] = await accessPool.execute(
+    await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [userLogin, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );

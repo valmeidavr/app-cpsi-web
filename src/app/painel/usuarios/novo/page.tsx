@@ -59,9 +59,9 @@ export default function UsuarioRegistrationForm() {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Erro ao criar usuário')
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao criar usuário:', error)
-      toast.error(error.message || 'Erro ao criar usuário')
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar usuário')
     } finally {
       setLoading(false)
     }

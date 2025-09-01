@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { NextResponse } from "next/server";
+import { gestorPool } from "@/lib/mysql";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 Debug - Iniciando teste da API de especialidades...');
     
@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
     const [tables] = await gestorPool.execute(
       "SHOW TABLES LIKE 'especialidades'"
     );
-    console.log('🔍 Tabela especialidades existe:', (tables as any[]).length > 0);
+    console.log('🔍 Tabela especialidades existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
     
-    if ((tables as any[]).length === 0) {
+    if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela especialidades não encontrada',
         tables: await gestorPool.execute("SHOW TABLES")
@@ -31,14 +31,21 @@ export async function GET(request: NextRequest) {
     const [countResult] = await gestorPool.execute(
       "SELECT COUNT(*) as total FROM especialidades"
     );
-    const total = (countResult as any[])[0]?.total || 0;
+    const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
     console.log('🔍 Total de especialidades:', total);
     
     // Tentar buscar especialidades ativas
     const [especialidades] = await gestorPool.execute(
       'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
     );
-    console.log('🔍 Especialidades ativas encontradas:', (especialidades as any[]).length);
+    console.log('🔍 Especialidades ativas encontradas:', (especialidades as Array<{
+      id: number;
+      nome: string;
+      codigo: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length);
     
     // Verificar se há especialidades com status diferente
     const [statusCount] = await gestorPool.execute(
@@ -52,18 +59,34 @@ export async function GET(request: NextRequest) {
         tabelaExiste: true,
         estrutura: columns,
         totalRegistros: total,
-        especialidadesAtivas: (especialidades as any[]).length,
+        especialidadesAtivas: (especialidades as Array<{
+          id: number;
+          nome: string;
+          codigo: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length,
         contagemPorStatus: statusCount,
-        amostra: (especialidades as any[]).slice(0, 3) // Primeiras 3 especialidades
+        amostra: (especialidades as Array<{
+          id: number;
+          nome: string;
+          codigo: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).slice(0, 3) // Primeiras 3 especialidades
       }
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Erro no debug de especialidades:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json({
       error: 'Erro interno do servidor',
-      details: error.message,
-      stack: error.stack
+      details: errorMessage,
+      stack: errorStack
     }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 
 // GET - Buscar procedimentos por convênio e tipo de cliente
 export async function GET(request: NextRequest) {

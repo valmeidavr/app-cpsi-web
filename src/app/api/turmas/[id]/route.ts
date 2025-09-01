@@ -14,14 +14,38 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      horario_inicio: string;
+      horario_fim: string;
+      data_inicio: string;
+      data_fim: string;
+      limite_vagas: number;
+      prestador_id: number;
+      procedimento_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Turma não encontrada' },
         { status: 404 }
       );
     }
 
-    const turma = (rows as any[])[0];
+    const turma = (rows as Array<{
+      id: number;
+      nome: string;
+      horario_inicio: string;
+      horario_fim: string;
+      data_inicio: string;
+      data_fim: string;
+      limite_vagas: number;
+      prestador_id: number;
+      procedimento_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(turma);
   } catch (error) {

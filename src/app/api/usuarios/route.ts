@@ -31,7 +31,12 @@ export async function GET(request: NextRequest) {
         const [rows] = await accessPool.execute(
           'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
         );
-        const usuarios = rows as any[];
+        const usuarios = rows as Array<{
+          login: string;
+          nome: string;
+          email: string;
+          status: string;
+        }>;
         
         console.log('🔍 API Debug - Usuários encontrados no banco:', usuarios.length);
         console.log('🔍 API Debug - Primeiro usuário:', usuarios[0]);
@@ -68,7 +73,12 @@ export async function GET(request: NextRequest) {
     // Debug logs removidos para evitar spam
 
     const [userRows] = await accessPool.execute(query, params)
-    const usuarios = userRows as any[]
+    const usuarios = userRows as Array<{
+      login: string;
+      nome: string;
+      email: string;
+      status: string;
+    }>;
     // Debug logs removidos para evitar spam
 
     // Buscar total de registros para paginação
@@ -81,7 +91,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [countRows] = await accessPool.execute(countQuery, countParams)
-    const total = (countRows as any[])[0]?.total || 0
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
 
     return NextResponse.json({
@@ -111,7 +121,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
     
     // Inserir usuário - usando email como login já que o schema não tem campo login
-    const [result] = await accessPool.execute(
+    await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [validatedData.email, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );
@@ -139,7 +149,7 @@ export async function PUT(request: NextRequest) {
     const validatedData = updateUsuarioSchema.parse(body);
     
     let query = 'UPDATE usuarios SET ';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     
     if (validatedData.nome) {
       query += 'nome = ?, ';

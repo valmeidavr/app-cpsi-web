@@ -48,7 +48,19 @@ export async function GET(request: NextRequest) {
     
     const alocacaoRows = await executeWithRetry(gestorPool, query, params);
     
-    console.log("✅ Alocações encontradas:", (alocacaoRows as any[])?.length || 0);
+    console.log("✅ Alocações encontradas:", (alocacaoRows as Array<{
+      id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+      unidade_nome: string;
+      especialidade_nome: string;
+      prestador_nome: string;
+      prestador_cpf: string;
+      prestador_celular: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)?.length || 0);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -59,7 +71,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN prestadores p ON a.prestador_id = p.id
       WHERE 1=1
     `;
-    const countParams: (string)[] = [];
+    const countParams: string[] = [];
 
     if (search) {
       countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
@@ -67,10 +79,22 @@ export async function GET(request: NextRequest) {
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // Transformar os dados para incluir objetos aninhados
-    const alocacoesFormatadas = (alocacaoRows as any[]).map((row: any) => ({
+    const alocacoesFormatadas = (alocacaoRows as Array<{
+      id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+      unidade_nome: string;
+      especialidade_nome: string;
+      prestador_nome: string;
+      prestador_cpf: string;
+      prestador_celular: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).map((row) => ({
       id: row.id,
       unidade_id: row.unidade_id,
       especialidade_id: row.especialidade_id,
@@ -128,7 +152,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar alocação:', error);

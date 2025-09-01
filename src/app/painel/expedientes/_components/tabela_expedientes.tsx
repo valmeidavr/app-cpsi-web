@@ -59,7 +59,7 @@ import { formatDateAsUTC } from "@/app/helpers/format";
 interface TabelaExpedienteProps {
   expedientes: Expediente[];
   CarregandoDadosExpediente: boolean;
-  fetchExpedientes: () => {};
+  fetchExpedientes: () => Promise<void>;
   setCarregandoDadosExpediente: Dispatch<SetStateAction<boolean>>;
   prestador: Prestador | null;
   unidade: Unidade | null;
@@ -108,8 +108,8 @@ const TabelaExpediente = ({
 
       toast.success("Expediente excluído com sucesso!");
       await fetchExpedientes();
-    } catch (error: any) {
-      toast.error(`Não foi possível excluir o expediente: ${error.message}`);
+    } catch (error) {
+      toast.error(`Não foi possível excluir o expediente: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setloading(false);
       setIsDeleteModalOpen(false);
@@ -155,8 +155,8 @@ const TabelaExpediente = ({
       await fetchExpedientes();
       toast.success("Expediente atualizado com sucesso!");
       setIsUpdateModalOpen(false);
-    } catch (error: any) {
-      toast.error(`Não foi possível atualizar o Expediente: ${error.message}`);
+    } catch (error) {
+      toast.error(`Não foi possível atualizar o Expediente: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setloading(false);
     }

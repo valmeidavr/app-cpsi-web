@@ -14,7 +14,7 @@ export async function GET(
       [emailDecoded]
     );
 
-    const exists = (rows as any[]).length > 0;
+    const exists = (rows as Array<{ id: number }>).length > 0;
 
     return NextResponse.json(exists);
   } catch (error) {

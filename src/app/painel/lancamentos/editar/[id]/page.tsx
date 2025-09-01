@@ -201,8 +201,8 @@ export default function EditarLancamento() {
       queryParams.set("message", "Lançamento atualizado com sucesso!");
 
       router.push(`/painel/lancamentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar lançamento");
     } finally {
       setLoading(false);
     }

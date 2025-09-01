@@ -33,7 +33,15 @@ export async function GET(request: NextRequest) {
       const valorRows = await executeWithRetry(gestorPool, query, [convenioId, tipoCliente]);
       
       // Transformar os dados para o formato esperado pelo frontend
-      const valorProcedimentosFormatados = (valorRows as any[]).map(row => ({
+      const valorProcedimentosFormatados = (valorRows as Array<{
+        id: number;
+        valor: number;
+        tipo: string;
+        tabela_faturamento_id: number;
+        procedimento_id: number;
+        procedimento_nome: string;
+        procedimento_codigo: string;
+      }>).map(row => ({
         id: row.id,
         valor: row.valor,
         tipo: row.tipo,
@@ -96,7 +104,15 @@ export async function GET(request: NextRequest) {
     const valorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     // 4. Transformar os dados para o formato esperado pelo frontend
-    const valorProcedimentosFormatados = (valorRows as any[]).map(row => ({
+    const valorProcedimentosFormatados = (valorRows as Array<{
+      id: number;
+      valor: number;
+      tipo: string;
+      tabela_faturamento_id: number;
+      procedimento_id: number;
+      procedimento_nome: string;
+      procedimento_codigo: string;
+    }>).map(row => ({
       id: row.id,
       valor: row.valor,
       tipo: row.tipo,
@@ -122,8 +138,7 @@ export async function GET(request: NextRequest) {
 
     // 6. Monte a query para contar o total de registros (sem repetir código).
     const countQuery = `SELECT COUNT(vp.id) as total ${baseQuery} ${whereString}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, params);
-    const total = (countRows as any[])[0]?.total || 0;
+    await executeWithRetry(gestorPool, countQuery, params);
     
     // Debug logs removidos para evitar spam
 
@@ -162,7 +177,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar valor de procedimento:', error);
@@ -201,7 +216,7 @@ export async function PATCH(request: NextRequest) {
         body.tabela_faturamento_id !== undefined || body.procedimento_id !== undefined) {
       
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
+      const updateValues: (string | number)[] = [];
 
       if (body.valor !== undefined) {
         updateFields.push('valor = ?');

@@ -14,14 +14,44 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      dtagenda: string;
+      situacao: string;
+      cliente_id: number;
+      convenio_id: number;
+      procedimento_id: number;
+      expediente_id: number | null;
+      prestador_id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      tipo: string;
+      tipo_cliente: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Agenda não encontrada' },
         { status: 404 }
       );
     }
 
-    const agenda = (rows as any[])[0];
+    const agenda = (rows as Array<{
+      id: number;
+      dtagenda: string;
+      situacao: string;
+      cliente_id: number;
+      convenio_id: number;
+      procedimento_id: number;
+      expediente_id: number | null;
+      prestador_id: number;
+      unidade_id: number;
+      especialidade_id: number;
+      tipo: string;
+      tipo_cliente: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(agenda);
   } catch (error) {

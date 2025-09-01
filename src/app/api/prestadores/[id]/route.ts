@@ -14,14 +14,52 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      rg: string;
+      cpf: string;
+      sexo: string;
+      dtnascimento: string;
+      cep: string;
+      logradouro: string;
+      numero: string;
+      bairro: string;
+      cidade: string;
+      uf: string;
+      telefone: string;
+      celular: string;
+      complemento: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Prestador não encontrado' },
         { status: 404 }
       );
     }
 
-    const prestador = (rows as any[])[0];
+    const prestador = (rows as Array<{
+      id: number;
+      nome: string;
+      rg: string;
+      cpf: string;
+      sexo: string;
+      dtnascimento: string;
+      cep: string;
+      logradouro: string;
+      numero: string;
+      bairro: string;
+      cidade: string;
+      uf: string;
+      telefone: string;
+      celular: string;
+      complemento: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
     console.log('🔍 API Debug - Prestador completo:', prestador);
     console.log('🔍 API Debug - Data de nascimento:', prestador.dtnascimento);
     console.log('🔍 API Debug - Tipo da data:', typeof prestador.dtnascimento);

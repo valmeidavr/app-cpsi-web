@@ -97,7 +97,7 @@ export default function ExpedientePage() {
       
       setAlocacoes(data.data);
       setUnidades(listaUnidades);
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados das Alocações");
       console.error("Erro ao carregar alocações:", error);
     }
@@ -132,7 +132,7 @@ export default function ExpedientePage() {
         
         // Limpar campos quando mudar unidade
         limparCamposExpediente();
-      } catch (error: any) {
+      } catch (error) {
         toast.error("Erro ao carregar dados dos Prestadores");
         console.error("Erro ao carregar prestadores:", error);
       }
@@ -183,22 +183,22 @@ export default function ExpedientePage() {
         
         // Limpar campos quando mudar prestador
         limparCamposExpediente();
-      } catch (error: any) {
-        console.error("❌ Erro ao carregar especialidades:", error);
-        
-        // Tentar buscar especialidades diretamente como último recurso
-        try {
-          const response = await fetch("/api/especialidades?all=true");
-          if (response.ok) {
-            const data = await response.json();
-            setEspecialidades(data.data || []);
-            console.log('🔍 Debug - Especialidades carregadas via último recurso:', data.data?.length || 0);
-          }
-        } catch (lastResortError) {
-          console.error('🔍 Debug - Erro no último recurso:', lastResortError);
-          toast.error("Erro ao carregar dados das Especialidades");
+          } catch (error) {
+      console.error("❌ Erro ao carregar especialidades:", error);
+      
+      // Tentar buscar especialidades diretamente como último recurso
+      try {
+        const response = await fetch("/api/especialidades?all=true");
+        if (response.ok) {
+          const data = await response.json();
+          setEspecialidades(data.data || []);
+          console.log('🔍 Debug - Especialidades carregadas via último recurso:', data.data?.length || 0);
         }
+      } catch (lastResortError) {
+        console.error('🔍 Debug - Erro no último recurso:', lastResortError);
+        toast.error("Erro ao carregar dados das Especialidades");
       }
+    }
     };
     fetchEspecialidadesByPrestadores();
   }, [prestador, unidade, alocacoes]);
@@ -378,8 +378,8 @@ export default function ExpedientePage() {
       
       // Limpar apenas os campos de input, mantendo a alocação selecionada
       limparCamposExpediente();
-    } catch (error: any) {
-      toast.error(`Não foi possível criar o Expediente: ${error.message}`);
+    } catch (error) {
+      toast.error(`Não foi possível criar o Expediente: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setCarregandoDadosExpediente(false);
     }

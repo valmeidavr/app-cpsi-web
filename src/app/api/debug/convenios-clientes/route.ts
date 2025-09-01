@@ -14,9 +14,9 @@ export async function GET(request: NextRequest) {
     const [tables] = await gestorPool.execute(
       "SHOW TABLES LIKE 'convenios_clientes'"
     );
-    console.log('🔍 Tabela convenios_clientes existe:', (tables as any[]).length > 0);
+    console.log('🔍 Tabela convenios_clientes existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
     
-    if ((tables as any[]).length === 0) {
+    if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela convenios_clientes não encontrada',
         tables: await gestorPool.execute("SHOW TABLES")
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const [countResult] = await gestorPool.execute(
       "SELECT COUNT(*) as total FROM convenios_clientes"
     );
-    const total = (countResult as any[])[0]?.total || 0;
+    const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
     console.log('🔍 Total de registros em convenios_clientes:', total);
     
     // Se foi solicitado um cliente específico, buscar seus convênios
@@ -58,7 +58,12 @@ export async function GET(request: NextRequest) {
           totalRegistros: total,
           clienteId: clienteId,
           conveniosDoCliente: clienteConvenios,
-          amostra: (clienteConvenios as any[]).slice(0, 5)
+          amostra: (clienteConvenios as Array<{
+            id: number;
+            cliente_id: number;
+            convenio_id: number;
+            convenio_nome: string;
+          }>).slice(0, 5)
         }
       });
     }
@@ -82,12 +87,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Erro no debug de convênios-clientes:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json({
       error: 'Erro interno do servidor',
-      details: error.message,
-      stack: error.stack
+      details: errorMessage,
+      stack: errorStack
     }, { status: 500 });
   }
 }

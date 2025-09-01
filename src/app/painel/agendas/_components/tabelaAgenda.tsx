@@ -47,6 +47,7 @@ import ModalAgendamento from "./modalAgendamento";
 import CriarAgendamento from "./criarAgendamento";
 import { Badge } from "@/components/ui/badge";
 import { localDateToUTCISO } from "@/app/helpers/dateUtils";
+import { Agenda } from "@/app/types/Agenda";
 
 const TabelaAgenda = () => {
   const {
@@ -65,9 +66,13 @@ const TabelaAgenda = () => {
 
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
-  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<
-    any | null
-  >(null);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<{
+    hora: string;
+    situacao: string;
+    paciente: string | null;
+    tipo: string;
+    dadosAgendamento: Agenda;
+  } | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isOpenModalCreate, setIsOpenModalCreate] = useState<boolean>(false);
 
@@ -170,8 +175,8 @@ const TabelaAgenda = () => {
         } às ${horaSelecionada} foi cancelado com sucesso!`
       );
       await carregarAgendamentos();
-    } catch (error: any) {
-      toast.error(`Não foi possível cancelar o agendamento: ${error.message || 'Erro desconhecido'}`);
+    } catch (error) {
+      toast.error(`Não foi possível cancelar o agendamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       console.error("Erro ao cancelar agendamento:", error);
     } finally {
       setLoading(false);
@@ -502,7 +507,14 @@ const TabelaAgenda = () => {
       <ModalAgendamento
         open={modalAgendamentoOpen}
         setOpen={setModalAgendamentoOpen}
-        agendamentoSelecionado={agendamentoSelecionado}
+        agendamentoSelecionado={agendamentoSelecionado ? {
+          id: agendamentoSelecionado.dadosAgendamento.id,
+          cliente_id: agendamentoSelecionado.dadosAgendamento.cliente_id || 0,
+          convenio_id: agendamentoSelecionado.dadosAgendamento.convenio_id || 0,
+          procedimento_id: agendamentoSelecionado.dadosAgendamento.procedimento_id || 0,
+          dtagenda: agendamentoSelecionado.dadosAgendamento.dtagenda,
+          situacao: agendamentoSelecionado.dadosAgendamento.situacao
+        } : null}
         horaSelecionada={horaSelecionada}
         dataSelecionada={dataSelecionada}
       />

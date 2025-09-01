@@ -14,14 +14,30 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      tipo: string;
+      categoria: string;
+      descricao: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Plano de contas não encontrado' },
         { status: 404 }
       );
     }
 
-    const planoConta = (rows as any[])[0];
+    const planoConta = (rows as Array<{
+      id: number;
+      nome: string;
+      tipo: string;
+      categoria: string;
+      descricao: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(planoConta);
   } catch (error) {

@@ -102,8 +102,8 @@ export default function EditarEspecialidade() {
       queryParams.set("message", "Especialidade atualizada com sucesso!");
 
       router.push(`/painel/especialidades?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar especialidade");
     } finally {
       setLoading(false);
     }

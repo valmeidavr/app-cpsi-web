@@ -46,8 +46,9 @@ export const gestorPool = mysql.createPool({
 
 // Limpeza automática de conexões ociosas a cada 30 segundos
 setInterval(() => {
-  cleanupIdleConnections(accessPool);
-  cleanupIdleConnections(gestorPool);
+  // Cast para o tipo esperado pela função cleanupIdleConnections
+  cleanupIdleConnections(accessPool as unknown as { _freeConnections?: Array<{ release?: () => void }> });
+  cleanupIdleConnections(gestorPool as unknown as { _freeConnections?: Array<{ release?: () => void }> });
 }, 30000);
 
 // Função para fechar o pool quando necessário
@@ -65,25 +66,25 @@ export const closePools = async () => {
 export const executeWithRetry = async <T>(
   pool: mysql.Pool,
   query: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T> => {
-  let lastError: any
+  let lastError: Error | undefined
   
   for (let attempt = 1; attempt <= dbSettings.retry.maxRetries; attempt++) {
     try {
       const [result] = await pool.execute(query, params)
       return result as T
-    } catch (error: any) {
-      lastError = error
+    } catch (error) {
+      lastError = error as Error
       
       // Se for erro de conexão, tentar novamente
-      if (error.code === 'ER_CON_COUNT_ERROR' || error.code === 'ECONNRESET') {
+      if ((error as { code?: string }).code === 'ER_CON_COUNT_ERROR' || (error as { code?: string }).code === 'ECONNRESET') {
         if (attempt < dbSettings.retry.maxRetries) {
           console.log(`Tentativa ${attempt} falhou, tentando novamente em ${dbSettings.retry.retryDelay}ms...`)
           await new Promise(resolve => setTimeout(resolve, dbSettings.retry.retryDelay))
           
           // Limpar conexões ociosas antes de tentar novamente
-          cleanupIdleConnections(pool);
+          cleanupIdleConnections(pool as unknown as { _freeConnections?: Array<{ release?: () => void }> });
           continue
         }
       }
@@ -93,6 +94,10 @@ export const executeWithRetry = async <T>(
     }
   }
   
-  throw lastError
+  if (lastError) {
+    throw lastError
+  }
+  
+  throw new Error('Erro desconhecido durante a execução da query')
 }
 

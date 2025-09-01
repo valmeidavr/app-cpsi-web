@@ -74,7 +74,12 @@ export default function Lancamentos() {
   const [loadingAction, setLoadingAction] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
-  const carregarLancamentos = async (filters?: any) => {
+  const carregarLancamentos = async (filters?: {
+    caixa_id?: number;
+    plano_conta_id?: number;
+    data_inicio?: string;
+    data_fim?: string;
+  }) => {
     setCarregando(true);
     try {
       const params = new URLSearchParams();
@@ -135,7 +140,7 @@ export default function Lancamentos() {
       } else {
         console.error("Erro ao buscar caixas:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar caixas:", error);
     }
   };
@@ -149,7 +154,7 @@ export default function Lancamentos() {
       } else {
         console.error("Erro ao buscar plano de contas:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar plano de contas:", error);
     }
   };
@@ -204,7 +209,12 @@ export default function Lancamentos() {
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
 
-  const handleSearch = (values: any) => {
+  const handleSearch = (values: {
+    caixa_id: number;
+    plano_conta_id: number;
+    data_inicio: string;
+    data_fim: string;
+  }) => {
     setPaginaAtual(0);
     carregarLancamentos(values);
   };

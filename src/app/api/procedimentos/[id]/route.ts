@@ -14,14 +14,32 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      codigo: string;
+      tipo: string;
+      especialidade_id: number;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Procedimento não encontrado' },
         { status: 404 }
       );
     }
 
-    const procedimento = (rows as any[])[0];
+    const procedimento = (rows as Array<{
+      id: number;
+      nome: string;
+      codigo: string;
+      tipo: string;
+      especialidade_id: number;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(procedimento);
   } catch (error) {

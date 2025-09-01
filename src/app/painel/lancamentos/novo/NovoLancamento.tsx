@@ -92,7 +92,7 @@ export default function NovoLancamento() {
     try {
       const { data } = await http.get("/api/caixa");
       setCaixas(data.data);
-    } catch (error: any) { }
+    } catch (error) { }
   };
   const fetchPlanoContas = async () => {
     try {
@@ -100,13 +100,13 @@ export default function NovoLancamento() {
         "/api/plano_contas"
       );
       setPlanoConta(data.data);
-    } catch (error: any) { }
+    } catch (error) { }
   };
   const fetchUsuario = async () => {
     try {
       const response = await http.get("/api/usuarios?all=true");
       setUsuarios(response.data.data);
-    } catch (error: any) { }
+    } catch (error) { }
   };
 
   useEffect(() => {

@@ -80,10 +80,10 @@ export default function GerenciarAcessoPage() {
         setSistemas(data)
         
         // Inicializar configuração de acesso
-        const initialConfig = data.reduce((acc: any, sistema: Sistema) => {
+        const initialConfig = data.reduce((acc: Record<number, { hasAccess: boolean; nivel: string }>, sistema: Sistema) => {
           acc[sistema.id] = { hasAccess: false, nivel: 'Usuario' }
           return acc
-        }, {})
+        }, {} as Record<number, { hasAccess: boolean; nivel: string }>)
         setAccessConfig(initialConfig)
       }
     } catch (error) {
@@ -151,14 +151,14 @@ export default function GerenciarAcessoPage() {
         setUserAccess(data.userAccess)
         
         // Atualizar configuração de acesso
-        const newConfig = sistemas.reduce((acc: any, sistema: Sistema) => {
+        const newConfig = sistemas.reduce((acc: Record<number, { hasAccess: boolean; nivel: string }>, sistema: Sistema) => {
           const userAccessInfo = data.userAccess[sistema.id]
           acc[sistema.id] = {
             hasAccess: !!userAccessInfo,
             nivel: userAccessInfo?.nivel || 'Usuario'
           }
           return acc
-        }, {})
+        }, {} as Record<number, { hasAccess: boolean; nivel: string }>)
         setAccessConfig(newConfig)
       }
     } catch (error) {

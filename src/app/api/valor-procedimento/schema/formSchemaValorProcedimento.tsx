@@ -1,4 +1,3 @@
-import { TipoCliente } from "@/app/types/ValorProcedimento";
 import { z } from "zod";
 export const createValorProcedimentoSchema = z.object({
   id: z.number().int().optional(),

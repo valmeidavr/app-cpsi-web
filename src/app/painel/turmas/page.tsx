@@ -105,8 +105,8 @@ export default function Turmas() {
     },
   });
 
-  const HandlefinalizarTurma = async (values: any) => {
-    if (!turmaSelecionado) return;
+  const HandlefinalizarTurma = async (values: { dataFim?: string }) => {
+    if (!turmaSelecionado || !values.dataFim) return;
     setLoadingInativar(true);
     try {
       await http.patch(`/api/turmas/${turmaSelecionado.id}`, { dataFim: values.dataFim });

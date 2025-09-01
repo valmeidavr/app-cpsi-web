@@ -85,8 +85,8 @@ export default function ValorProcedimentos() {
   const [tabelaSelecionado, setTabelaSelecionado] =
     useState<TabelaFaturamento | null>();
 
-  const [convenios, setConvenios] = useState<any[]>([]);
-  const [convenioSelecionado, setConvenioSelecionado] = useState<any>(null);
+  const [convenios, setConvenios] = useState<{ id: number; nome: string }[]>([]);
+  const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string } | null>(null);
   const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("SOCIO");
 
   useEffect(() => {
@@ -100,7 +100,13 @@ export default function ValorProcedimentos() {
     }
   }, [tabelaSelecionado, convenioSelecionado, procedimentoSelecionado]);
 
-  const carregarValorProcedimentos = async (filters?: any) => {
+  const carregarValorProcedimentos = async (filters?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    tabela_faturamento_id?: number;
+    procedimento_id?: number;
+  }) => {
     setCarregando(true);
     try {
       if (!tabelaSelecionado || !convenioSelecionado) {
@@ -129,7 +135,7 @@ export default function ValorProcedimentos() {
             // Debug logs removidos para evitar spam
             
             // Verificar se os dados têm a estrutura correta
-            const dadosValidos = data.data.filter((item: any) => 
+            const dadosValidos = data.data.filter((item: { id: number; procedimento: { nome: string } }) => 
               item && item.id && item.procedimento && item.procedimento.nome
             );
           
@@ -218,7 +224,7 @@ export default function ValorProcedimentos() {
         console.error("Erro ao buscar procedimentos:", data.error);
         setProcedimentos([]);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar procedimentos:", error);
       setProcedimentos([]);
     }
@@ -233,7 +239,7 @@ export default function ValorProcedimentos() {
       } else {
         console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar tabela de faturamentos:", error);
     }
   };
@@ -248,7 +254,7 @@ export default function ValorProcedimentos() {
       } else {
         console.error("Erro ao buscar convênios:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar convênios:", error);
     }
   };
@@ -366,7 +372,12 @@ export default function ValorProcedimentos() {
       if (!valorProcedimentoSelecionado) return;
       
       // Preparar dados para atualização
-      const updateData: any = {};
+      const updateData: {
+        valor?: number;
+        tipo?: string;
+        tabela_faturamento_id?: number;
+        procedimento_id?: number;
+      } = {};
       if (values.valor !== undefined) updateData.valor = values.valor;
       if (values.tipo_cliente !== undefined) updateData.tipo = values.tipo_cliente;
       if (values.tabela_faturamento_id !== undefined) updateData.tabela_faturamento_id = values.tabela_faturamento_id;

@@ -41,7 +41,7 @@ import { Caixa } from "@/app/types/Caixa";
 
 export default function EditarCaixa() {
   const [loading, setLoading] = useState(false);
-  const [caixa, setCaixa] = useState(null);
+  const [caixa, setCaixa] = useState<Caixa | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [caixaOptions, setCaixaOptions] = useState<Caixa[]>([]);
   const params = useParams();
@@ -127,8 +127,8 @@ export default function EditarCaixa() {
       queryParams.set("message", "Caixa atualizado com sucesso!");
 
       router.push(`/painel/caixas?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar caixa!";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar caixa!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

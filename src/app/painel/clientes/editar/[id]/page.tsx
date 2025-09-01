@@ -173,8 +173,8 @@ export default function EditarCliente() {
       queryParams.set("message", "Cliente atualizado com sucesso!");
 
       router.push(`/painel/clientes?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar cliente");
     } finally {
       setLoading(false);
     }
@@ -182,7 +182,33 @@ export default function EditarCliente() {
 
   //Função de buscar endereco com o CEP
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    const rawCEP = e.target.value;
+    const onlyNumbers = rawCEP.replace(/\D/g, "");
+    
+    if (onlyNumbers.length === 8) {
+      fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data.erro) {
+            form.setValue("logradouro", data.logradouro || "");
+            form.setValue("bairro", data.bairro || "");
+            form.setValue("cidade", data.localidade || "");
+            form.setValue("uf", data.uf || "");
+            form.clearErrors("cep");
+          } else {
+            form.setError("cep", {
+              type: "manual",
+              message: "CEP não encontrado",
+            });
+          }
+        })
+        .catch(() => {
+          form.setError("cep", {
+            type: "manual",
+            message: "Erro ao buscar CEP. Tente novamente.",
+          });
+        });
+    }
   };
   const fetchConvenios = async () => {
     try {
@@ -261,8 +287,8 @@ export default function EditarCliente() {
 
           // Se há convênios, mapear corretamente
           if (data.convenios && Array.isArray(data.convenios)) {
-            const conveniosIds = data.convenios.map((item: any) => item.convenioId);
-            const descontos = data.convenios.reduce((acc: any, item: any) => {
+            const conveniosIds = data.convenios.map((item: { convenioId: number }) => item.convenioId);
+            const descontos = data.convenios.reduce((acc: Record<number, number>, item: { convenioId: number; desconto: number }) => {
               acc[item.convenioId] = item.desconto;
               return acc;
             }, {} as Record<number, number>);
@@ -393,8 +419,8 @@ export default function EditarCliente() {
                               : "border-gray-300"
                           } focus:ring-2 focus:ring-primary`}
                           onChange={(e) => {
-                            let inputDate = e.target.value.replace(/\D/g, "");
-                            let formatted = inputDate
+                            const inputDate = e.target.value.replace(/\D/g, "");
+                            const formatted = inputDate
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .slice(0, 10);
@@ -512,7 +538,7 @@ export default function EditarCliente() {
                           maxLength={14}
                           value={field.value || ""}
                           onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                            const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
                             const inputEvent = e.nativeEvent as InputEvent;
                             if (
                               inputEvent.inputType === "deleteContentBackward"
@@ -548,7 +574,7 @@ export default function EditarCliente() {
                           maxLength={9}
                           value={field.value || ""}
                           onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, "");
+                            const rawValue = e.target.value.replace(/\D/g, "");
                             const inputEvent = e.nativeEvent as InputEvent;
 
                             if (

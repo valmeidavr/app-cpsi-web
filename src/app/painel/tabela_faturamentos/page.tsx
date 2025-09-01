@@ -105,9 +105,9 @@ export default function TabelaFaturamentos() {
       carregarTabelaFaturamentos();
       toast.success("Tabela criada com sucesso!");
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar Tabela";
+        error instanceof Error ? error.message : "Erro ao salvar Tabela";
 
       // Exibindo toast de erro
       toast.error(errorMessage);

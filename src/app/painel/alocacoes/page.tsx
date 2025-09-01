@@ -122,7 +122,7 @@ export default function AlocacaoPage() {
         console.error("Erro ao carregar prestadores:", data.error);
         toast.error("Erro ao carregar dados dos Prestadores");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar prestadores:", error);
       toast.error("Erro ao carregar dados dos Prestadores");
     }
@@ -139,7 +139,7 @@ export default function AlocacaoPage() {
         console.error("Erro ao carregar unidades:", data.error);
         toast.error("Erro ao carregar dados das Unidades");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar unidades:", error);
       toast.error("Erro ao carregar dados das Unidades");
     }
@@ -156,7 +156,7 @@ export default function AlocacaoPage() {
         console.error("Erro ao carregar especialidades:", data.error);
         toast.error("Erro ao carregar dados das Especialidades");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar dados das Especialidades");
     }
@@ -180,9 +180,9 @@ export default function AlocacaoPage() {
 
       await fetchAlocacoes();
       toast.success("Alocação criada com sucesso!");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao criar alocação:", error);
-      toast.error(error.message || "Não foi possível criar a Alocação!");
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar a Alocação!");
     } finally {
       setCarregandoDadosAlocacao(false);
     }

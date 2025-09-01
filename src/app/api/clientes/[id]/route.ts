@@ -15,14 +15,50 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      email: string;
+      cpf: string;
+      dtnascimento: string;
+      cep: string;
+      logradouro: string;
+      bairro: string;
+      cidade: string;
+      uf: string;
+      telefone1: string;
+      telefone2: string;
+      status: string;
+      tipo: string;
+      sexo: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Cliente não encontrado' },
         { status: 404 }
       );
     }
 
-    const cliente = (rows as any[])[0];
+    const cliente = (rows as Array<{
+      id: number;
+      nome: string;
+      email: string;
+      cpf: string;
+      dtnascimento: string;
+      cep: string;
+      logradouro: string;
+      bairro: string;
+      cidade: string;
+      uf: string;
+      telefone1: string;
+      telefone2: string;
+      status: string;
+      tipo: string;
+      sexo: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
     
     // Log para debug
     console.log('🔍 Cliente encontrado:', {
@@ -30,7 +66,6 @@ export async function GET(
       nome: cliente.nome,
       sexo: cliente.sexo,
       tipo: cliente.tipo,
-      tipoCliente: cliente.tipoCliente,
       dtnascimento: cliente.dtnascimento
     });
 
@@ -50,12 +85,18 @@ export async function GET(
       [id]
     );
     
-    cliente.convenios = (conveniosRows as any[]).map((row: any) => ({
+    const convenios = (conveniosRows as Array<{
+      convenio_id: number;
+      desconto: number;
+    }>).map((row) => ({
       convenioId: row.convenio_id,
       desconto: row.desconto
     }));
 
-    return NextResponse.json(cliente);
+    return NextResponse.json({
+      ...cliente,
+      convenios
+    });
   } catch (error) {
     console.error('Erro ao buscar cliente:', error);
     return NextResponse.json(

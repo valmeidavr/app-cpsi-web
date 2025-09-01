@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
       [userId]
     );
     console.log(acessoRows)
-    const sistemas = sistemasRows as any[];
-    const acessos = acessoRows as any[];
+    const sistemas = sistemasRows as Array<{ id: number; nome: string }>;
+    const acessos = acessoRows as Array<{ sistemas_id: number; nivel: string; sistema_nome: string }>;
     console.log(sistemas, acessos)
     return NextResponse.json({
       sistemas,

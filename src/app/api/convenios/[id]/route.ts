@@ -14,14 +14,26 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      desconto: number;
+      regras: string;
+      tabela_faturamento_id: number;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Convênio não encontrado' },
         { status: 404 }
       );
     }
 
-    const convenio = (rows as any[])[0];
+    const convenio = (rows as Array<{
+      id: number;
+      nome: string;
+      desconto: number;
+      regras: string;
+      tabela_faturamento_id: number;
+    }>)[0];
 
     return NextResponse.json(convenio);
   } catch (error) {

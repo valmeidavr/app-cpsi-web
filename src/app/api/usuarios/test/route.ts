@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 Teste - Verificando conexão com banco de usuários...');
     

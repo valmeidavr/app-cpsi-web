@@ -95,8 +95,8 @@ export default function EditarTurma() {
       queryParams.set("message", "Turma atualizada com sucesso!");
 
       router.push(`/painel/turmas?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar turma");
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function EditarTurma() {
       } else {
         console.error("Erro ao carregar prestadores:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
@@ -127,7 +127,7 @@ export default function EditarTurma() {
       } else {
         console.error("Erro ao carregar procedimentos:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }
   };

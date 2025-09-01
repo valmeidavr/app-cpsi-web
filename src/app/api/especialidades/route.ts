@@ -24,15 +24,39 @@ export async function GET(request: NextRequest) {
         const [rows] = await gestorPool.execute(
           'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
         );
-        console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as any[]).length);
+        console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length);
         
-        if ((rows as any[]).length > 0) {
+        if ((rows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length > 0) {
           return NextResponse.json({
             data: rows,
             pagination: {
               page: 1,
-              limit: (rows as any[]).length,
-              total: (rows as any[]).length,
+              limit: (rows as Array<{
+                id: number;
+                nome: string;
+                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+              }>).length,
+              total: (rows as Array<{
+                id: number;
+                nome: string;
+                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+              }>).length,
               totalPages: 1
             }
           });
@@ -43,14 +67,32 @@ export async function GET(request: NextRequest) {
         const [allRows] = await gestorPool.execute(
           'SELECT * FROM especialidades ORDER BY nome ASC'
         );
-        console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as any[]).length);
+        console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length);
         
         return NextResponse.json({
           data: allRows,
           pagination: {
             page: 1,
-            limit: (allRows as any[]).length,
-            total: (allRows as any[]).length,
+            limit: (allRows as Array<{
+              id: number;
+              nome: string;
+              status: string;
+              createdAt: Date;
+              updatedAt: Date;
+            }>).length,
+            total: (allRows as Array<{
+              id: number;
+              nome: string;
+              status: string;
+              createdAt: Date;
+              updatedAt: Date;
+            }>).length,
             totalPages: 1
           }
         });
@@ -63,14 +105,23 @@ export async function GET(request: NextRequest) {
           const [simpleRows] = await gestorPool.execute(
             'SELECT id, nome FROM especialidades ORDER BY nome ASC'
           );
-          console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as any[]).length);
+          console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as Array<{
+            id: number;
+            nome: string;
+          }>).length);
           
           return NextResponse.json({
             data: simpleRows,
             pagination: {
               page: 1,
-              limit: (simpleRows as any[]).length,
-              total: (simpleRows as any[]).length,
+              limit: (simpleRows as Array<{
+                id: number;
+                nome: string;
+              }>).length,
+              total: (simpleRows as Array<{
+                id: number;
+                nome: string;
+              }>).length,
               totalPages: 1
             }
           });
@@ -93,7 +144,7 @@ export async function GET(request: NextRequest) {
     // 2. Query para contar o total de registros
     const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
     const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -140,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar especialidade:', error);

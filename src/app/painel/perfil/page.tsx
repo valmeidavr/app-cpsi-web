@@ -91,7 +91,7 @@ export default function UsuarioProfilePage() {
           }
         }
       }
-    } catch (e: any) {
+    } catch (e) {
       toast.error("Erro ao carregar os dados do perfil.");
     } finally {
       setCarregando(false);
@@ -132,9 +132,9 @@ export default function UsuarioProfilePage() {
       } else {
         throw new Error("Usuário não encontrado");
       }
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar usuário";
+        error instanceof Error ? error.message : "Erro ao salvar usuário";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

@@ -18,7 +18,37 @@ export type Prestador = {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
-  Alocacao: any[]; 
-  Turma: any[]; 
-  Agenda: any[];
+  Alocacao: Array<{
+    id: number;
+    prestador_id: number;
+    especialidade_id: number;
+    unidade_id: number;
+    status: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  Turma: Array<{
+    id: number;
+    nome: string;
+    horario_inicio: string;
+    horario_fim: string;
+    data_inicio: string;
+    data_fim: string;
+    limite_vagas: number;
+    prestador_id: number;
+    procedimento_id: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  Agenda: Array<{
+    id: number;
+    data: string;
+    horario: string;
+    status: string;
+    cliente_id: number;
+    prestador_id: number;
+    procedimento_id: number;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 };

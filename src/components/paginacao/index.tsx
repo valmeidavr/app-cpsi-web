@@ -49,7 +49,7 @@ const Pagination = ({
                   href={{ pathname: destination, query: { page } }}
                   className={styles}
                 >
-                  {page as any}
+                  {page}
                 </Link>
               </li>
             );

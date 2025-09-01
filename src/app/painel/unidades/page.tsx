@@ -102,9 +102,9 @@ export default function Unidades() {
       carregarUnidades();
       toast.success("Unidade criada com sucesso!");
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar unidade!";
+        error instanceof Error ? error.message : "Erro ao salvar unidade!";
 
       // Exibindo toast de erro
       toast.error(errorMessage);

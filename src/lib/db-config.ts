@@ -30,7 +30,11 @@ export const dbConfig = {
 }
 
 // Função para verificar a saúde do pool de conexões
-export const checkPoolHealth = (pool: any) => {
+export const checkPoolHealth = (pool: {
+  _allConnections?: Array<unknown>;
+  _freeConnections?: Array<unknown>;
+  _connectionQueue?: Array<unknown>;
+}) => {
   return {
     totalConnections: pool._allConnections?.length || 0,
     idleConnections: pool._freeConnections?.length || 0,

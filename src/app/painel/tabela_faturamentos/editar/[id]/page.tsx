@@ -98,8 +98,8 @@ export default function EditarTabelaFaturamento() {
       queryParams.set("message", "Tabela atualizada com sucesso!");
 
       router.push(`/painel/tabela_faturamentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar tabela de faturamento");
     } finally {
       setLoading(false);
     }

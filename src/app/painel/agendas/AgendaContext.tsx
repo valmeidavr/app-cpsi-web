@@ -17,8 +17,20 @@ interface AgendaContextType {
   setEspecialidade: (e: Especialidade | null) => void;
   date: Date | undefined;
   setDate: (d: Date | undefined) => void;
-  horariosDia: any[];
-  setHorariosDia: (v: any[]) => void;
+  horariosDia: Array<{
+    hora: string;
+    situacao: string;
+    paciente: string | null;
+    tipo: string;
+    dadosAgendamento: Agenda;
+  }>;
+  setHorariosDia: (v: Array<{
+    hora: string;
+    situacao: string;
+    paciente: string | null;
+    tipo: string;
+    dadosAgendamento: Agenda;
+  }>) => void;
   carregandoDadosAgenda: boolean;
   carregarAgendamentos: () => Promise<void>;
   carregarAgendamentosGeral: () => Promise<void>;
@@ -48,14 +60,19 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     null
   );
   const [date, setDate] = useState<Date>();
-  const [horariosDia, setHorariosDia] = useState<any[]>([]);
+  const [horariosDia, setHorariosDia] = useState<Array<{
+    hora: string;
+    situacao: string;
+    paciente: string | null;
+    tipo: string;
+    dadosAgendamento: Agenda;
+  }>>([]);
   const [carregandoDadosAgenda, setCarregandoDadosAgenda] = useState(false);
   const [loading, setLoading] = useState(false);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Agenda[]>([]);
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-  const [carregarAgenda, setCarregarAgenda] = useState<boolean>(false);
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     
     
@@ -89,8 +106,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.error("Erro ao buscar agendamentos:", data.error);
       }
-    } catch (error) {
-      console.error("Erro ao buscar agendamentos:", error);
+    } catch {
+      console.error("Erro ao buscar agendamentos");
     } finally {
       setCarregandoDadosAgenda(false);
     }
@@ -115,8 +132,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         console.error("Erro ao buscar agendamentos gerais:", data.error);
       }
-    } catch (error) {
-      console.error("Erro ao buscar agendamentos gerais:", error);
+    } catch {
+      console.error("Erro ao buscar agendamentos gerais");
     } finally {
       setCarregandoDadosAgenda(false);
     }
@@ -203,14 +220,14 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await fetch("/api/alocacoes?limit=1000");
       if (response.ok) {
         const data = await response.json();
-        const especialidadesArray = data.data?.map((alocacao: any) => alocacao.especialidade) || [];
-        const especialidadesUnicas = especialidadesArray.filter((esp: any, index: number, arr: any[]) => 
+        const especialidadesArray = data.data?.map((alocacao: { especialidade: Especialidade }) => alocacao.especialidade) || [];
+        const especialidadesUnicas = especialidadesArray.filter((esp: Especialidade, index: number, arr: Especialidade[]) => 
           arr.findIndex(e => e.id === esp.id) === index
         );
         setEspecialidades(especialidadesUnicas);
         return;
       }
-    } catch (error) {
+    } catch {
       // Tentar busca de emergência
     }
 

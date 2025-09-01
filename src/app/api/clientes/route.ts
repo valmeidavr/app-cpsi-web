@@ -5,7 +5,7 @@ import {
   createClienteSchema,
   updateClienteSchema,
 } from "./shema/formSchemaCliente";
-import { getCurrentUTCISO, getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
 export type CreateClienteDTO = z.infer<typeof createClienteSchema>;
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
     
     const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -51,7 +51,24 @@ export async function GET(request: NextRequest) {
     const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 
     return NextResponse.json({
-      data: (clienteRows as any[])[0],
+      data: (clienteRows as Array<{
+        id: number;
+        nome: string;
+        email: string;
+        cpf: string;
+        dtnascimento: string;
+        cep: string;
+        logradouro: string;
+        bairro: string;
+        cidade: string;
+        uf: string;
+        telefone1: string;
+        telefone2: string;
+        status: string;
+        tipo: string;
+        createdAt: Date;
+        updatedAt: Date;
+      }>)[0],
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -111,7 +128,7 @@ export async function POST(request: NextRequest) {
       ]
     );
 
-    const clienteId = (result as any).insertId;
+    const clienteId = (result as { insertId: number }).insertId;
 
     // Salvar convênios do cliente com seus respectivos descontos
     if (convenios && convenios.length > 0) {

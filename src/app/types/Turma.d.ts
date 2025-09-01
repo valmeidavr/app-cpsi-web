@@ -11,6 +11,22 @@ export type Turma = {
   limite_vagas: number;
   prestador: Prestador;
   procedimento: Procedimento;
-  TurmasDias: any[]; // Substitua por um tipo mais específico, se tiver
-  Presenca: any[];
+  TurmasDias: Array<{
+    id: number;
+    turma_id: number;
+    dia_semana: string;
+    horario_inicio: string;
+    horario_fim: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
+  Presenca: Array<{
+    id: number;
+    turma_id: number;
+    aluno_id: number;
+    data: Date;
+    presente: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }>;
 };

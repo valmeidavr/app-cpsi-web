@@ -1,7 +1,7 @@
 import * as cookie from "cookie";
 import Cookies from "js-cookie";
 
-export function parseCookies(req?: any) {
+export function parseCookies(req?: { headers?: { cookie?: string } }) {
   if (!req || !req.headers) {
     return {};
   }
@@ -34,7 +34,7 @@ export function getCookie(key: string) {
   return null;
 }
 
-export function delCookie(): any {
+export function delCookie(): void {
   Cookies.remove("accessToken", { path: "/" });
   Cookies.remove("userGroups", { path: "/" });
 }

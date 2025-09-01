@@ -72,11 +72,11 @@ const sexOptions = [
 export default function CustomerRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [isCheckingEmail, setIsCheckingEmail] = useState<Boolean>(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState<boolean>(false);
   const [emailError, setEmailError] = useState<string | null>("");
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
-  const [isCheckingCpf, setIsCheckingCpf] = useState<Boolean>(false);
+  const [isCheckingCpf, setIsCheckingCpf] = useState<boolean>(false);
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
   const [loadingInativar, setLoadingInativar] = useState(false);
@@ -170,9 +170,9 @@ export default function CustomerRegistrationForm() {
       queryParams.set("message", "Cliente salvo com sucesso!");
 
       router.push(`/painel/clientes?${queryParams.toString()}`);
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar cliente";
+        error instanceof Error ? error.message : "Erro ao salvar cliente";
 
       toast.error(errorMessage);
     } finally {
@@ -255,7 +255,11 @@ export default function CustomerRegistrationForm() {
   };
 
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    handleCEPChange(e, {
+      setValue: (field: string, value: string) => form.setValue(field as keyof z.infer<typeof createClienteSchema>, value),
+      setError: (field: string, error: { type: string; message: string }) => form.setError(field as keyof z.infer<typeof createClienteSchema>, error),
+      clearErrors: (field: string) => form.clearErrors(field as keyof z.infer<typeof createClienteSchema>)
+    });
   };
 
   return (
@@ -479,7 +483,7 @@ export default function CustomerRegistrationForm() {
                       value={field.value || ""}
                       onChange={(e) => {
                         handlecpfChange(e);
-                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent; // Força o tipo correto
 
                         if (inputEvent.inputType === "deleteContentBackward") {
@@ -519,7 +523,7 @@ export default function CustomerRegistrationForm() {
                       maxLength={9}
                       value={field.value || ""}
                       onChange={(e) => {
-                        let rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent;
 
                         if (inputEvent.inputType === "deleteContentBackward") {

@@ -14,14 +14,30 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      tipo: string;
+      saldo: number;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Caixa não encontrado' },
         { status: 404 }
       );
     }
 
-    const caixa = (rows as any[])[0];
+    const caixa = (rows as Array<{
+      id: number;
+      nome: string;
+      tipo: string;
+      saldo: number;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(caixa);
   } catch (error) {

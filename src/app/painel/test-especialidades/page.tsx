@@ -14,7 +14,13 @@ interface Especialidade {
 
 interface DebugInfo {
   especialidades: Especialidade[];
-  alocacoes: any[];
+  alocacoes: { 
+    id: number; 
+    nome: string;
+    especialidade?: { nome: string };
+    unidade?: { nome: string };
+    prestador?: { nome: string };
+  }[];
   error?: string;
   loading: boolean;
 }
@@ -66,11 +72,11 @@ export default function TestEspecialidades() {
         loading: false
       });
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('❌ Erro no teste:', error);
       setDebugInfo(prev => ({
         ...prev,
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
         loading: false
       }));
     }

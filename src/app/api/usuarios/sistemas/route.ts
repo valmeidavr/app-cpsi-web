@@ -41,8 +41,15 @@ export async function POST(request: NextRequest) {
       [userId]
     );
 
-    const sistemas = sistemasRows as any[];
-    const acessos = acessoRows as any[];
+    const sistemas = sistemasRows as Array<{
+      id: number;
+      nome: string;
+    }>;
+    const acessos = acessoRows as Array<{
+      sistemas_id: number;
+      nivel: string;
+      sistema_nome: string;
+    }>;
 
     // Criar mapa de acesso
     const accessMap = acessos.reduce((acc, acesso) => {
@@ -51,7 +58,10 @@ export async function POST(request: NextRequest) {
         sistema_nome: acesso.sistema_nome
       };
       return acc;
-    }, {} as any);
+    }, {} as Record<number, {
+      nivel: string;
+      sistema_nome: string;
+    }>);
 
     return NextResponse.json({
       sistemas,

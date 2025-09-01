@@ -45,7 +45,7 @@ export const formatCPFInput = (value: string) => {
 };
 export const formatRGInput = (value: string) => {
   // Remove qualquer caractere não numérico
-  let rawValue = value.replace(/\D/g, "");
+  const rawValue = value.replace(/\D/g, "");
 
   // Aplica a máscara do RG no formato XX.XXX.XXX-X
   if (rawValue.length <= 2) {
@@ -64,7 +64,7 @@ export const formatRGInput = (value: string) => {
   }
 };
 
-export function formatDateAsUTC(dateInput: any) {
+export function formatDateAsUTC(dateInput: string | Date | number) {
   const date = new Date(dateInput);
 
   // getTimezoneOffset() retorna a diferença em minutos entre UTC e o fuso local.

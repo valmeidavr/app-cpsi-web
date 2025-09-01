@@ -120,8 +120,8 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       };
       await http.post("/api/alunos_turmas", payload);
       await carregarAlunos();
-    } catch (error: any) {
-      toast.error(`Erro ao adicionar alunos: ${error.message}`);
+    } catch (error) {
+      toast.error(`Erro ao adicionar alunos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoadingAluno(false);
     }

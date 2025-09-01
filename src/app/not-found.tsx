@@ -8,10 +8,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { FileQuestion, Home, MoveLeft } from "lucide-react";
-
+import { cookies } from "next/headers";
 
 export default async function NotFound() {
-  const { cookies } = require("next/headers"); 
   const cookiesStore = await cookies(); 
   const token = cookiesStore.get("accessToken")?.value;
   return (

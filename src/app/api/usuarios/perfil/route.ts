@@ -21,7 +21,12 @@ export async function GET(request: NextRequest) {
       [id]
     );
     
-    const usuarios = rows as any[];
+    const usuarios = rows as Array<{
+      id: number;
+      nome: string;
+      email: string;
+      status: string;
+    }>;
     const usuario = usuarios[0] || null;
     
     if (!usuario) {
@@ -53,7 +58,7 @@ export async function PUT(request: NextRequest) {
     
     // Função para atualizar usuário (sem bcrypt)
     let query = 'UPDATE usuarios SET ';
-    const params: any[] = [];
+    const params: (string | number)[] = [];
     
     if (validatedData.nome) {
       query += 'nome = ?, ';

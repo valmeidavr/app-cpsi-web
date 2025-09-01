@@ -14,14 +14,28 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      codigo: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Especialidade não encontrada' },
         { status: 404 }
       );
     }
 
-    const especialidade = (rows as any[])[0];
+    const especialidade = (rows as Array<{
+      id: number;
+      nome: string;
+      codigo: string;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(especialidade);
   } catch (error) {

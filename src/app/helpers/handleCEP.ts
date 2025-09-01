@@ -7,10 +7,14 @@ const formatCEP = (value: string) => {
 
 export const handleCEPChange = async (
   e: React.ChangeEvent<HTMLInputElement>,
-  form: any 
+  form: {
+    setValue: (field: string, value: string) => void;
+    setError: (field: string, error: { type: string; message: string }) => void;
+    clearErrors: (field: string) => void;
+  }
 ) => {
-  let rawCEP = e.target.value;
-  let formattedCEP = formatCEP(rawCEP); 
+  const rawCEP = e.target.value;
+  const formattedCEP = formatCEP(rawCEP); 
 
   form.setValue("cep", formattedCEP); 
   const onlyNumbers = formattedCEP.replace(/\D/g, ""); 
@@ -34,7 +38,7 @@ export const handleCEPChange = async (
           message: "CEP não encontrado",
         });
       }
-    } catch (error) {
+    } catch {
       form.setError("cep", {
         type: "manual",
         message: "Erro ao buscar CEP. Tente novamente.",

@@ -77,7 +77,7 @@ export default function Convenios() {
       } else {
         console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao buscar tabela de faturamentos:", error);
     }
   };

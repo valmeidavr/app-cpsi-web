@@ -107,7 +107,7 @@ const TabelaAlocacoes = ({
         console.error('Erro da API:', errorData);
         toast.error(errorData.error || "Não foi possível excluir a alocação");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao excluir alocação:", error);
       toast.error("Erro ao excluir a alocação. Tente novamente.");
     } finally {
@@ -156,7 +156,7 @@ const TabelaAlocacoes = ({
       } else {
         toast.error("Erro ao carregar dados das Especialidades");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados das Especialidades");
     }
   };

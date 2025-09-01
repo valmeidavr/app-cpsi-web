@@ -3,7 +3,8 @@ import {
   createAgendaSchema,
   updateAgendaSchema,
 } from "@/app/api/agendas/schema/formSchemaAgendas";
-import { Cliente, TipoCliente } from "@/app/types/Cliente";
+import { Cliente } from "@/app/types/Cliente";
+import { TipoCliente as TipoClienteValorProcedimento } from "@/app/types/ValorProcedimento";
 
 import { Procedimento } from "@/app/types/Procedimento";
 import {
@@ -58,7 +59,14 @@ import { Loader2 } from "lucide-react";
 interface ModalAgendamentoProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  agendamentoSelecionado: any | null;
+  agendamentoSelecionado: {
+    id: number;
+    cliente_id: number;
+    convenio_id: number;
+    procedimento_id: number;
+    dtagenda: string;
+    situacao: string;
+  } | null;
   horaSelecionada: string | null;
   dataSelecionada: Date | null;
 }
@@ -103,7 +111,7 @@ const ModalAgendamento = ({
   const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(
     null
   );
-  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoCliente | null>(null); // Inicialmente null
+  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoClienteValorProcedimento | null>(null); // Inicialmente null
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
   const [openSelectConvenios, setOpenSelectConvenios] = useState(false);
@@ -172,7 +180,13 @@ const ModalAgendamento = ({
         const data = await response.json();
         
         if (data.data && data.data.length > 0) {
-          const conveniosList = data.data.map((item: any) => ({
+          const conveniosList = data.data.map((item: {
+            convenioId: number;
+            nome: string;
+            regras: string;
+            tabela_faturamentos_id: number;
+            desconto: number;
+          }) => ({
             id: item.convenioId,
             nome: item.nome,
             regras: item.regras,
@@ -215,7 +229,7 @@ const ModalAgendamento = ({
   };
 
   const fetchProcedimentos = async (
-    tipoCliente: TipoCliente,
+    tipoCliente: TipoClienteValorProcedimento,
     convenio_id: number
   ) => {
     try {
@@ -229,10 +243,28 @@ const ModalAgendamento = ({
         // A API retorna um array diretamente, não data.data
         if (Array.isArray(data)) {
           // Mapear os dados corretamente baseado na estrutura real retornada
-          const procedimentosMapeados = data.map((item: any) => ({
+          const procedimentosMapeados = data.map((item: {
+            id: number;
+            valor: number;
+            tipo: string;
+            tabela_faturamento_id: number;
+            procedimento_id: number;
+            createdAt: string;
+            updatedAt: string;
+            procedimento: {
+              id: number;
+              nome: string;
+              codigo: string;
+              tipo: string;
+              especialidade_id: number;
+              status: string;
+              createdAt: string;
+              updatedAt: string;
+            };
+          }) => ({
             id: item.id,
-            valor: item.valor,
-            tipo: item.tipo as any, // Usar o tipo retornado pela API
+            valor: item.valor.toString(),
+            tipo: item.tipo as TipoClienteValorProcedimento,
             tabela_faturamento_id: item.tabela_faturamento_id || 1,
             procedimento_id: item.procedimento_id,
             createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
@@ -293,7 +325,7 @@ const ModalAgendamento = ({
     if (especialidade) form.setValue("especialidade_id", especialidade.id);
   }, [dataSelecionada, horaSelecionada, prestador, unidade, especialidade]);
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: z.infer<typeof updateAgendaSchema>) => {
     setLoading(true);
 
     try {
@@ -335,6 +367,10 @@ const ModalAgendamento = ({
       };
 
       // Enviar para a API
+      if (!agendamentoSelecionado) {
+        throw new Error("Agendamento não selecionado");
+      }
+      
       const response = await fetch(`/api/agendas?id=${agendamentoSelecionado.id}`, {
         method: "PUT",
         headers: {
@@ -398,13 +434,13 @@ const ModalAgendamento = ({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          setTipoClienteSelecionado(value as TipoCliente);
+                          setTipoClienteSelecionado(value as TipoClienteValorProcedimento);
                           // Limpar procedimento selecionado quando tipo mudar
                           setProcedimentoSelecionado(null);
                           form.setValue("procedimento_id", 0);
                           // Recarregar procedimentos se já há convênio selecionado
                           if (convenioSelecionado) {
-                            fetchProcedimentos(value as TipoCliente, convenioSelecionado.id);
+                            fetchProcedimentos(value as TipoClienteValorProcedimento, convenioSelecionado.id);
                           }
                         }}
                         value={field.value || tipoClienteSelecionado || undefined}
@@ -483,7 +519,7 @@ const ModalAgendamento = ({
                                       form.setValue("procedimento_id", 0);
                                       
                                       setClienteSelecionado(cliente);
-                                      setTipoClienteSelecionado(cliente.tipoCliente);
+                                      setTipoClienteSelecionado((cliente.tipoCliente as unknown as TipoClienteValorProcedimento) || null);
                                       form.setValue("tipo_cliente", cliente.tipoCliente || undefined);
                                       
                                       // Buscar convênios do cliente

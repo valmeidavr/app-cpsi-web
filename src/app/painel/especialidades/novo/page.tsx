@@ -68,8 +68,8 @@ export default function NovaEspecialidade() {
       queryParams.set("message", "Especialidade salva com sucesso!");
 
       router.push(`/painel/especialidades?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar especialidade";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar especialidade";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

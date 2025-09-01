@@ -43,7 +43,7 @@ export default function Home() {
         // Login bem-sucedido, redirecionar para o painel
         router.replace("/painel");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMessage("Erro interno do servidor. Tente novamente.");
     } finally {
       setLoading(false);

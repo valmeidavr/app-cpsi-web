@@ -83,7 +83,7 @@ export default function Procedimentos() {
       
       const data = await response.json();
       setEspecialidades(data.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar lista de especialidades");
     }

@@ -70,7 +70,7 @@ export default function NovoTurma() {
       } else {
         toast.error("Erro ao carregar prestadores");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
@@ -84,7 +84,7 @@ export default function NovoTurma() {
       } else {
         toast.error("Erro ao carregar procedimentos");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }
   };

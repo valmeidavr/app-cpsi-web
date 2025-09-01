@@ -138,9 +138,9 @@ export default function EditarPrestador() {
         console.log('🔍 Debug - Data formatada:', formattedData.dtnascimento);
         // 3. CHAME O form.reset() UMA ÚNICA VEZ com os dados prontos
         form.reset(formattedData);
-      } catch (error: any) {
+      } catch (error) {
         console.error("Erro ao carregar prestador:", error);
-        toast.error(error.message);
+        toast.error(error instanceof Error ? error.message : "Erro ao carregar prestador");
       } finally {
         setCarregando(false); // Desativa o loader da página
       }
@@ -167,15 +167,41 @@ export default function EditarPrestador() {
 
       toast.success("Prestador atualizado com sucesso!");
       router.push(`/painel/prestadores`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar prestador");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    const rawCEP = e.target.value;
+    const onlyNumbers = rawCEP.replace(/\D/g, "");
+    
+    if (onlyNumbers.length === 8) {
+      fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data.erro) {
+            form.setValue("logradouro", data.logradouro || "");
+            form.setValue("bairro", data.bairro || "");
+            form.setValue("cidade", data.localidade || "");
+            form.setValue("uf", data.uf || "");
+            form.clearErrors("cep");
+          } else {
+            form.setError("cep", {
+              type: "manual",
+              message: "CEP não encontrado",
+            });
+          }
+        })
+        .catch(() => {
+          form.setError("cep", {
+            type: "manual",
+            message: "Erro ao buscar CEP. Tente novamente.",
+          });
+        });
+    }
   };
 
   return (
@@ -244,8 +270,8 @@ export default function EditarPrestador() {
                               : "border-gray-300"
                           } focus:ring-2 focus:ring-primary`}
                           onChange={(e) => {
-                            let inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
-                            let formatted = inputDate
+                            const inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
+                            const formatted = inputDate
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .slice(0, 10); // Garante que não haja mais de 10 caracteres
@@ -326,7 +352,7 @@ export default function EditarPrestador() {
                           maxLength={12}
                           value={field.value || ""}
                           onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, "");
+                            const rawValue = e.target.value.replace(/\D/g, "");
                             const inputEvent = e.nativeEvent as InputEvent;
 
                             if (
@@ -360,7 +386,7 @@ export default function EditarPrestador() {
                           maxLength={14}
                           value={field.value || ""}
                           onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
+                            const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
                             const inputEvent = e.nativeEvent as InputEvent;
                             if (
                               inputEvent.inputType === "deleteContentBackward"
@@ -388,24 +414,6 @@ export default function EditarPrestador() {
                   control={form.control}
                   name="cep"
                   render={({ field }) => {
-                    useEffect(() => {
-                      if (field.value) {
-                        const rawValue = field.value.replace(/\D/g, "");
-
-                        // Aplica a máscara automaticamente ao carregar o valor
-                        if (rawValue.length <= 5) {
-                          field.onChange(rawValue); // Sem formatação
-                        } else {
-                          const formattedValue = rawValue.replace(
-                            /^(\d{5})(\d{0,3})/,
-                            "$1-$2"
-                          );
-
-                          field.onChange(formattedValue);
-                        }
-                      }
-                    }, [field.value]); // Executa sempre que field.value mudar
-
                     return (
                       <FormItem>
                         <FormLabel>CEP</FormLabel>
@@ -416,7 +424,7 @@ export default function EditarPrestador() {
                             value={field.value || ""}
                             onChange={(e) => {
                               // Quando o usuário digitar, remove caracteres não numéricos
-                              let rawValue = e.target.value;
+                              const rawValue = e.target.value;
 
                               // Se o valor tiver mais de 5 caracteres, aplica a máscara
                               if (rawValue.length <= 5) {

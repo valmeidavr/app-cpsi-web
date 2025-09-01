@@ -21,13 +21,70 @@ export async function GET(request: NextRequest) {
       const [rows] = await gestorPool.execute(
         'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC'
       );
-      console.log('🔍 Debug - Prestadores encontrados:', (rows as any[]).length);
+      console.log('🔍 Debug - Prestadores encontrados:', (rows as Array<{
+        id: number;
+        nome: string;
+        rg: string;
+        cpf: string;
+        sexo: string;
+        dtnascimento: string;
+        cep: string;
+        logradouro: string;
+        numero: string;
+        bairro: string;
+        cidade: string;
+        uf: string;
+        telefone: string;
+        celular: string;
+        complemento: string;
+        status: string;
+        createdAt: Date;
+        updatedAt: Date;
+      }>).length);
       return NextResponse.json({
         data: rows,
         pagination: {
           page: 1,
-          limit: (rows as any[]).length,
-          total: (rows as any[]).length,
+          limit: (rows as Array<{
+            id: number;
+            nome: string;
+            rg: string;
+            cpf: string;
+            sexo: string;
+            dtnascimento: string;
+            cep: string;
+            logradouro: string;
+            numero: string;
+            bairro: string;
+            cidade: string;
+            uf: string;
+            telefone: string;
+            celular: string;
+            complemento: string;
+            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+          }>).length,
+          total: (rows as Array<{
+            id: number;
+            nome: string;
+            rg: string;
+            cpf: string;
+            sexo: string;
+            dtnascimento: string;
+            cep: string;
+            logradouro: string;
+            numero: string;
+            bairro: string;
+            cidade: string;
+            uf: string;
+            telefone: string;
+            celular: string;
+            complemento: string;
+            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+          }>).length,
           totalPages: 1
         }
       });
@@ -45,7 +102,7 @@ export async function GET(request: NextRequest) {
     // 2. Query para contar o total de registros
     const countQuery = `SELECT COUNT(*) as total FROM prestadores${whereClause}`;
     const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -96,7 +153,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar prestador:', error);

@@ -16,14 +16,14 @@ export async function GET(request: NextRequest) {
         "SHOW TABLES LIKE 'convenios_clientes'"
       );
       
-      if ((tableCheck as any[]).length === 0) {
+      if ((tableCheck as Array<{ Tables_in_gestor: string }>).length === 0) {
         // Fallback: buscar todos os convênios
         const [allConvenios] = await gestorPool.execute(
           "SELECT DISTINCT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios ORDER BY nome ASC"
         );
         return NextResponse.json({ data: allConvenios });
       }
-    } catch (tableError) {
+    } catch {
       // Tabela não existe, continuar com fallback
     }
 

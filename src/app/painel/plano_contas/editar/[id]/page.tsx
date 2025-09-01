@@ -101,8 +101,8 @@ export default function EditarPlanoConta() {
       queryParams.set("message", "Plano de contas atualizado com sucesso!");
 
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar plano de contas");
     } finally {
       setLoading(false);
     }
@@ -120,7 +120,7 @@ export default function EditarPlanoConta() {
       if (response.ok) {
         setPlanoConta(data.data);
       }
-    } catch (error: any) { }
+    } catch (error) { }
   };
 
   return (

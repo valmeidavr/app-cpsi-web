@@ -38,7 +38,7 @@ const updateUsuarioSchema = z.object({
 export default function EditarUsuario() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
-  const [usuario, setUsuario] = useState<any>(null)
+  const [usuario, setUsuario] = useState<{ nome: string; email: string } | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const params = useParams()
@@ -109,9 +109,9 @@ export default function EditarUsuario() {
         const errorData = await response.json()
         throw new Error(errorData.error || 'Erro ao atualizar usuário')
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Erro ao atualizar usuário:', error)
-      toast.error(error.message || 'Erro ao atualizar usuário')
+      toast.error(error instanceof Error ? error.message : 'Erro ao atualizar usuário')
     } finally {
       setLoading(false)
     }

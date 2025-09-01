@@ -14,14 +14,26 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      descricao: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Tabela de faturamento não encontrada' },
         { status: 404 }
       );
     }
 
-    const tabelaFaturamento = (rows as any[])[0];
+    const tabelaFaturamento = (rows as Array<{
+      id: number;
+      nome: string;
+      descricao: string;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(tabelaFaturamento);
   } catch (error) {

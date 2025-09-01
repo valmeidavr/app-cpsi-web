@@ -14,14 +14,36 @@ export async function GET(
       [id]
     );
 
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      dt_inicio: string;
+      dt_final: string;
+      h_inicio: string;
+      h_final: string;
+      intervalo: number;
+      semana: string;
+      alocacoes_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Expediente não encontrado' },
         { status: 404 }
       );
     }
 
-    const expediente = (rows as any[])[0];
+    const expediente = (rows as Array<{
+      id: number;
+      dt_inicio: string;
+      dt_final: string;
+      h_inicio: string;
+      h_final: string;
+      intervalo: number;
+      semana: string;
+      alocacoes_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
 
     return NextResponse.json(expediente);
   } catch (error) {

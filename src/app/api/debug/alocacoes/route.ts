@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { NextResponse } from "next/server";
+import { gestorPool } from "@/lib/mysql";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('🔍 Debug - Iniciando teste da API de alocações...');
     
@@ -12,9 +12,9 @@ export async function GET(request: NextRequest) {
     const [tables] = await gestorPool.execute(
       "SHOW TABLES LIKE 'alocacoes'"
     );
-    console.log('🔍 Tabela alocacoes existe:', (tables as any[]).length > 0);
+    console.log('🔍 Tabela alocacoes existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
     
-    if ((tables as any[]).length === 0) {
+    if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela alocacoes não encontrada',
         tables: await gestorPool.execute("SHOW TABLES")
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     const [countResult] = await gestorPool.execute(
       "SELECT COUNT(*) as total FROM alocacoes"
     );
-    const total = (countResult as any[])[0]?.total || 0;
+    const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
     console.log('🔍 Total de alocações:', total);
     
     // Tentar buscar alocações com JOIN
@@ -50,7 +50,15 @@ export async function GET(request: NextRequest) {
       LEFT JOIN prestadores p ON a.prestador_id = p.id
       LIMIT 5
     `);
-    console.log('🔍 Alocações com JOIN encontradas:', (alocacoes as any[]).length);
+    console.log('🔍 Alocações com JOIN encontradas:', (alocacoes as Array<{
+      id: number;
+      especialidade_id: number;
+      especialidade_nome: string;
+      unidade_id: number;
+      unidade_nome: string;
+      prestador_id: number;
+      prestador_nome: string;
+    }>).length);
     
     // Verificar se há problemas com as tabelas relacionadas
     const [especialidadesCount] = await gestorPool.execute(
@@ -69,20 +77,38 @@ export async function GET(request: NextRequest) {
         tabelaExiste: true,
         estrutura: columns,
         totalAlocacoes: total,
-        totalEspecialidades: (especialidadesCount as any[])[0]?.total || 0,
-        totalUnidades: (unidadesCount as any[])[0]?.total || 0,
-        totalPrestadores: (prestadoresCount as any[])[0]?.total || 0,
-        alocacoesComJoin: (alocacoes as any[]).length,
-        amostra: (alocacoes as any[]).slice(0, 3) // Primeiras 3 alocações
+        totalEspecialidades: (especialidadesCount as Array<{ total: number }>)[0]?.total || 0,
+        totalUnidades: (unidadesCount as Array<{ total: number }>)[0]?.total || 0,
+        totalPrestadores: (prestadoresCount as Array<{ total: number }>)[0]?.total || 0,
+        alocacoesComJoin: (alocacoes as Array<{
+          id: number;
+          especialidade_id: number;
+          especialidade_nome: string;
+          unidade_id: number;
+          unidade_nome: string;
+          prestador_id: number;
+          prestador_nome: string;
+        }>).length,
+        amostra: (alocacoes as Array<{
+          id: number;
+          especialidade_id: number;
+          especialidade_nome: string;
+          unidade_id: number;
+          unidade_nome: string;
+          prestador_id: number;
+          prestador_nome: string;
+        }>).slice(0, 3) // Primeiras 3 alocações
       }
     });
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Erro no debug de alocações:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    const errorStack = error instanceof Error ? error.stack : undefined;
     return NextResponse.json({
       error: 'Erro interno do servidor',
-      details: error.message,
-      stack: error.stack
+      details: errorMessage,
+      stack: errorStack
     }, { status: 500 });
   }
 }

@@ -77,8 +77,8 @@ export default function NovoPlano() {
       queryParams.set("message", "Plano salvo com sucesso!");
 
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar plano!";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar plano!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

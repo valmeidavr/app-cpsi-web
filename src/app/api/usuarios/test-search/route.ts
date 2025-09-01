@@ -23,7 +23,12 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Teste Busca - Parâmetros:', params);
     
     const [rows] = await accessPool.execute(query, params);
-    const usuarios = rows as any[];
+    const usuarios = rows as Array<{
+      login: string;
+      nome: string;
+      email: string;
+      status: string;
+    }>;
     
     console.log('🔍 Teste Busca - Usuários encontrados:', usuarios.length);
     console.log('🔍 Teste Busca - Primeiros usuários:', usuarios.slice(0, 3));
@@ -36,7 +41,7 @@ export async function GET(request: NextRequest) {
         'SELECT COUNT(*) as total FROM usuarios WHERE nome LIKE ? AND status = "Ativo"',
         [`%${search}%`]
       );
-      const total = (testRows as any[])[0]?.total || 0;
+      const total = (testRows as Array<{ total: number }>)[0]?.total || 0;
       console.log('🔍 Teste Busca - Total de usuários com nome contendo:', search, '=', total);
     }
     

@@ -136,8 +136,8 @@ export default function EditarProcedimento() {
       queryParams.set("message", "Procedimento atualizado com sucesso!");
 
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar procedimento");
     } finally {
       setLoading(false);
     }

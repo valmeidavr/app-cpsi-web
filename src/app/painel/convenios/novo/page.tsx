@@ -88,8 +88,8 @@ export default function NovoConvenio() {
       queryParams.set("message", "Convênio salvo com sucesso!");
 
       router.push(`/painel/convenios?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar convênio";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar convênio";
       toast.error(errorMessage);
     } finally {
       setLoading(false);

@@ -27,12 +27,16 @@ export const dbSettings = {
 }
 
 // Função para limpar conexões ociosas
-export const cleanupIdleConnections = (pool: any) => {
+export const cleanupIdleConnections = (pool: {
+  _freeConnections?: Array<{
+    release?: () => void;
+  }>;
+}) => {
   try {
     // Forçar liberação de conexões ociosas
     if (pool._freeConnections && pool._freeConnections.length > 0) {
       console.log(`Limpando ${pool._freeConnections.length} conexões ociosas`);
-      pool._freeConnections.forEach((conn: any) => {
+      pool._freeConnections.forEach((conn) => {
         if (conn && typeof conn.release === 'function') {
           conn.release();
         }

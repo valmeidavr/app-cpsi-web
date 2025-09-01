@@ -53,7 +53,7 @@ const sexOptions = [
 
 export default function NovoPrestador() {
   const [loading, setLoading] = useState(false);
-  const [isCheckingCpf, setIsCheckingCpf] = useState<Boolean>(false);
+  const [isCheckingCpf, setIsCheckingCpf] = useState<boolean>(false);
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
 
@@ -81,7 +81,33 @@ export default function NovoPrestador() {
   });
 
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    const rawCEP = e.target.value;
+    const onlyNumbers = rawCEP.replace(/\D/g, "");
+    
+    if (onlyNumbers.length === 8) {
+      fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
+        .then(response => response.json())
+        .then(data => {
+          if (!data.erro) {
+            form.setValue("logradouro", data.logradouro || "");
+            form.setValue("bairro", data.bairro || "");
+            form.setValue("cidade", data.localidade || "");
+            form.setValue("uf", data.uf || "");
+            form.clearErrors("cep");
+          } else {
+            form.setError("cep", {
+              type: "manual",
+              message: "CEP não encontrado",
+            });
+          }
+        })
+        .catch(() => {
+          form.setError("cep", {
+            type: "manual",
+            message: "Erro ao buscar CEP. Tente novamente.",
+          });
+        });
+    }
   };
 
   const checkCpf = async (cpf: string) => {
@@ -183,7 +209,7 @@ export default function NovoPrestador() {
                       maxLength={12}
                       value={field.value || ""}
                       onChange={(e) => {
-                        let rawValue = e.target.value.replace(/\D/g, "");
+                        const rawValue = e.target.value.replace(/\D/g, "");
                         const inputEvent = e.nativeEvent as InputEvent;
 
                         if (inputEvent.inputType === "deleteContentBackward") {
@@ -216,7 +242,7 @@ export default function NovoPrestador() {
                       value={field.value || ""}
                       onChange={(e) => {
                         handlecpfChange(e);
-                        let rawValue = e.target.value.replace(/\D/g, "");
+                        const rawValue = e.target.value.replace(/\D/g, "");
                         const inputEvent = e.nativeEvent as InputEvent;
 
                         if (inputEvent.inputType === "deleteContentBackward") {

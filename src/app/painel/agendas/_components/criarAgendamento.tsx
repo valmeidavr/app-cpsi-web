@@ -47,7 +47,8 @@ import { z } from "zod";
 import { useAgenda } from "../AgendaContext";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
-import { Cliente, TipoCliente } from "@/app/types/Cliente";
+import { Cliente } from "@/app/types/Cliente";
+import { TipoCliente as TipoClienteValorProcedimento } from "@/app/types/ValorProcedimento";
 import { localDateToUTCISO } from "@/app/helpers/dateUtils";
 
 interface CriarAgendamentoProps {
@@ -87,7 +88,7 @@ const CriarAgendamento = ({
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
-  const [tipoClienteSelecionado, setTipoClienteSelecionada] = useState<TipoCliente | null>(null); // Inicialmente null
+  const [tipoClienteSelecionado, setTipoClienteSelecionada] = useState<TipoClienteValorProcedimento | null>(null); // Inicialmente null
   const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio | undefined>(undefined);
   const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(null);
   const [searchCliente, setSearchCliente] = useState("");
@@ -168,7 +169,13 @@ const CriarAgendamento = ({
         console.log("🔍 Convênios recebidos da API:", data);
         
         if (data.data && data.data.length > 0) {
-          const conveniosList = data.data.map((item: any) => ({
+          const conveniosList = data.data.map((item: {
+            convenioId: number;
+            nome: string;
+            regras: string;
+            tabela_faturamentos_id: number;
+            desconto: number;
+          }) => ({
             id: item.convenioId,
             nome: item.nome,
             regras: item.regras,
@@ -213,7 +220,7 @@ const CriarAgendamento = ({
     }
   };
 
-  const fetchProcedimentos = async (tipoCliente: TipoCliente, conveniosId: number) => {
+  const fetchProcedimentos = async (tipoCliente: TipoClienteValorProcedimento, conveniosId: number) => {
     try {
       // Verificar se temos tanto convênio quanto tipo de cliente
       if (!tipoCliente) {
@@ -232,10 +239,28 @@ const CriarAgendamento = ({
       // A API retorna um array diretamente, não data.data
       if (Array.isArray(data)) {
         // Mapear os dados corretamente baseado na estrutura real retornada
-        const procedimentosMapeados = data.map((item: any) => ({
+        const procedimentosMapeados = data.map((item: {
+          id: number;
+          valor: number;
+          tipo: string;
+          tabela_faturamento_id: number;
+          procedimento_id: number;
+          createdAt: string;
+          updatedAt: string;
+          procedimento: {
+            id: number;
+            nome: string;
+            codigo: string;
+            tipo: string;
+            especialidade_id: number;
+            status: string;
+            createdAt: string;
+            updatedAt: string;
+          };
+        }) => ({
           id: item.id,
-          valor: item.valor,
-          tipo: item.tipo as any, // Usar o tipo retornado pela API
+          valor: item.valor.toString(),
+          tipo: item.tipo as TipoClienteValorProcedimento,
           tabela_faturamento_id: item.tabela_faturamento_id || 1,
           procedimento_id: item.procedimento_id,
           createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
@@ -280,7 +305,7 @@ const CriarAgendamento = ({
     }
   };
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = async (values: z.infer<typeof createAgendaSchema>) => {
     setLoading(true);
 
     try {
@@ -312,8 +337,9 @@ const CriarAgendamento = ({
       dataComHorario.setHours(parseInt(horas), parseInt(minutos), 0, 0);
 
       // Preparar dados para envio
-      const dadosParaEnviar = {
-        ...values,
+      const { horario, ...dadosParaEnviar } = values;
+      const dadosFinais = {
+        ...dadosParaEnviar,
         dtagenda: dataComHorario.toISOString(),
         prestador_id: prestador?.id,
         unidade_id: unidade?.id,
@@ -321,7 +347,6 @@ const CriarAgendamento = ({
         tipo_cliente: tipoClienteSelecionado,
         situacao: "AGENDADO", // Sempre será AGENDADO para novos agendamentos
       };
-      delete dadosParaEnviar.horario;
 
       // Enviar para a API
       const response = await fetch("/api/agendas", {
@@ -329,7 +354,7 @@ const CriarAgendamento = ({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(dadosParaEnviar),
+        body: JSON.stringify(dadosFinais),
       });
 
       if (response.ok) {
@@ -399,13 +424,13 @@ const CriarAgendamento = ({
                       <Select
                         onValueChange={(value) => {
                           field.onChange(value);
-                          setTipoClienteSelecionada(value as TipoCliente);
+                          setTipoClienteSelecionada(value as TipoClienteValorProcedimento);
                           // Limpar procedimento selecionado quando tipo mudar
                           setProcedimentoSelecionado(null);
                           form.setValue("procedimento_id", 0);
                           // Recarregar procedimentos se já há convênio selecionado
                           if (convenioSelecionado) {
-                            fetchProcedimentos(value as TipoCliente, convenioSelecionado.id);
+                            fetchProcedimentos(value as TipoClienteValorProcedimento, convenioSelecionado.id);
                           }
                         }}
                         value={field.value || tipoClienteSelecionado || ""}
@@ -495,7 +520,7 @@ const CriarAgendamento = ({
                                       form.setValue("tipo_cliente", item.tipoCliente || undefined);
                                       
                                       setClienteSelecionado(item);
-                                      setTipoClienteSelecionada(item.tipoCliente || null);
+                                      setTipoClienteSelecionada((item.tipoCliente as unknown as TipoClienteValorProcedimento) || null);
                                       
                                       console.log("🔍 Estado DEPOIS da seleção:", {
                                         clienteSelecionado: item.id,

@@ -96,8 +96,8 @@ export default function EditarUnidade() {
       queryParams.set("message", "Unidade atualizada com sucesso!");
 
       router.push(`/painel/unidades?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar unidade");
     } finally {
       setLoading(false);
     }

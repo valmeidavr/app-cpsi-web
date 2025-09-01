@@ -62,14 +62,25 @@ export async function GET(request: NextRequest) {
 
     // Agora buscar os nomes dos usuários do banco cpsi_acesso
     const lancamentosComUsuarios = await Promise.all(
-      (lancamentoRows as any[]).map(async (lancamento) => {
+      (lancamentoRows as Array<{
+        id: number;
+        descricao: string;
+        valor: number;
+        tipo: string;
+        data_lancamento: string;
+        caixa_id: number;
+        plano_conta_id: number;
+        usuario_id: number;
+        createdAt: Date;
+        updatedAt: Date;
+      }>).map(async (lancamento) => {
         try {
           if (lancamento.usuario_id) {
             const [userRows] = await accessPool.execute(
               'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
               [lancamento.usuario_id]
             );
-            const usuario = (userRows as any[])[0];
+            const usuario = (userRows as Array<{ nome: string }>)[0];
             return {
               ...lancamento,
               usuario_nome: usuario ? usuario.nome : 'Usuário não encontrado'
@@ -118,7 +129,7 @@ export async function GET(request: NextRequest) {
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
       data: lancamentosComUsuarios,
@@ -155,7 +166,7 @@ export async function POST(request: NextRequest) {
       );
       console.log('🔍 Debug - Usuário encontrado:', userRows);
       
-      if ((userRows as any[]).length === 0) {
+      if ((userRows as Array<{ login: string; nome: string }>).length === 0) {
         return NextResponse.json(
           { error: 'Usuário não encontrado ou inativo' },
           { status: 400 }
@@ -185,7 +196,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar lançamento:', error);

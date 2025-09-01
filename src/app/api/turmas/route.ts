@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [countRows] = await gestorPool.execute(countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
       data: turmaRows,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
     console.error('Erro ao criar turma:', error);

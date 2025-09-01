@@ -85,7 +85,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { hasSystemAccess, userLevel } = useAuth();
-  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
 
   useEffect(() => {
     // Carrega os itens do menu e converte os ícones para componentes React
