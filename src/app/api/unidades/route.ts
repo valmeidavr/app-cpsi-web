@@ -96,7 +96,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar unidade
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateUnidadeDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createUnidadeSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir unidade
     const [result] = await gestorPool.execute(
@@ -104,7 +114,7 @@ export async function POST(request: NextRequest) {
         nome
       ) VALUES (?)`,
       [
-        body.nome,
+        payload.nome,
       ]
     );
 
@@ -114,12 +124,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar unidade:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar unidade
 export async function PUT(request: NextRequest) {
@@ -134,7 +150,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateUnidadeDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateUnidadeSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar unidade
     await gestorPool.execute(
@@ -142,13 +168,20 @@ export async function PUT(request: NextRequest) {
         nome = ?
        WHERE id = ?`,
       [
-        body.nome, id
+        payload.nome,
+        id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar unidade:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -169,9 +202,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // DELETE - remover registro
+    // Soft delete - marcar como inativo
     await gestorPool.execute(
-      'DELETE FROM unidades WHERE id = ?',
+      'UPDATE unidades SET status = "Inativo" WHERE id = ?',
       [id]
     );
 
@@ -183,4 +216,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

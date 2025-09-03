@@ -114,6 +114,16 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const validatedData = updateClienteSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { convenios, desconto = {}, ...payload } = validatedData.data;
 
     // Atualizar cliente
     await gestorPool.execute(
@@ -123,9 +133,9 @@ export async function PUT(
         cidade = ?, uf = ?, telefone1 = ?, telefone2 = ?
        WHERE id = ?`,
       [
-        body.nome, body.email, body.dtnascimento, body.sexo, body.tipo,
-        body.cpf, body.cep, body.logradouro, body.numero, body.bairro,
-        body.cidade, body.uf, body.telefone1, body.telefone2, id
+        payload.nome, payload.email, payload.dtnascimento, payload.sexo, payload.tipo,
+        payload.cpf, payload.cep, payload.logradouro, payload.numero, payload.bairro,
+        payload.cidade, payload.uf, payload.telefone1, payload.telefone2, id
       ]
     );
 
@@ -136,9 +146,9 @@ export async function PUT(
     );
 
     // Adicionar novos convênios
-    if (body.convenios && body.convenios.length > 0) {
-      for (const convenioId of body.convenios) {
-        const descontoValue = body.desconto[convenioId];
+    if (convenios && convenios.length > 0) {
+      for (const convenioId of convenios) {
+        const descontoValue = desconto[convenioId];
         const descontoFinal = typeof descontoValue === 'number' && !isNaN(descontoValue) 
           ? descontoValue 
           : 0;
@@ -153,6 +163,12 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar cliente:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -97,7 +97,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     
     // Validar dados com Zod
-    const validatedData = createAlunoTurmaSchema.parse(body);
+    const validatedData = createAlunoTurmaSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
 
     // Inserir aluno em turma
     const [result] = await gestorPool.execute(
@@ -105,7 +112,7 @@ export async function POST(request: NextRequest) {
         cliente_id, turma_id, data_inscricao, status
       ) VALUES (?, ?, ?, ?)`,
       [
-        validatedData.cliente_id, validatedData.turma_id, validatedData.data_inscricao || new Date().toISOString(), 'Ativo'
+        validatedData.data.cliente_id, validatedData.data.turma_id, validatedData.data.data_inscricao || new Date().toISOString(), 'Ativo'
       ]
     );
 
@@ -115,6 +122,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar aluno em turma:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

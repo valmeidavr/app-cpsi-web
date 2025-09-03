@@ -62,7 +62,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar caixa
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateCaixaDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createCaixaSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir caixa
     const result = await executeWithRetry(gestorPool,
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest) {
         nome, tipo, saldo
       ) VALUES (?, ?, ?)`,
       [
-        body.nome, body.tipo, body.saldo
+        payload.nome, payload.tipo, payload.saldo
       ]
     );
 
@@ -80,6 +90,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar caixa:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -115,20 +115,35 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = createUsuarioSchema.parse(body);
+    const validatedData = createUsuarioSchema.safeParse(body);
     
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
     // Hash da senha
-    const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
+    const hashedPassword = await bcrypt.hash(payload.senha, 10);
     
     // Inserir usuário - usando email como login já que o schema não tem campo login
     await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
-      [validatedData.email, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
+      [payload.email, payload.nome, payload.email, hashedPassword, 'Ativo']
     );
     
-    return NextResponse.json({ success: true, login: validatedData.email });
+    return NextResponse.json({ success: true, login: payload.email });
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -146,23 +161,32 @@ export async function PUT(request: NextRequest) {
     }
     
     const body = await request.json();
-    const validatedData = updateUsuarioSchema.parse(body);
+    const validatedData = updateUsuarioSchema.safeParse(body);
     
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
     let query = 'UPDATE usuarios SET ';
     const params: (string | number)[] = [];
     
-    if (validatedData.nome) {
+    if (payload.nome) {
       query += 'nome = ?, ';
-      params.push(validatedData.nome);
+      params.push(payload.nome);
     }
     
-    if (validatedData.email) {
+    if (payload.email) {
       query += 'email = ?, ';
-      params.push(validatedData.email);
+      params.push(payload.email);
     }
     
-    if (validatedData.senha) {
-      const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
+    if (payload.senha) {
+      const hashedPassword = await bcrypt.hash(payload.senha, 10);
       query += 'senha = ?, ';
       params.push(hashedPassword);
     }
@@ -176,6 +200,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

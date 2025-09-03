@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
         e.id as especialidade_id,
         e.nome as especialidade_nome,
         u.id as unidade_id,
-        u.descricao as unidade_nome,
+        u.nome as unidade_nome,
         p.id as prestador_id,
         p.nome as prestador_nome,
         p.cpf as prestador_cpf,
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (e.nome LIKE ? OR u.descricao LIKE ? OR p.nome LIKE ?)';
+      query += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
     const countParams: string[] = [];
 
     if (search) {
-      countQuery += ' AND (e.nome LIKE ? OR u.descricao LIKE ? OR p.nome LIKE ?)';
+      countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
@@ -161,7 +161,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar alocação
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAlocacaoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createAlocacaoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir alocação
     const result = await executeWithRetry(gestorPool,
@@ -169,7 +179,7 @@ export async function POST(request: NextRequest) {
         unidade_id, especialidade_id, prestador_id
       ) VALUES (?, ?, ?)`,
       [
-        body.unidade_id, body.especialidade_id, body.prestador_id
+        payload.unidade_id, payload.especialidade_id, payload.prestador_id
       ]
     );
 
@@ -179,6 +189,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar alocação:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

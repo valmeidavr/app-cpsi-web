@@ -142,7 +142,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar agenda
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAgendaDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createAgendaSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir agenda
     const result = await executeWithRetry(gestorPool,
@@ -151,9 +161,9 @@ export async function POST(request: NextRequest) {
         expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
-        body.procedimento_id, body.expediente_id || null, body.prestador_id,
-        body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente
+        payload.dtagenda, payload.situacao, payload.cliente_id, payload.convenio_id,
+        payload.procedimento_id, payload.expediente_id || null, payload.prestador_id,
+        payload.unidade_id, payload.especialidade_id, payload.tipo, payload.tipo_cliente
       ]
     );
 
@@ -163,10 +173,10 @@ export async function POST(request: NextRequest) {
     try {
       // Buscar informações do cliente para a descrição
       let clienteNome = 'Cliente não informado';
-      if (body.cliente_id) {
+      if (payload.cliente_id) {
         const [clienteRows] = await gestorPool.execute(
           'SELECT nome FROM clientes WHERE id = ?',
-          [body.cliente_id]
+          [payload.cliente_id]
         );
         if ((clienteRows as Array<{ nome: string }>).length > 0) {
           clienteNome = (clienteRows as Array<{ nome: string }>)[0].nome;
@@ -175,10 +185,10 @@ export async function POST(request: NextRequest) {
 
       // Buscar informações do procedimento para a descrição
       let procedimentoNome = 'Procedimento não informado';
-      if (body.procedimento_id) {
+      if (payload.procedimento_id) {
         const [procedimentoRows] = await gestorPool.execute(
           'SELECT nome FROM procedimentos WHERE id = ?',
-          [body.procedimento_id]
+          [payload.procedimento_id]
         );
         if ((procedimentoRows as Array<{ nome: string }>).length > 0) {
           procedimentoNome = (procedimentoRows as Array<{ nome: string }>)[0].nome;
@@ -235,7 +245,7 @@ export async function POST(request: NextRequest) {
           'ENTRADA', // tipo ENTRADA
           null, // forma_pagamento como null
           'PENDENTE', // status_pagamento PENDENTE
-          body.cliente_id,
+          payload.cliente_id,
           planoContaId,
           caixaId,
           agendaId, // agenda_id da agenda criada
@@ -257,6 +267,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar agenda:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -277,7 +293,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateAgendaDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateAgendaSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar agenda
     await executeWithRetry(gestorPool,
@@ -287,15 +313,21 @@ export async function PUT(request: NextRequest) {
         unidade_id = ?, especialidade_id = ?, tipo = ?, tipo_cliente = ?
        WHERE id = ?`,
       [
-        body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
-        body.procedimento_id, body.expediente_id || null, body.prestador_id,
-        body.unidade_id, body.especialidade_id, body.tipo, body.tipo_cliente, id
+        payload.dtagenda, payload.situacao, payload.cliente_id, payload.convenio_id,
+        payload.procedimento_id, payload.expediente_id || null, payload.prestador_id,
+        payload.unidade_id, payload.especialidade_id, payload.tipo, payload.tipo_cliente, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar agenda:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -316,9 +348,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // DELETE - remover registro
+    // Soft delete - marcar como cancelado
     await executeWithRetry(gestorPool,
-      'DELETE FROM agendas WHERE id = ?',
+      'UPDATE agendas SET situacao = "Cancelado" WHERE id = ?',
       [id]
     );
 
@@ -330,4 +362,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

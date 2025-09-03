@@ -62,34 +62,20 @@ export async function GET(request: NextRequest) {
 // POST - Criar convênio
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateConvenioDTO = await request.json();
-    
-    console.log("🔍 Dados recebidos para criar convênio:", body);
-    console.log("🔍 Tipo do tabela_faturamento_id:", typeof body.tabela_faturamento_id);
-    console.log("🔍 Valor do tabela_faturamento_id:", body.tabela_faturamento_id);
+    const body = await request.json();
+    const validatedData = createConvenioSchema.safeParse(body);
 
-    // Validar campos obrigatórios
-    if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
-      console.log("❌ Validação falhou:", {
-        nome: !!body.nome,
-        regras: !!body.regras,
-        tabela_faturamento_id: body.tabela_faturamento_id
-      });
+    if (!validatedData.success) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios não preenchidos' },
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
 
-    // Garantir que desconto seja um número válido
-    const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+    const { ...payload } = validatedData.data;
 
-    console.log("🔍 Dados para inserção:", {
-      nome: body.nome,
-      desconto,
-      regras: body.regras,
-      tabelaFaturamentosId: body.tabela_faturamento_id
-    });
+    // Garantir que desconto seja um número válido
+    const desconto = payload.desconto !== undefined ? Number(payload.desconto) : 0;
 
     // Inserir convênio
     const [result] = await gestorPool.execute(
@@ -97,11 +83,9 @@ export async function POST(request: NextRequest) {
         nome, desconto, regras, tabelaFaturamentosId
       ) VALUES (?, ?, ?, ?)`,
       [
-        body.nome, desconto, body.regras, body.tabela_faturamento_id
+        payload.nome, desconto, payload.regras, payload.tabelaFaturamentosId
       ]
     );
-
-    console.log("✅ Convênio criado com sucesso:", result);
 
     return NextResponse.json({ 
       success: true, 
@@ -109,12 +93,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Erro ao criar convênio:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar convênio
 export async function PUT(request: NextRequest) {
@@ -129,18 +119,20 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateConvenioDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateConvenioSchema.safeParse(body);
 
-    // Validar campos obrigatórios
-    if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
+    if (!validatedData.success) {
       return NextResponse.json(
-        { error: 'Campos obrigatórios não preenchidos' },
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
 
+    const { ...payload } = validatedData.data;
+
     // Garantir que desconto seja um número válido
-    const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
+    const desconto = payload.desconto !== undefined ? Number(payload.desconto) : 0;
 
     // Atualizar convênio
     await gestorPool.execute(
@@ -148,13 +140,19 @@ export async function PUT(request: NextRequest) {
         nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
        WHERE id = ?`,
       [
-        body.nome, desconto, body.regras, body.tabela_faturamento_id, id
+        payload.nome, desconto, payload.regras, payload.tabelaFaturamentosId, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar convênio:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -175,9 +173,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // DELETE - remover registro
+    // Soft delete - marcar como inativo
     await gestorPool.execute(
-      'DELETE FROM convenios WHERE id = ?',
+      'UPDATE convenios SET status = "Inativo" WHERE id = ?',
       [id]
     );
 
@@ -189,4 +187,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

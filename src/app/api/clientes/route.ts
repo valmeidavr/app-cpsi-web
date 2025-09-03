@@ -88,23 +88,31 @@ export async function GET(request: NextRequest) {
 // POST - Criar cliente
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateClienteDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createClienteSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { convenios, desconto = {}, ...payload } = validatedData.data;
 
     // Formatar dados
-    if (body.dtnascimento) {
-      const parsedDate = new Date(body.dtnascimento);
-      body.dtnascimento = getDateOnlyUTCISO(parsedDate);
+    if (payload.dtnascimento) {
+      const parsedDate = new Date(payload.dtnascimento);
+      payload.dtnascimento = getDateOnlyUTCISO(parsedDate);
     }
-    body.cpf = limparCPF(String(body.cpf));
-    if (body.cep) {
-      body.cep = limparCEP(String(body.cep));
+    payload.cpf = limparCPF(String(payload.cpf));
+    if (payload.cep) {
+      payload.cep = limparCEP(String(payload.cep));
     }
-    body.telefone1 = limparTelefone(String(body.telefone1));
-    if (body.telefone2) {
-      body.telefone2 = limparTelefone(String(body.telefone2));
+    payload.telefone1 = limparTelefone(String(payload.telefone1));
+    if (payload.telefone2) {
+      payload.telefone2 = limparTelefone(String(payload.telefone2));
     }
-
-    const { convenios, desconto = {}, ...payload } = body;
 
     // Inserir cliente
     const [result] = await gestorPool.execute(
@@ -154,6 +162,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Erro ao criar cliente:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -174,23 +188,31 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateClienteDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateClienteSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { convenios, desconto = {}, ...payload } = validatedData.data;
 
     // Formatar dados
-    if (body.dtnascimento) {
-      const parsedDate = new Date(body.dtnascimento);
-      body.dtnascimento = getDateOnlyUTCISO(parsedDate);
+    if (payload.dtnascimento) {
+      const parsedDate = new Date(payload.dtnascimento);
+      payload.dtnascimento = getDateOnlyUTCISO(parsedDate);
     }
-    body.cpf = limparCPF(String(body.cpf));
-    if (body.cep) {
-      body.cep = limparCEP(String(body.cep));
+    payload.cpf = limparCPF(String(payload.cpf));
+    if (payload.cep) {
+      payload.cep = limparCEP(String(payload.cep));
     }
-    body.telefone1 = limparTelefone(String(body.telefone1));
-    if (body.telefone2) {
-      body.telefone2 = limparTelefone(String(body.telefone2));
+    payload.telefone1 = limparTelefone(String(payload.telefone1));
+    if (payload.telefone2) {
+      payload.telefone2 = limparTelefone(String(payload.telefone2));
     }
-
-    const { convenios, desconto = {}, ...payload } = body;
 
     // Atualizar cliente
     await gestorPool.execute(
@@ -240,6 +262,12 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erro ao atualizar cliente:", error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

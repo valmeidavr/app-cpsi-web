@@ -65,7 +65,23 @@ export const createPrestadorSchema = z.object({
         return false;
       },
       { message: "Formato de data inválido. Use DD/MM/AAAA ou YYYY-MM-AA" }
-    ),
+    )
+    .transform((value) => {
+      if (!value) return null;
+      
+      // Se for DD/MM/AAAA, converter para YYYY-MM-DD
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+        const [day, month, year] = value.split('/');
+        return `${year}-${month}-${day}`;
+      }
+      
+      // Se já for YYYY-MM-DD, retornar como está
+      if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+      
+      return null; // Caso não seja nenhum dos formatos esperados
+    }),
 
   cep: z
     .string()

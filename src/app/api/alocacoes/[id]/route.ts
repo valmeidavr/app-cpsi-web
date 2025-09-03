@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { updateAlocacaoSchema } from "../shema/formSchemaAlocacao";
+import { z } from "zod";
+import { Alocacao } from "@/app/types/Alocacao";
 
 // GET - Buscar alocacao por ID
 export async function GET(
@@ -14,28 +17,14 @@ export async function GET(
       [id]
     );
 
-    if ((rows as Array<{
-      id: number;
-      unidade_id: number;
-      especialidade_id: number;
-      prestador_id: number;
-      createdAt: Date;
-      updatedAt: Date;
-    }>).length === 0) {
+    if ((rows as Alocacao[]).length === 0) {
       return NextResponse.json(
         { error: 'Alocação não encontrada' },
         { status: 404 }
       );
     }
 
-    const alocacao = (rows as Array<{
-      id: number;
-      unidade_id: number;
-      especialidade_id: number;
-      prestador_id: number;
-      createdAt: Date;
-      updatedAt: Date;
-    }>)[0];
+    const alocacao = (rows as Alocacao[])[0];
 
     return NextResponse.json(alocacao);
   } catch (error) {
@@ -55,18 +44,34 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const validatedData = updateAlocacaoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar alocacao
     await executeWithRetry(gestorPool,
       `UPDATE alocacoes SET 
         unidade_id = ?, especialidade_id = ?, prestador_id = ?
        WHERE id = ?`,
-      [body.unidade_id, body.especialidade_id, body.prestador_id, id]
+      [payload.unidade_id, payload.especialidade_id, payload.prestador_id, id]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar alocacao:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -96,4 +101,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-} 
+}

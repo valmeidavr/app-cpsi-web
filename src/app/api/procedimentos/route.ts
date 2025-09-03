@@ -62,7 +62,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar procedimento
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateProcedimentoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createProcedimentoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir procedimento
     const [result] = await gestorPool.execute(
@@ -70,7 +80,7 @@ export async function POST(request: NextRequest) {
         nome, codigo, tipo, especialidade_id, status
       ) VALUES (?, ?, ?, ?, ?)`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidade_id, 'Ativo'
+        payload.nome, payload.codigo, payload.tipo, payload.especialidade_id, 'Ativo'
       ]
     );
 
@@ -80,12 +90,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar procedimento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar procedimento
 export async function PUT(request: NextRequest) {
@@ -100,7 +116,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateProcedimentoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateProcedimentoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar procedimento
     await gestorPool.execute(
@@ -108,13 +134,19 @@ export async function PUT(request: NextRequest) {
         nome = ?, codigo = ?, tipo = ?, especialidade_id = ?
        WHERE id = ?`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidade_id, id
+        payload.nome, payload.codigo, payload.tipo, payload.especialidade_id, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar procedimento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -149,4 +181,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

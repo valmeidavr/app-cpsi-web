@@ -177,7 +177,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar especialidade
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateEspecialidadeDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createEspecialidadeSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir especialidade
     const [result] = await gestorPool.execute(
@@ -185,7 +195,7 @@ export async function POST(request: NextRequest) {
         nome, codigo, status
       ) VALUES (?, ?, ?)`,
       [
-        body.nome, body.codigo, 'Ativo'
+        payload.nome, payload.codigo, 'Ativo'
       ]
     );
 
@@ -195,12 +205,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar especialidade:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar especialidade
 export async function PUT(request: NextRequest) {
@@ -215,7 +231,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateEspecialidadeDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateEspecialidadeSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar especialidade
     await gestorPool.execute(
@@ -223,13 +249,19 @@ export async function PUT(request: NextRequest) {
         nome = ?, codigo = ?
        WHERE id = ?`,
       [
-        body.nome, body.codigo, id
+        payload.nome, payload.codigo, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar especialidade:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -264,4 +296,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

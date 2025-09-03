@@ -61,23 +61,32 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-    const validatedData = updateUsuarioSchema.parse(body);
+    const validatedData = updateUsuarioSchema.safeParse(body);
     
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
     let query = 'UPDATE usuarios SET ';
     const queryParams: (string | number)[] = [];
     
-    if (validatedData.nome) {
+    if (payload.nome) {
       query += 'nome = ?, ';
-      queryParams.push(validatedData.nome);
+      queryParams.push(payload.nome);
     }
     
-    if (validatedData.email) {
+    if (payload.email) {
       query += 'email = ?, ';
-      queryParams.push(validatedData.email);
+      queryParams.push(payload.email);
     }
     
-    if (validatedData.senha) {
-      const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
+    if (payload.senha) {
+      const hashedPassword = await bcrypt.hash(payload.senha, 10);
       query += 'senha = ?, ';
       queryParams.push(hashedPassword);
     }
@@ -91,9 +100,39 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
+
+// API route para DELETE (deletar usuário)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Soft delete - marcar como inativo
+    await accessPool.execute(
+      'UPDATE usuarios SET status = "Inativo" WHERE login = ?',
+      [id]
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao deletar usuário:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}

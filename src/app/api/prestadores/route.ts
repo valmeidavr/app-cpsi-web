@@ -3,6 +3,10 @@ import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createPrestadorSchema, updatePrestadorSchema } from "./schema/formSchemaPretadores";
 
+const updatePrestadorStatusSchema = z.object({
+  status: z.enum(["Ativo", "Inativo"], { message: "Status deve ser 'Ativo' ou 'Inativo'" }),
+});
+
 export type CreatePrestadorDTO = z.infer<typeof createPrestadorSchema>;
 export type UpdatePrestadorDTO = z.infer<typeof updatePrestadorSchema>;
 
@@ -135,7 +139,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar prestador
 export async function POST(request: NextRequest) {
   try {
-    const body: CreatePrestadorDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createPrestadorSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir prestador
     const [result] = await gestorPool.execute(
@@ -144,10 +158,10 @@ export async function POST(request: NextRequest) {
         bairro, cidade, uf, telefone, celular, complemento, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.nome, body.rg, body.cpf, body.sexo, body.dtnascimento,
-        body.cep, body.logradouro, body.numero, body.bairro,
-        body.cidade, body.uf, body.telefone, body.celular,
-        body.complemento, 'Ativo'
+        payload.nome, payload.rg, payload.cpf, payload.sexo, payload.dtnascimento,
+        payload.cep, payload.logradouro, payload.numero, payload.bairro,
+        payload.cidade, payload.uf, payload.telefone, payload.celular,
+        payload.complemento, 'Ativo'
       ]
     );
 
@@ -157,12 +171,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar prestador
 export async function PUT(request: NextRequest) {
@@ -177,7 +197,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdatePrestadorDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updatePrestadorSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar prestador
     await gestorPool.execute(
@@ -187,16 +217,22 @@ export async function PUT(request: NextRequest) {
         telefone = ?, celular = ?, complemento = ?
        WHERE id = ?`,
       [
-        body.nome, body.rg, body.cpf, body.sexo, body.dtnascimento,
-        body.cep, body.logradouro, body.numero, body.bairro,
-        body.cidade, body.uf, body.telefone, body.celular,
-        body.complemento, id
+        payload.nome, payload.rg, payload.cpf, payload.sexo, payload.dtnascimento,
+        payload.cep, payload.logradouro, payload.numero, payload.bairro,
+        payload.cidade, payload.uf, payload.telefone, payload.celular,
+        payload.complemento, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -218,14 +254,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { status } = body;
+    const validatedData = updatePrestadorStatusSchema.safeParse(body);
 
-    if (!status || !['Ativo', 'Inativo'].includes(status)) {
+    if (!validatedData.success) {
       return NextResponse.json(
-        { error: 'Status deve ser "Ativo" ou "Inativo"' },
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+
+    const { status } = validatedData.data;
 
     // Atualizar status do prestador
     await gestorPool.execute(
@@ -236,6 +274,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao alterar status do prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -270,4 +314,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
