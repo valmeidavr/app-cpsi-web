@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const prestadorId = searchParams.get('prestadorId');
+    const especialidadeId = searchParams.get('especialidade_id');
+    const unidadeId = searchParams.get('unidadeId');
 
     let query = `
       SELECT 
@@ -20,7 +23,7 @@ export async function GET(request: NextRequest) {
         e.id as especialidade_id,
         e.nome as especialidade_nome,
         u.id as unidade_id,
-        u.nome as unidade_nome,
+        u.descricao as unidade_nome,
         p.id as prestador_id,
         p.nome as prestador_nome,
         p.cpf as prestador_cpf,
@@ -34,8 +37,23 @@ export async function GET(request: NextRequest) {
     const params: (string | number)[] = [];
 
     if (search) {
-      query += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      query += ' AND (e.nome LIKE ? OR u.descricao LIKE ? OR p.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (prestadorId) {
+      query += ' AND a.prestador_id = ?';
+      params.push(prestadorId);
+    }
+
+    if (especialidadeId) {
+      query += ' AND a.especialidade_id = ?';
+      params.push(especialidadeId);
+    }
+
+    if (unidadeId) {
+      query += ' AND a.unidade_id = ?';
+      params.push(unidadeId);
     }
 
     // Adicionar paginação
@@ -74,14 +92,14 @@ export async function GET(request: NextRequest) {
     const countParams: string[] = [];
 
     if (search) {
-      countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
+      countQuery += ' AND (e.nome LIKE ? OR u.descricao LIKE ? OR p.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
-    // Transformar os dados para incluir objetos aninhados
+    // Transformar os dados para incluir objetos aninhados e campos diretos
     const alocacoesFormatadas = (alocacaoRows as Array<{
       id: number;
       unidade_id: number;
@@ -101,6 +119,11 @@ export async function GET(request: NextRequest) {
       prestador_id: row.prestador_id,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      // Campos diretos para compatibilidade
+      unidade_nome: row.unidade_nome,
+      especialidade_nome: row.especialidade_nome,
+      prestador_nome: row.prestador_nome,
+      // Objetos aninhados
       unidade: {
         id: row.unidade_id,
         nome: row.unidade_nome

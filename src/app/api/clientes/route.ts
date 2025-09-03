@@ -110,8 +110,8 @@ export async function POST(request: NextRequest) {
     const [result] = await gestorPool.execute(
       `INSERT INTO clientes (
         nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
-        uf, telefone1, telefone2, status
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        uf, telefone1, telefone2, status, sexo, tipo
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.nome,
         payload.email,
@@ -125,6 +125,8 @@ export async function POST(request: NextRequest) {
         payload.telefone1,
         payload.telefone2,
         "Ativo",
+        payload.sexo,
+        payload.tipo,
       ]
     );
 
