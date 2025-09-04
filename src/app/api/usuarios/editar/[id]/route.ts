@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 import { z } from "zod";
 import { updateUsuarioSchema } from "../../schema/formShemaUpdateUsuario";
 import bcrypt from 'bcrypt';
@@ -14,7 +14,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const [rows] = await accessPool.execute(
+    const [rows] = await gestorPool.execute(
       'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
       [id]
     );
@@ -32,7 +32,7 @@ export async function GET(
     }
     
     // Buscar sistemas do usuário
-    const [sistemaRows] = await accessPool.execute(
+    const [sistemaRows] = await gestorPool.execute(
       `SELECT s.id, s.nome, us.nivel 
        FROM sistemas s 
        INNER JOIN usuario_sistema us ON s.id = us.sistemas_id 
@@ -95,7 +95,7 @@ export async function PUT(
     query = query.slice(0, -2) + ' WHERE login = ?';
     queryParams.push(id);
     
-    await accessPool.execute(query, queryParams);
+    await gestorPool.execute(query, queryParams);
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -122,7 +122,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Soft delete - marcar como inativo
-    await accessPool.execute(
+    await gestorPool.execute(
       'UPDATE usuarios SET status = "Inativo" WHERE login = ?',
       [id]
     );

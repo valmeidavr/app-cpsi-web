@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
@@ -24,11 +24,11 @@ export async function GET(request: NextRequest) {
       
       try {
         // Primeiro, vamos ver a estrutura real da tabela
-        const [structureRows] = await accessPool.execute('DESCRIBE usuarios');
+        const [structureRows] = await gestorPool.execute('DESCRIBE usuarios');
         console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
         
         // Buscar usuários com a estrutura correta
-        const [rows] = await accessPool.execute(
+        const [rows] = await gestorPool.execute(
           'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
         );
         const usuarios = rows as Array<{
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // Debug logs removidos para evitar spam
 
-    const [userRows] = await accessPool.execute(query, params)
+    const [userRows] = await gestorPool.execute(query, params)
     const usuarios = userRows as Array<{
       login: string;
       nome: string;
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`)
     }
 
-    const [countRows] = await accessPool.execute(countQuery, countParams)
+    const [countRows] = await gestorPool.execute(countQuery, countParams)
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
 
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(payload.senha, 10);
     
     // Inserir usuário - usando email como login já que o schema não tem campo login
-    await accessPool.execute(
+    await gestorPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [payload.email, payload.nome, payload.email, hashedPassword, 'Ativo']
     );
@@ -195,7 +195,7 @@ export async function PUT(request: NextRequest) {
     query = query.slice(0, -2) + ' WHERE login = ?';
     params.push(login);
     
-    await accessPool.execute(query, params);
+    await gestorPool.execute(query, params);
     
     return NextResponse.json({ success: true });
   } catch (error) {

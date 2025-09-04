@@ -1,4 +1,4 @@
-import { accessPool } from './mysql'
+import { gestorPool } from './mysql'
 import bcrypt from 'bcrypt'
 
 export interface AuthUser {
@@ -22,7 +22,7 @@ export async function authenticateUser(login: string, password: string): Promise
     console.log('🔍 Iniciando autenticação para:', login)
     
     // Buscar usuário na tabela usuarios do database acesso
-    const [userRows] = await accessPool.execute(
+    const [userRows] = await gestorPool.execute(
       'SELECT login, senha, nome, email FROM usuarios WHERE login = ? AND status = ? LIMIT 1',
       [login, 'Ativo']
     )
@@ -73,7 +73,7 @@ export async function authenticateUser(login: string, password: string): Promise
     }
 
     // Verificar se o usuário tem acesso ao sistema CPSI
-    const [sistemaRows] = await accessPool.execute(
+    const [sistemaRows] = await gestorPool.execute(
       'SELECT s.id, s.nome, us.nivel FROM sistemas s INNER JOIN usuario_sistema us ON s.id = us.sistemas_id WHERE s.id = ? AND us.usuarios_login = ?',
       [1087, login]
     )
@@ -108,7 +108,7 @@ export async function authenticateUser(login: string, password: string): Promise
 
 export async function checkUserAdmin(userLogin: string): Promise<boolean> {
   try {
-    const [adminRows] = await accessPool.execute(
+    const [adminRows] = await gestorPool.execute(
       'SELECT COUNT(*) as count FROM usuario_sistema WHERE sistemas_id = ? AND usuarios_login = ?',
       [1088, userLogin]
     )
@@ -123,7 +123,7 @@ export async function checkUserAdmin(userLogin: string): Promise<boolean> {
 
 export async function checkUserSystemAdmin(userLogin: string): Promise<boolean> {
   try {
-    const [adminRows] = await accessPool.execute(
+    const [adminRows] = await gestorPool.execute(
       'SELECT COUNT(*) as count FROM usuario_sistema WHERE sistemas_id = ? AND usuarios_login = ? AND nivel = ?',
       [1088, userLogin, 'Administrador']
     )

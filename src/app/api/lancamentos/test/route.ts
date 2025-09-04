@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gestorPool, accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 
 export async function GET() {
   try {
@@ -15,7 +15,7 @@ export async function GET() {
 
     // Verificar estrutura da tabela usuarios no banco cpsi_acesso
     try {
-      const [usuariosStructure] = await accessPool.execute('DESCRIBE usuarios');
+      const [usuariosStructure] = await gestorPool.execute('DESCRIBE usuarios');
       console.log('🔍 Teste - Estrutura da tabela usuarios:', usuariosStructure);
     } catch (error) {
       console.error('🔍 Teste - Erro ao verificar usuarios:', error);
@@ -48,7 +48,7 @@ export async function GET() {
     }
 
     try {
-      const [usuariosSample] = await accessPool.execute('SELECT * FROM usuarios LIMIT 3');
+      const [usuariosSample] = await gestorPool.execute('SELECT * FROM usuarios LIMIT 3');
       console.log('🔍 Teste - Amostra de usuários:', usuariosSample);
     } catch (error) {
       console.error('🔍 Teste - Erro ao buscar usuários:', error);

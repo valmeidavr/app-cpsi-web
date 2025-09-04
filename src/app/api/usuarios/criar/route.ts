@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "../schema/formSchemaUsuarios";
 import bcrypt from 'bcrypt';
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const validatedData = createUsuarioSchema.parse(body);
     
     // Verificar se o usuário já existe
-    const [existingUser] = await accessPool.execute(
+    const [existingUser] = await gestorPool.execute(
       'SELECT login FROM usuarios WHERE email = ?',
       [validatedData.email]
     );
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const userLogin = Date.now().toString() + Math.random().toString(36).substr(2, 5);
     
     // Inserir usuário
-    await accessPool.execute(
+    await gestorPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [userLogin, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );

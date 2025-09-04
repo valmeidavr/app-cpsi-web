@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, accessPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAgendaSchema, updateAgendaSchema } from "./schema/formSchemaAgendas";
 import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       // Buscar o primeiro usuário ativo disponível (usuário da sessão)
       let usuarioId = 'admin'; // Usuário padrão se não houver nenhum
       try {
-        const [usuarioRows] = await accessPool.execute(
+        const [usuarioRows] = await gestorPool.execute(
           'SELECT login FROM usuarios WHERE status = "Ativo" LIMIT 1'
         );
         if ((usuarioRows as Array<{ login: string }>).length > 0) {

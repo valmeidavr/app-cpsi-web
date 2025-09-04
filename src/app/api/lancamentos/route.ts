@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, accessPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       }>).map(async (lancamento) => {
         try {
           if (lancamento.usuario_id) {
-            const [userRows] = await accessPool.execute(
+            const [userRows] = await gestorPool.execute(
               'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
               [lancamento.usuario_id]
             );
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário existe no banco cpsi_acesso
     try {
-      const [userRows] = await accessPool.execute(
+      const [userRows] = await gestorPool.execute(
         'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
         [payload.usuario_id]
       );

@@ -30,7 +30,7 @@ export default function Header() {
   };
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm">
+    <header className="flex items-center justify-between px-6 py-4 bg-white shadow-md border-b border-gray-200">
       <div className="flex items-center">
         {/* <h1 className="text-2xl font-bold text-gray-800">GRUPO AAP-VR</h1> */}
       </div>

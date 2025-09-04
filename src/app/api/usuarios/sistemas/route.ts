@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 
 // Buscar todos os sistemas
 export async function GET() {
   try {
-    const [sistemasRows] = await accessPool.execute(
+    const [sistemasRows] = await gestorPool.execute(
       'SELECT id, nome FROM sistemas ORDER BY nome'
     );
 
@@ -28,12 +28,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar todos os sistemas
-    const [sistemasRows] = await accessPool.execute(
+    const [sistemasRows] = await gestorPool.execute(
       'SELECT id, nome FROM sistemas ORDER BY nome'
     );
 
     // Buscar acesso do usuário
-    const [acessoRows] = await accessPool.execute(
+    const [acessoRows] = await gestorPool.execute(
       `SELECT us.sistemas_id, us.nivel, s.nome as sistema_nome 
        FROM usuario_sistema us 
        INNER JOIN sistemas s ON us.sistemas_id = s.id 
@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Remover todos os acessos atuais do usuário
-    await accessPool.execute(
+    await gestorPool.execute(
       'DELETE FROM usuario_sistema WHERE usuarios_login = ?',
       [userId]
     );
@@ -95,7 +95,7 @@ export async function PUT(request: NextRequest) {
     // Inserir novos acessos
     for (const sistema of sistemas) {
       if (sistema.hasAccess) {
-        await accessPool.execute(
+        await gestorPool.execute(
           'INSERT INTO usuario_sistema (usuarios_login, sistemas_id, nivel) VALUES (?, ?, ?)',
           [userId, sistema.id, sistema.nivel || 'Usuario']
         );

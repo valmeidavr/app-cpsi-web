@@ -164,7 +164,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                             variant="ghost"
                             className={cn(
                               "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                              pathname === subItem.href && "bg-gray-700"
+                              pathname === subItem.href && "bg-gray-700 border-l-4 border-primary"
                             )}
                           >
                             <subItem.icon className="h-4 w-4 mr-2" />
@@ -187,7 +187,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           variant="ghost"
           className={cn(
             "w-full justify-start py-2 px-3 text-left hover:bg-gray-800 transition-colors hover:text-white text-white",
-            pathname === item.href && "bg-gray-800"
+            pathname === item.href && "bg-gray-800 border-l-4 border-primary"
           )}
           onClick={() =>
             setActiveItem(activeItem === item.label ? null : item.label)
@@ -218,7 +218,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                       variant="ghost"
                       className={cn(
                         "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                        pathname === subItem.href && "bg-gray-700"
+                                                      pathname === subItem.href && "bg-gray-700 border-l-4 border-primary"
                       )}
                     >
                       <subItem.icon className="h-4 w-4 mr-2" />
