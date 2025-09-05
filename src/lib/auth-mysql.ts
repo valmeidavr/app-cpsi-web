@@ -21,7 +21,7 @@ export async function authenticateUser(login: string, password: string): Promise
   try {
     console.log('🔍 Iniciando autenticação para:', login)
     
-    // Buscar usuário na tabela usuarios do database acesso
+    // Buscar usuário na tabela usuarios do database gestor
     const [userRows] = await gestorPool.execute(
       'SELECT login, senha, nome, email FROM usuarios WHERE login = ? AND status = ? LIMIT 1',
       [login, 'Ativo']

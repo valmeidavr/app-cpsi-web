@@ -2,15 +2,12 @@ import mysql from 'mysql2/promise'
 import { dbSettings, cleanupIdleConnections } from './db-settings'
 
 // Configurações do banco de dados a partir das variáveis de ambiente
-const dbConfig = {
+const dbConfigGestor = {
   host: process.env.MYSQL_GESTOR_HOST || 'localhost',
   user: process.env.MYSQL_USER || 'root',
   password: process.env.MYSQL_GESTOR_PASSWORD || '',
   port: parseInt(process.env.MYSQL_PORT || '3306'),
 }
-
-
-
 
 // Conexão para database GESTOR-nova (database principal da aplicação)
 export const createGestorConnection = async () => {
@@ -21,8 +18,6 @@ export const createGestorConnection = async () => {
 }
 
 // Pool de conexões OTIMIZADO com configurações do ambiente
-
-
 export const gestorPool = mysql.createPool({
   ...dbConfigGestor,
   database: process.env.MYSQL_GESTOR_DB || 'gestor',

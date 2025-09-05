@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { gestorPool } from "@/lib/mysql";
 import { TipoCliente } from "@/app/types/Cliente";
+import { updateClienteSchema } from "../shema/formSchemaCliente";
 
 // GET - Buscar cliente por ID
 export async function GET(
