@@ -50,11 +50,11 @@ export default function Agendas() {
     setCurrentMonth,
   } = useAgenda();
 
-  useEffect(() => {
+    useEffect(() => {
     if (unidade && prestador && especialidade) {
       carregarAgendamentosGeral();
     }
-  }, [unidade, prestador, especialidade]);
+  }, [unidade, prestador, especialidade, carregarAgendamentosGeral]);
 
   const form = useForm({
     resolver: zodResolver(createAgendaSchema),

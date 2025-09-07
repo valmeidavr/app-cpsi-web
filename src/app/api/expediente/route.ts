@@ -137,8 +137,19 @@ export async function GET(request: NextRequest) {
 // POST - Criar expediente
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateExpedienteDTO = await request.json();
-    console.log("🔍 Criando expediente:", body);
+    const body = await request.json();
+    const validatedData = createExpedienteSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
+    console.log("🔍 Criando expediente:", payload);
 
     // 1. Inserir expediente
     const expedienteResult = await executeWithRetry(gestorPool,
@@ -147,8 +158,8 @@ export async function POST(request: NextRequest) {
         semana, alocacao_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.dtinicio, body.dtfinal, body.hinicio, body.hfinal,
-        body.intervalo, body.semana, body.alocacao_id
+        payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
+        payload.intervalo, payload.semana, payload.alocacao_id
       ]
     );
 
@@ -163,7 +174,7 @@ export async function POST(request: NextRequest) {
         a.prestador_id
        FROM alocacoes a 
        WHERE a.id = ?`,
-      [body.alocacao_id]
+      [payload.alocacao_id]
     );
 
     if (!alocacaoRows || (alocacaoRows as Array<{
@@ -171,7 +182,7 @@ export async function POST(request: NextRequest) {
       especialidade_id: number;
       prestador_id: number;
     }>).length === 0) {
-      throw new Error(`Alocação com ID ${body.alocacao_id} não encontrada`);
+      throw new Error(`Alocação com ID ${payload.alocacao_id} não encontrada`);
     }
 
     const alocacao = (alocacaoRows as Array<{
@@ -192,16 +203,16 @@ export async function POST(request: NextRequest) {
       "Sábado": 6
     };
 
-    if (!body.semana || !(body.semana in diasDaSemana)) {
-      throw new Error(`Dia da semana inválido: ${body.semana}`);
+    if (!payload.semana || !(payload.semana in diasDaSemana)) {
+      throw new Error(`Dia da semana inválido: ${payload.semana}`);
     }
 
-    const semanaIndex = diasDaSemana[body.semana];
+    const semanaIndex = diasDaSemana[payload.semana];
     console.log("✅ Índice da semana:", semanaIndex);
 
     // 4. Gerar datas válidas
-    const dataInicial = new Date(body.dtinicio);
-    const dataFinal = new Date(body.dtfinal);
+    const dataInicial = new Date(payload.dtinicio);
+    const dataFinal = new Date(payload.dtfinal);
 
     // Validar se as datas são válidas
     if (isNaN(dataInicial.getTime()) || isNaN(dataFinal.getTime())) {
@@ -222,7 +233,7 @@ export async function POST(request: NextRequest) {
 
     if (datasValidas.length === 0) {
       throw new Error(
-        `Não existe nenhuma data correspondente à semana "${body.semana}" entre ${body.dtinicio} e ${body.dtfinal}.`
+        `Não existe nenhuma data correspondente à semana "${payload.semana}" entre ${payload.dtinicio} e ${payload.dtfinal}.`
       );
     }
 
@@ -238,11 +249,11 @@ export async function POST(request: NextRequest) {
       especialidade_id: number;
       tipo: string;
     }> = [];
-    const intervaloMin = parseInt(body.intervalo, 10);
+    const intervaloMin = parseInt(payload.intervalo, 10);
 
     for (const data of datasValidas) {
-      const [hStart, mStart] = body.hinicio.split(':').map(Number);
-      const [hEnd, mEnd] = body.hfinal.split(':').map(Number);
+      const [hStart, mStart] = payload.hinicio.split(':').map(Number);
+      const [hEnd, mEnd] = payload.hfinal.split(':').map(Number);
 
       let startMinutes = hStart * 60 + mStart;
       const endMinutes = hEnd * 60 + mEnd;
@@ -302,6 +313,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Erro ao criar expediente:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Erro interno do servidor' },
       { status: 500 }
@@ -322,7 +339,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateExpedienteDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateExpedienteSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar expediente
     await executeWithRetry(gestorPool,
@@ -331,14 +358,20 @@ export async function PUT(request: NextRequest) {
         intervalo = ?, semana = ?, alocacao_id = ?
        WHERE id = ?`,
       [
-        body.dtinicio, body.dtfinal, body.hinicio, body.hfinal,
-        body.intervalo, body.semana, body.alocacao_id, id
+        payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
+        payload.intervalo, payload.semana, payload.alocacao_id, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar expediente:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -359,9 +392,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Excluir expediente
+    // Soft delete - marcar como inativo
     await executeWithRetry(gestorPool,
-      'DELETE FROM expedientes WHERE id = ?',
+      'UPDATE expedientes SET status = "Inativo" WHERE id = ?',
       [id]
     );
 
@@ -373,4 +406,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

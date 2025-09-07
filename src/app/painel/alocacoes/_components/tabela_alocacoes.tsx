@@ -189,9 +189,9 @@ const TabelaAlocacoes = ({
             {alocacoes.length > 0 ? (
               alocacoes.map((row, index) => (
                 <TableRow key={index}>
-                  <TableCell>{row.especialidade_nome || 'Não definido'}</TableCell>
-                  <TableCell>{row.unidade_nome || 'Não definido'}</TableCell>
-                  <TableCell>{row.prestador_nome || 'Não definido'}</TableCell>
+                  <TableCell>{row.especialidade?.nome || row.especialidade_nome || 'Não definido'}</TableCell>
+                  <TableCell>{row.unidade?.nome || row.unidade_nome || 'Não definido'}</TableCell>
+                  <TableCell>{row.prestador?.nome || row.prestador_nome || 'Não definido'}</TableCell>
 
                   <TableCell className="flex justify-center">
                     <DropdownMenu>

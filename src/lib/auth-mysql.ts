@@ -31,7 +31,7 @@ export async function authenticateUser(login: string, password: string): Promise
 
     
     // Buscar usuário na tabela usuarios do database acesso
-    const [userRows] = await accessPool.execute(
+    const [userRows] = await gestorPool.execute(
       'SELECT login, senha, nome, email FROM usuarios WHERE login = ? AND status = ? LIMIT 1',
       [login, 'Ativo']
     )

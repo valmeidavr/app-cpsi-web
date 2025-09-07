@@ -1,6 +1,6 @@
 // context/AgendaContext.tsx
 "use client";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Agenda } from "@/app/types/Agenda";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -76,7 +76,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
     
     
-    const carregarAgendamentos = async () => {
+    const carregarAgendamentos = useCallback(async () => {
     setCarregandoDadosAgenda(true);
     try {
       if (!unidade || !prestador || !especialidade) return;
@@ -111,10 +111,10 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setCarregandoDadosAgenda(false);
     }
-  };
+  }, [date, unidade, prestador, especialidade]);
 
   //Carregando agendamentos para o calendarioa fazer o controle de agendamento  esgotado ou não
-  const carregarAgendamentosGeral = async () => {
+  const carregarAgendamentosGeral = useCallback(async () => {
     setCarregandoDadosAgenda(true);
     try {
       const params = new URLSearchParams();
@@ -137,19 +137,25 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     } finally {
       setCarregandoDadosAgenda(false);
     }
-  };
+  }, [unidade, prestador, especialidade]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (unidade && prestador && especialidade) {
       carregarAgendamentosGeral();
     }
-  }, [unidade, prestador, especialidade]);
+  }, [unidade, prestador, especialidade, carregarAgendamentosGeral]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (unidade && prestador && especialidade && date) {
       carregarAgendamentos();
     }
-  }, [date, unidade, prestador, especialidade]);
+  }, [date, unidade, prestador, especialidade, carregarAgendamentos]);
+
+  
+
+  
 
   useEffect(() => {
     const carregarDados = async () => {
@@ -171,8 +177,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         }
         const newUrl = window.location.pathname;
         window.history.replaceState({}, "", newUrl);
-      } catch (error) {
-        console.error("Erro ao carregar dados:", error);
+      } catch {
+        console.error("Erro ao carregar dados:");
       }
     };
 
@@ -186,8 +192,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setPrestadores(data.data || []);
       }
-    } catch (error) {
-      console.error("Erro ao carregar prestadores:", error);
+    } catch (_error) {
+      console.error("Erro ao carregar prestadores:", _error);
     }
   };
 
@@ -198,8 +204,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setUnidades(data.data || []);
       }
-    } catch (error) {
-      console.error("Erro ao carregar unidades:", error);
+    } catch (_error) {
+      console.error("Erro ao carregar unidades:", _error);
     }
   };
 
@@ -211,7 +217,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         setEspecialidades(data.data || []);
         return;
       }
-    } catch (error) {
+    } catch {
       // API de especialidades falhou, tentar via alocações
     }
 
@@ -238,8 +244,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         const data = await response.json();
         setEspecialidades(data.data || []);
       }
-    } catch (error) {
-      console.error("Erro ao carregar especialidades:", error);
+    } catch (_error) {
+      console.error("Erro ao carregar especialidades:", _error);
     }
   };
   return (

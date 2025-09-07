@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
@@ -31,6 +31,12 @@ export async function GET(request: NextRequest) {
     if ((limit === '1000' || all === 'true') && !search) {
       try {
         const [rows] = await accessPool.execute(
+        // Primeiro, vamos ver a estrutura real da tabela
+        const [structureRows] = await gestorPool.execute('DESCRIBE usuarios');
+        console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
+        
+        // Buscar usuários com a estrutura correta
+        const [rows] = await gestorPool.execute(
           'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
         );
         const usuarios = rows as Array<{
@@ -66,6 +72,9 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
 
     const [userRows] = await accessPool.execute(query)
+    // Debug logs removidos para evitar spam
+
+    const [userRows] = await gestorPool.execute(query, params)
     const usuarios = userRows as Array<{
       login: string;
       nome: string;
@@ -81,6 +90,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [countRows] = await accessPool.execute(countQuery)
+    const [countRows] = await gestorPool.execute(countQuery, countParams)
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
 
@@ -105,20 +115,35 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = createUsuarioSchema.parse(body);
+    const validatedData = createUsuarioSchema.safeParse(body);
     
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
     // Hash da senha
-    const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
+    const hashedPassword = await bcrypt.hash(payload.senha, 10);
     
     // Inserir usuário - usando email como login já que o schema não tem campo login
-    await accessPool.execute(
+    await gestorPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
-      [validatedData.email, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
+      [payload.email, payload.nome, payload.email, hashedPassword, 'Ativo']
     );
     
-    return NextResponse.json({ success: true, login: validatedData.email });
+    return NextResponse.json({ success: true, login: payload.email });
   } catch (error) {
     console.error('Erro ao criar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -136,23 +161,32 @@ export async function PUT(request: NextRequest) {
     }
     
     const body = await request.json();
-    const validatedData = updateUsuarioSchema.parse(body);
+    const validatedData = updateUsuarioSchema.safeParse(body);
     
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
     let query = 'UPDATE usuarios SET ';
     const params: (string | number)[] = [];
     
-    if (validatedData.nome) {
+    if (payload.nome) {
       query += 'nome = ?, ';
-      params.push(validatedData.nome);
+      params.push(payload.nome);
     }
     
-    if (validatedData.email) {
+    if (payload.email) {
       query += 'email = ?, ';
-      params.push(validatedData.email);
+      params.push(payload.email);
     }
     
-    if (validatedData.senha) {
-      const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
+    if (payload.senha) {
+      const hashedPassword = await bcrypt.hash(payload.senha, 10);
       query += 'senha = ?, ';
       params.push(hashedPassword);
     }
@@ -161,11 +195,17 @@ export async function PUT(request: NextRequest) {
     query = query.slice(0, -2) + ' WHERE login = ?';
     params.push(login);
     
-    await accessPool.execute(query, params);
+    await gestorPool.execute(query, params);
     
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

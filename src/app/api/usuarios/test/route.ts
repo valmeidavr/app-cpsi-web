@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { gestorPool } from "@/lib/mysql";
 
 export async function GET() {
   try {
     console.log('🔍 Teste - Verificando conexão com banco de usuários...');
     
     // Testar conexão simples
-    const [testRows] = await accessPool.execute('SELECT 1 as test');
+    const [testRows] = await gestorPool.execute('SELECT 1 as test');
     console.log('🔍 Teste - Conexão OK:', testRows);
     
     // Verificar estrutura da tabela
-    const [structureRows] = await accessPool.execute('DESCRIBE usuarios');
+    const [structureRows] = await gestorPool.execute('DESCRIBE usuarios');
     console.log('🔍 Teste - Estrutura da tabela usuarios:', structureRows);
     
     // Tentar buscar usuários
-    const [userRows] = await accessPool.execute('SELECT * FROM usuarios LIMIT 5');
+    const [userRows] = await gestorPool.execute('SELECT * FROM usuarios LIMIT 5');
     console.log('🔍 Teste - Usuários encontrados:', userRows);
     
     return NextResponse.json({

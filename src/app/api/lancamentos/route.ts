@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, accessPool, executeWithRetry } from "@/lib/mysql";
+import { gestorPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       }>).map(async (lancamento) => {
         try {
           if (lancamento.usuario_id) {
-            const [userRows] = await accessPool.execute(
+            const [userRows] = await gestorPool.execute(
               'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
               [lancamento.usuario_id]
             );
@@ -152,7 +152,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar lançamento
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateLancamentoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createLancamentoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Debug logs removidos para evitar spam
 
@@ -160,9 +170,9 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário existe no banco cpsi_acesso
     try {
-      const [userRows] = await accessPool.execute(
+      const [userRows] = await gestorPool.execute(
         'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
-        [body.usuario_id]
+        [payload.usuario_id]
       );
       console.log('🔍 Debug - Usuário encontrado:', userRows);
       
@@ -188,9 +198,9 @@ export async function POST(request: NextRequest) {
         usuario_id, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.valor, body.descricao, body.data_lancamento, body.tipo,
-        body.forma_pagamento, body.status_pagamento, body.cliente_id,
-        body.plano_conta_id, body.caixa_id, body.usuario_id, 'Ativo'
+        payload.valor, payload.descricao, payload.data_lancamento, payload.tipo,
+        payload.forma_pagamento, payload.status_pagamento, payload.cliente_id,
+        payload.plano_conta_id, payload.caixa_id, payload.usuario_id, 'Ativo'
       ]
     );
 
@@ -200,12 +210,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar lançamento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar lançamento
 export async function PUT(request: NextRequest) {
@@ -220,7 +236,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateLancamentoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateLancamentoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar lançamento com campos corretos
     await executeWithRetry(gestorPool,
@@ -230,15 +256,21 @@ export async function PUT(request: NextRequest) {
         plano_conta_id = ?, caixa_id = ?, usuario_id = ?
        WHERE id = ?`,
       [
-        body.valor, body.descricao, body.tipo, body.data_lancamento,
-        body.forma_pagamento, body.status_pagamento, body.cliente_id,
-        body.plano_conta_id, body.caixa_id, body.usuario_id, id
+        payload.valor, payload.descricao, payload.tipo, payload.data_lancamento,
+        payload.forma_pagamento, payload.status_pagamento, payload.cliente_id,
+        payload.plano_conta_id, payload.caixa_id, payload.usuario_id, id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar lançamento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -259,9 +291,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // DELETE - remover registro
+    // Soft delete - marcar como inativo
     await executeWithRetry(gestorPool,
-      'DELETE FROM lancamentos WHERE id = ?',
+      'UPDATE lancamentos SET status = "Inativo" WHERE id = ?',
       [id]
     );
 
@@ -273,4 +305,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}

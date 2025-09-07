@@ -60,14 +60,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateTabelaFaturamentoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createTabelaFaturamentoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     const [result] = await gestorPool.execute(
       `INSERT INTO tabela_faturamentos (
         nome
       ) VALUES (?)`,
       [
-        body.nome,
+        payload.nome,
       ]
     );
 
@@ -77,6 +87,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar tabela de faturamento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    const prestadorId = searchParams.get('prestadorId');
+    const especialidadeId = searchParams.get('especialidade_id');
+    const unidadeId = searchParams.get('unidadeId');
 
     let query = `
       SELECT 
@@ -36,6 +39,21 @@ export async function GET(request: NextRequest) {
     if (search) {
       query += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    if (prestadorId) {
+      query += ' AND a.prestador_id = ?';
+      params.push(prestadorId);
+    }
+
+    if (especialidadeId) {
+      query += ' AND a.especialidade_id = ?';
+      params.push(especialidadeId);
+    }
+
+    if (unidadeId) {
+      query += ' AND a.unidade_id = ?';
+      params.push(unidadeId);
     }
 
     // Adicionar paginação
@@ -81,7 +99,7 @@ export async function GET(request: NextRequest) {
     const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
-    // Transformar os dados para incluir objetos aninhados
+    // Transformar os dados para incluir objetos aninhados e campos diretos
     const alocacoesFormatadas = (alocacaoRows as Array<{
       id: number;
       unidade_id: number;
@@ -101,6 +119,11 @@ export async function GET(request: NextRequest) {
       prestador_id: row.prestador_id,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      // Campos diretos para compatibilidade
+      unidade_nome: row.unidade_nome,
+      especialidade_nome: row.especialidade_nome,
+      prestador_nome: row.prestador_nome,
+      // Objetos aninhados
       unidade: {
         id: row.unidade_id,
         nome: row.unidade_nome
@@ -138,7 +161,17 @@ export async function GET(request: NextRequest) {
 // POST - Criar alocação
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateAlocacaoDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createAlocacaoSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Inserir alocação
     const result = await executeWithRetry(gestorPool,
@@ -146,7 +179,7 @@ export async function POST(request: NextRequest) {
         unidade_id, especialidade_id, prestador_id
       ) VALUES (?, ?, ?)`,
       [
-        body.unidade_id, body.especialidade_id, body.prestador_id
+        payload.unidade_id, payload.especialidade_id, payload.prestador_id
       ]
     );
 
@@ -156,6 +189,12 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar alocação:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

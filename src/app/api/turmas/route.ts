@@ -77,9 +77,19 @@ export async function GET(request: NextRequest) {
 // POST - Criar turma
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateTurmaDTO = await request.json();
+    const body = await request.json();
+    const validatedData = createTurmaSchema.safeParse(body);
 
-    console.log('🔍 Debug - Dados recebidos:', body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
+
+    console.log('🔍 Debug - Dados recebidos:', payload);
 
     // Inserir turma
     const [result] = await gestorPool.execute(
@@ -88,14 +98,14 @@ export async function POST(request: NextRequest) {
         procedimento_id, prestador_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.nome, 
-        body.horario_inicio, 
-        body.horario_fim, 
-        body.data_inicio, 
+        payload.nome, 
+        payload.horario_inicio, 
+        payload.horario_fim, 
+        payload.data_inicio, 
         null, // data_fim começa como null
-        body.limite_vagas, 
-        body.procedimento_id, 
-        body.prestador_id 
+        payload.limite_vagas, 
+        payload.procedimento_id, 
+        payload.prestador_id 
       ]
     );
 
@@ -105,12 +115,18 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Erro ao criar turma:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}
 
 // PUT - Atualizar turma
 export async function PUT(request: NextRequest) {
@@ -125,7 +141,17 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const body: UpdateTurmaDTO = await request.json();
+    const body = await request.json();
+    const validatedData = updateTurmaSchema.safeParse(body);
+
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { ...payload } = validatedData.data;
 
     // Atualizar turma
     await gestorPool.execute(
@@ -134,14 +160,26 @@ export async function PUT(request: NextRequest) {
         limite_vagas = ?, procedimento_id = ?, prestador_id = ?
        WHERE id = ?`,
       [
-        body.nome, body.horario_inicio, body.horario_fim, body.data_inicio,
-        body.limite_vagas, body.procedimento_id, body.prestador_id, id
+        payload.nome, 
+        payload.horario_inicio, 
+        payload.horario_fim, 
+        payload.data_inicio, 
+        payload.limite_vagas, 
+        payload.procedimento_id, 
+        payload.prestador_id, 
+        id
       ]
     );
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar turma:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -162,9 +200,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // DELETE - remover registro
+    // Soft delete - marcar como inativo
     await gestorPool.execute(
-      'DELETE FROM turmas WHERE id = ?',
+      'UPDATE turmas SET status = "Inativo" WHERE id = ?',
       [id]
     );
 
@@ -176,4 +214,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
