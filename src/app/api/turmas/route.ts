@@ -33,8 +33,8 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY t.nome ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    // Parâmetros de paginação inseridos diretamente na query;
 
     const [turmaRows] = await gestorPool.execute(query, params);
 

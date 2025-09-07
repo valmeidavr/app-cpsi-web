@@ -31,18 +31,24 @@ export async function GET(
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
     
-    // Buscar sistemas do usuário
-    const [sistemaRows] = await accessPool.execute(
-      `SELECT s.id, s.nome, us.nivel 
-       FROM sistemas s 
-       INNER JOIN usuario_sistema us ON s.id = us.sistemas_id 
-       WHERE us.usuarios_login = ?`,
+    // Buscar grupos do usuário
+    const [grupoRows] = await accessPool.execute(
+      `SELECT grupo_id as id, 
+              CASE grupo_id 
+                WHEN 1 THEN 'Administrador' 
+                WHEN 2 THEN 'Gestor' 
+                WHEN 3 THEN 'Usuário' 
+                WHEN 4 THEN 'Operador' 
+                ELSE CONCAT('Grupo ', grupo_id) 
+              END as nome
+       FROM usuariogrupo 
+       WHERE usuario_login = ?`,
       [id]
     );
     
     return NextResponse.json({
       ...usuario,
-      sistemas: sistemaRows
+      sistemas: grupoRows
     });
   } catch (error) {
     console.error('Erro ao buscar usuário:', error);
@@ -87,6 +93,23 @@ export async function PUT(
     queryParams.push(id);
     
     await accessPool.execute(query, queryParams);
+    
+    // Atualizar grupos do usuário
+    if (validatedData.grupos && validatedData.grupos.length > 0) {
+      // Remover grupos atuais
+      await accessPool.execute(
+        'DELETE FROM usuariogrupo WHERE usuario_login = ?',
+        [id]
+      );
+      
+      // Inserir novos grupos
+      for (const grupoId of validatedData.grupos) {
+        await accessPool.execute(
+          'INSERT INTO usuariogrupo (usuario_login, grupo_id) VALUES (?, ?)',
+          [id, grupoId]
+        );
+      }
+    }
     
     return NextResponse.json({ success: true });
   } catch (error) {

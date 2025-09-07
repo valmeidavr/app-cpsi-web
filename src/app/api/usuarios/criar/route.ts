@@ -37,6 +37,16 @@ export async function POST(request: NextRequest) {
       [userLogin, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );
     
+    // Inserir grupos do usuário
+    if (validatedData.grupos && validatedData.grupos.length > 0) {
+      for (const grupoId of validatedData.grupos) {
+        await accessPool.execute(
+          'INSERT INTO usuariogrupo (usuario_login, grupo_id) VALUES (?, ?)',
+          [userLogin, grupoId]
+        );
+      }
+    }
+    
     return NextResponse.json({ 
       success: true, 
       id: userLogin 

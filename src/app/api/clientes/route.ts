@@ -44,9 +44,9 @@ export async function GET(request: NextRequest) {
                      uf, telefone1, telefone2, status, tipo, createdAt, updatedAt
       FROM clientes${whereClause}
       ORDER BY nome ASC, id ASC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
-    const dataParams = [...queryParams, parseInt(limit), offset];
+    const dataParams = [...queryParams];
     
     const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
 

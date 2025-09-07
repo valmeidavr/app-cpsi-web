@@ -151,7 +151,7 @@ export async function GET(request: NextRequest) {
     const dataQuery = `
       SELECT * FROM especialidades${whereClause}
       ORDER BY nome ASC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
     const especialidadeRows = await executeWithRetry(gestorPool, dataQuery, dataParams);

@@ -37,6 +37,8 @@ export function useAuth() {
   const hasSystemAccess = session?.user?.hasSystemAccess || false
   const userLevel = session?.user?.role || 'Usuario'
 
+
+
   return {
     session,
     status,

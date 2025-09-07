@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       ${baseQuery}
       ${whereString}
       ORDER BY vp.id DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [
       ...params,

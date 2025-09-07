@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,22 +13,31 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // Schema de validação
 const createUsuarioSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  confirmedsenha: z.string()
+  confirmedsenha: z.string(),
+  grupos: z.array(z.number()).min(1, 'Selecione pelo menos um grupo')
 }).refine((data) => data.senha === data.confirmedsenha, {
   message: 'As senhas não coincidem',
   path: ['confirmedsenha']
 })
 
+interface Grupo {
+  id: number
+  nome: string
+}
+
 export default function UsuarioRegistrationForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+  const [loadingGrupos, setLoadingGrupos] = useState(true)
   const router = useRouter()
 
   const form = useForm({
@@ -37,9 +46,30 @@ export default function UsuarioRegistrationForm() {
       nome: '',
       email: '',
       senha: '',
-      confirmedsenha: ''
+      confirmedsenha: '',
+      grupos: []
     }
   })
+
+  // Carregar grupos disponíveis
+  useEffect(() => {
+    const carregarGrupos = async () => {
+      try {
+        const response = await fetch('/api/usuarios/sistemas')
+        if (response.ok) {
+          const gruposData = await response.json()
+          setGrupos(gruposData)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar grupos:', error)
+        toast.error('Erro ao carregar grupos')
+      } finally {
+        setLoadingGrupos(false)
+      }
+    }
+
+    carregarGrupos()
+  }, [])
 
   const onSubmit = async (values: z.infer<typeof createUsuarioSchema>) => {
     setLoading(true)
@@ -185,6 +215,45 @@ export default function UsuarioRegistrationForm() {
                             <Eye className="h-4 w-4" />
                           )}
                         </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Seleção de Grupos */}
+              <FormField
+                control={form.control}
+                name="grupos"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Grupos de Acesso *</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        {loadingGrupos ? (
+                          <div className="text-sm text-gray-500">Carregando grupos...</div>
+                        ) : (
+                          grupos.map((grupo) => (
+                            <div key={grupo.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`grupo-${grupo.id}`}
+                                checked={form.watch('grupos').includes(grupo.id)}
+                                onCheckedChange={(checked) => {
+                                  const currentGrupos = form.getValues('grupos')
+                                  if (checked) {
+                                    form.setValue('grupos', [...currentGrupos, grupo.id])
+                                  } else {
+                                    form.setValue('grupos', currentGrupos.filter(id => id !== grupo.id))
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`grupo-${grupo.id}`} className="text-sm font-medium">
+                                {grupo.nome}
+                              </Label>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage />

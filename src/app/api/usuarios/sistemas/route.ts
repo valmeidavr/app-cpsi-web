@@ -1,24 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 
-// Buscar todos os sistemas
+// Buscar todos os grupos disponíveis
 export async function GET() {
   try {
-    const [sistemasRows] = await accessPool.execute(
-      'SELECT id, nome FROM sistemas ORDER BY nome'
+    // Verificar se a tabela usuariogrupo existe
+    const [tableCheck] = await accessPool.execute(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'usuariogrupo'",
+      ['prevsaude']
+    );
+    
+    if ((tableCheck as Array<{ count: number }>)[0]?.count === 0) {
+      // Se não existir, retornar grupos padrão
+      return NextResponse.json([
+        { id: 1, nome: 'Administrador' },
+        { id: 2, nome: 'Gestor' },
+        { id: 3, nome: 'Usuário' },
+        { id: 4, nome: 'Operador' }
+      ]);
+    }
+
+    // Buscar grupos da tabela usuariogrupo
+    const [gruposRows] = await accessPool.execute(
+      'SELECT DISTINCT grupo_id as id, CASE grupo_id WHEN 1 THEN "Administrador" WHEN 2 THEN "Gestor" WHEN 3 THEN "Usuário" WHEN 4 THEN "Operador" ELSE CONCAT("Grupo ", grupo_id) END as nome FROM usuariogrupo ORDER BY grupo_id'
     );
 
-    return NextResponse.json(sistemasRows);
+    return NextResponse.json(gruposRows);
   } catch (error) {
-    console.error('Erro ao buscar sistemas:', error);
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    );
+    console.error('Erro ao buscar grupos:', error);
+    // Retornar grupos padrão em caso de erro
+    return NextResponse.json([
+      { id: 1, nome: 'Administrador' },
+      { id: 2, nome: 'Gestor' },
+      { id: 3, nome: 'Usuário' },
+      { id: 4, nome: 'Operador' }
+    ]);
   }
 }
 
-// Buscar acesso de um usuário específico
+// Buscar grupos de um usuário específico
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await request.json();
@@ -27,49 +47,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório' }, { status: 400 });
     }
 
-    // Buscar todos os sistemas
-    const [sistemasRows] = await accessPool.execute(
-      'SELECT id, nome FROM sistemas ORDER BY nome'
+    // Buscar todos os grupos disponíveis
+    const [gruposRows] = await accessPool.execute(
+      'SELECT DISTINCT grupo_id as id, CASE grupo_id WHEN 1 THEN "Administrador" WHEN 2 THEN "Gestor" WHEN 3 THEN "Usuário" WHEN 4 THEN "Operador" ELSE CONCAT("Grupo ", grupo_id) END as nome FROM usuariogrupo ORDER BY grupo_id'
     );
 
-    // Buscar acesso do usuário
-    const [acessoRows] = await accessPool.execute(
-      `SELECT us.sistemas_id, us.nivel, s.nome as sistema_nome 
-       FROM usuario_sistema us 
-       INNER JOIN sistemas s ON us.sistemas_id = s.id 
-       WHERE us.usuarios_login = ?`,
+    // Buscar grupos do usuário
+    const [usuarioGruposRows] = await accessPool.execute(
+      'SELECT grupo_id FROM usuariogrupo WHERE usuario_login = ?',
       [userId]
     );
 
-    const sistemas = sistemasRows as Array<{
+    const grupos = gruposRows as Array<{
       id: number;
       nome: string;
     }>;
-    const acessos = acessoRows as Array<{
-      sistemas_id: number;
-      nivel: string;
-      sistema_nome: string;
+    const usuarioGrupos = usuarioGruposRows as Array<{
+      grupo_id: number;
     }>;
 
-    // Criar mapa de acesso
-    const accessMap = acessos.reduce((acc, acesso) => {
-      acc[acesso.sistemas_id] = {
-        nivel: acesso.nivel,
-        sistema_nome: acesso.sistema_nome
-      };
-      return acc;
-    }, {} as Record<number, {
-      nivel: string;
-      sistema_nome: string;
-    }>);
+    // Criar mapa de grupos do usuário
+    const userGroups = usuarioGrupos.map(ug => ug.grupo_id);
 
     return NextResponse.json({
-      sistemas,
-      userAccess: accessMap
+      grupos,
+      userGroups
     });
 
   } catch (error) {
-    console.error('Erro ao buscar acesso do usuário:', error);
+    console.error('Erro ao buscar grupos do usuário:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -77,27 +83,27 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Atualizar acesso do usuário
+// Atualizar grupos do usuário
 export async function PUT(request: NextRequest) {
   try {
-    const { userId, sistemas } = await request.json();
+    const { userId, grupos } = await request.json();
 
-    if (!userId || !sistemas) {
+    if (!userId || !grupos) {
       return NextResponse.json({ error: 'Dados obrigatórios não fornecidos' }, { status: 400 });
     }
 
-    // Remover todos os acessos atuais do usuário
+    // Remover todos os grupos atuais do usuário
     await accessPool.execute(
-      'DELETE FROM usuario_sistema WHERE usuarios_login = ?',
+      'DELETE FROM usuariogrupo WHERE usuario_login = ?',
       [userId]
     );
 
-    // Inserir novos acessos
-    for (const sistema of sistemas) {
-      if (sistema.hasAccess) {
+    // Inserir novos grupos
+    for (const grupo of grupos) {
+      if (grupo.hasAccess) {
         await accessPool.execute(
-          'INSERT INTO usuario_sistema (usuarios_login, sistemas_id, nivel) VALUES (?, ?, ?)',
-          [userId, sistema.id, sistema.nivel || 'Usuario']
+          'INSERT INTO usuariogrupo (usuario_login, grupo_id) VALUES (?, ?)',
+          [userId, grupo.id]
         );
       }
     }
@@ -105,7 +111,7 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error('Erro ao atualizar acesso do usuário:', error);
+    console.error('Erro ao atualizar grupos do usuário:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

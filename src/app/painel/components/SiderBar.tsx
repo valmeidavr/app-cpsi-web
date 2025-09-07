@@ -105,13 +105,17 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
 
   const hasAccess = (requiredGroups?: string[]) => {
     // Se não tem acesso ao sistema, não mostra nada
-    if (!hasSystemAccess) return false;
+    if (!hasSystemAccess) {
+      return false;
+    }
     
     // Se não há grupos requeridos, permite acesso
-    if (!requiredGroups || requiredGroups.length === 0) return true;
+    if (!requiredGroups || requiredGroups.length === 0) {
+      return true;
+    }
     
     // Verifica se o nível do usuário está nos grupos permitidos
-    return requiredGroups.some((group) => {
+    const hasPermission = requiredGroups.some((group) => {
       switch (group) {
         case 'ADMIN':
           return userLevel === 'Administrador';
@@ -123,6 +127,8 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           return false;
       }
     });
+
+    return hasPermission;
   };
 
   const renderMenuItem = (item: MenuItem, index: number) => {

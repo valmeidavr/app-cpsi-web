@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY l.data_lancamento DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    query += ` ORDER BY l.data_lancamento DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    // Parâmetros de paginação inseridos diretamente na query
 
     const lancamentoRows = await executeWithRetry(gestorPool, query, params);
 

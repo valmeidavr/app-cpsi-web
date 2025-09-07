@@ -16,18 +16,20 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const all = searchParams.get('all') || ''
 
-    console.log('🔍 API Debug - GET /api/usuarios chamada com:', { page, limit, search, all })
+    // Verificar a estrutura da tabela
+    try {
+      await accessPool.execute('DESCRIBE usuarios');
+    } catch (structureError) {
+      console.error('Erro ao verificar estrutura da tabela:', structureError);
+      return NextResponse.json(
+        { error: 'Erro ao verificar estrutura da tabela', details: structureError.message },
+        { status: 500 }
+      );
+    }
 
     // Para o cadastro de lançamentos, sempre retornar todos os usuários
     if ((limit === '1000' || all === 'true') && !search) {
-      console.log('🔍 API Debug - Retornando todos os usuários...');
-      
       try {
-        // Primeiro, vamos ver a estrutura real da tabela
-        const [structureRows] = await accessPool.execute('DESCRIBE usuarios');
-        console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
-        
-        // Buscar usuários com a estrutura correta
         const [rows] = await accessPool.execute(
           'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
         );
@@ -37,9 +39,6 @@ export async function GET(request: NextRequest) {
           email: string;
           status: string;
         }>;
-        
-        console.log('🔍 API Debug - Usuários encontrados no banco:', usuarios.length);
-        console.log('🔍 API Debug - Primeiro usuário:', usuarios[0]);
         
         return NextResponse.json({
           data: usuarios,
@@ -51,46 +50,37 @@ export async function GET(request: NextRequest) {
           }
         });
       } catch (dbError) {
-        console.error('🔍 API Debug - Erro ao consultar banco:', dbError);
+        console.error('Erro ao consultar banco:', dbError);
         throw dbError;
       }
     }
 
-    // Lógica para busca com paginação
+    // Lógica para busca com paginação - versão sem parâmetros preparados
     let query = 'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo"'
-    const params: (string | number)[] = []
 
     if (search) {
-      query += ' AND (nome LIKE ? OR email LIKE ?)'
-      params.push(`%${search}%`, `%${search}%`)
-      console.log('🔍 API Debug - Query com busca:', query, 'Params:', params)
+      query += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit)
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), offset)
+    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
 
-    // Debug logs removidos para evitar spam
-
-    const [userRows] = await accessPool.execute(query, params)
+    const [userRows] = await accessPool.execute(query)
     const usuarios = userRows as Array<{
       login: string;
       nome: string;
       email: string;
       status: string;
     }>;
-    // Debug logs removidos para evitar spam
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE status = "Ativo"'
-    const countParams: (string)[] = []
 
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR email LIKE ?)'
-      countParams.push(`%${search}%`, `%${search}%`)
+      countQuery += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
 
-    const [countRows] = await accessPool.execute(countQuery, countParams)
+    const [countRows] = await accessPool.execute(countQuery)
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
 
@@ -176,6 +166,41 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar usuário:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const login = searchParams.get('login');
+    
+    if (!login) {
+      return NextResponse.json({ error: 'Login é obrigatório' }, { status: 400 });
+    }
+    
+    // Verificar se o usuário existe
+    const [existingUser] = await accessPool.execute(
+      'SELECT login FROM usuarios WHERE login = ?',
+      [login]
+    );
+    
+    if (!(existingUser as any[]).length) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+    
+    // Soft delete - marcar como inativo em vez de deletar
+    await accessPool.execute(
+      'UPDATE usuarios SET status = "Inativo" WHERE login = ?',
+      [login]
+    );
+    
+    return NextResponse.json({ success: true, message: 'Usuário desativado com sucesso' });
+  } catch (error) {
+    console.error('Erro ao deletar usuário:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

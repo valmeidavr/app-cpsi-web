@@ -16,7 +16,7 @@ export const updateUsuarioSchema = z
       .default(""),
     senha: z.string().optional(),
     confirmedsenha: z.string().optional(),
-    grupo_ids: z.record(z.number().optional()).optional(),
+    grupos: z.array(z.number()).min(1, "Selecione pelo menos um grupo"),
   })
   .refine((data) => data.senha === data.confirmedsenha, {
     message: "As senhas não coincidem",

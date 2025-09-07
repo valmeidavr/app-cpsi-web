@@ -12,13 +12,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { toast } from 'sonner'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 // Schema de validação
 const updateUsuarioSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
   senha: z.string().optional(),
-  confirmedsenha: z.string().optional()
+  confirmedsenha: z.string().optional(),
+  grupos: z.array(z.number()).min(1, 'Selecione pelo menos um grupo')
 }).refine((data) => {
   if (data.senha && !data.confirmedsenha) {
     return false
@@ -35,12 +38,19 @@ const updateUsuarioSchema = z.object({
   path: ['confirmedsenha']
 })
 
+interface Grupo {
+  id: number
+  nome: string
+}
+
 export default function EditarUsuario() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
   const [usuario, setUsuario] = useState<{ nome: string; email: string } | null>(null)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+  const [loadingGrupos, setLoadingGrupos] = useState(true)
   const params = useParams()
   const router = useRouter()
   const userId = Array.isArray(params.id) ? params.id[0] : params.id
@@ -51,7 +61,8 @@ export default function EditarUsuario() {
       nome: '',
       email: '',
       senha: '',
-      confirmedsenha: ''
+      confirmedsenha: '',
+      grupos: []
     }
   })
 
@@ -64,6 +75,8 @@ export default function EditarUsuario() {
 
       try {
         setFetching(true)
+        
+        // Carregar dados do usuário
         const response = await fetch(`/api/usuarios/editar/${userId}`)
         
         if (response.ok) {
@@ -73,18 +86,40 @@ export default function EditarUsuario() {
             nome: data.nome,
             email: data.email,
             senha: '',
-            confirmedsenha: ''
+            confirmedsenha: '',
+            grupos: data.sistemas?.map((s: any) => s.id) || []
           })
         } else {
           toast.error('Usuário não encontrado')
           router.push('/painel/usuarios')
         }
+
+        // Carregar grupos disponíveis
+        const gruposResponse = await fetch('/api/usuarios/sistemas')
+        if (gruposResponse.ok) {
+          const gruposData = await gruposResponse.json()
+          setGrupos(gruposData)
+        }
+
+        // Carregar grupos do usuário
+        const userGruposResponse = await fetch('/api/usuarios/sistemas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId })
+        })
+        
+        if (userGruposResponse.ok) {
+          const userGruposData = await userGruposResponse.json()
+          form.setValue('grupos', userGruposData.userGroups || [])
+        }
+        
       } catch (error) {
-        console.error('Erro ao carregar usuário:', error)
-        toast.error('Erro ao carregar usuário')
+        console.error('Erro ao carregar dados:', error)
+        toast.error('Erro ao carregar dados')
         router.push('/painel/usuarios')
       } finally {
         setFetching(false)
+        setLoadingGrupos(false)
       }
     }
 
@@ -246,6 +281,45 @@ export default function EditarUsuario() {
                             <Eye className="h-4 w-4" />
                           )}
                         </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Seleção de Grupos */}
+              <FormField
+                control={form.control}
+                name="grupos"
+                render={() => (
+                  <FormItem>
+                    <FormLabel>Grupos de Acesso *</FormLabel>
+                    <FormControl>
+                      <div className="space-y-2">
+                        {loadingGrupos ? (
+                          <div className="text-sm text-gray-500">Carregando grupos...</div>
+                        ) : (
+                          grupos.map((grupo) => (
+                            <div key={grupo.id} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`grupo-${grupo.id}`}
+                                checked={form.watch('grupos').includes(grupo.id)}
+                                onCheckedChange={(checked) => {
+                                  const currentGrupos = form.getValues('grupos')
+                                  if (checked) {
+                                    form.setValue('grupos', [...currentGrupos, grupo.id])
+                                  } else {
+                                    form.setValue('grupos', currentGrupos.filter(id => id !== grupo.id))
+                                  }
+                                }}
+                              />
+                              <Label htmlFor={`grupo-${grupo.id}`} className="text-sm font-medium">
+                                {grupo.nome}
+                              </Label>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </FormControl>
                     <FormMessage />
