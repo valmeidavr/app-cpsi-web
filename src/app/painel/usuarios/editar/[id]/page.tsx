@@ -87,7 +87,7 @@ export default function EditarUsuario() {
             email: data.email,
             senha: '',
             confirmedsenha: '',
-            grupos: data.sistemas?.map((s: any) => s.id) || []
+            grupos: data.sistemas?.map((s: { id: number }) => s.id) || []
           })
         } else {
           toast.error('Usuário não encontrado')

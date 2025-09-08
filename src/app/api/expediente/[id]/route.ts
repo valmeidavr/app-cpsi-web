@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar expediente por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM expediente WHERE id = ?',
       [id]
     );
@@ -65,7 +65,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar expediente
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE expediente SET 
         dt_inicio = ?, dt_final = ?, h_inicio = ?, h_final = ?, 
         intervalo = ?, semana = ?, alocacoes_id = ?

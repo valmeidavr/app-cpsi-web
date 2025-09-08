@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar convênios de um cliente
 export async function GET(request: NextRequest) {
@@ -12,13 +12,13 @@ export async function GET(request: NextRequest) {
 
     // Primeiro verificar se a tabela convenios_clientes existe
     try {
-      const [tableCheck] = await gestorPool.execute(
+      const [tableCheck] = await accessPool.execute(
         "SHOW TABLES LIKE 'convenios_clientes'"
       );
       
       if ((tableCheck as Array<{ Tables_in_gestor: string }>).length === 0) {
         // Fallback: buscar todos os convênios
-        const [allConvenios] = await gestorPool.execute(
+        const [allConvenios] = await accessPool.execute(
           "SELECT DISTINCT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios ORDER BY nome ASC"
         );
         return NextResponse.json({ data: allConvenios });
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar convênios específicos do cliente
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       `SELECT DISTINCT cc.id, cc.desconto, c.id as convenioId, c.nome, c.regras, c.tabelaFaturamentosId as tabela_faturamento_id
        FROM convenios_clientes cc
        INNER JOIN convenios c ON cc.convenio_id = c.id
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
     
     // Fallback: buscar todos os convênios em caso de erro
     try {
-      const [fallbackRows] = await gestorPool.execute(
+      const [fallbackRows] = await accessPool.execute(
         "SELECT DISTINCT id, nome, regras, tabelaFaturamentosId as tabela_faturamento_id, desconto FROM convenios ORDER BY nome ASC"
       );
       return NextResponse.json({ data: fallbackRows });

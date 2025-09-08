@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createTabelaFaturamentoSchema, updateTabelaFaturamentoSchema } from "./schema/formSchemaEspecialidade";
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
-    const [tabelaRows] = await gestorPool.execute(query, params);
+    const [tabelaRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM tabela_faturamentos';
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
     const { ...payload } = validatedData.data;
 
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO tabela_faturamentos (
         nome
       ) VALUES (?)`,

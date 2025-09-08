@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { TipoCliente } from "@/app/types/Cliente";
+import { updateClienteSchema } from "../shema/formSchemaCliente";
+import { z } from "zod";
 
-// GET - Buscar cliente por ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -10,7 +11,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM clientes WHERE id = ? AND status = "Ativo"',
       [id]
     );
@@ -80,7 +81,7 @@ export async function GET(
     }
 
     // Buscar convênios do cliente
-    const [conveniosRows] = await gestorPool.execute(
+    const [conveniosRows] = await accessPool.execute(
       'SELECT convenio_id, desconto FROM convenios_clientes WHERE cliente_id = ?',
       [id]
     );
@@ -126,7 +127,7 @@ export async function PUT(
     const { convenios, desconto = {}, ...payload } = validatedData.data;
 
     // Atualizar cliente
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE clientes SET 
         nome = ?, email = ?, dtnascimento = ?, sexo = ?, tipo = ?, 
         cpf = ?, cep = ?, logradouro = ?, numero = ?, bairro = ?, 
@@ -140,7 +141,7 @@ export async function PUT(
     );
 
     // Remover convênios antigos
-    await gestorPool.execute(
+    await accessPool.execute(
       'DELETE FROM convenios_clientes WHERE cliente_id = ?',
       [id]
     );
@@ -153,7 +154,7 @@ export async function PUT(
           ? descontoValue 
           : 0;
 
-        await gestorPool.execute(
+        await accessPool.execute(
           'INSERT INTO convenios_clientes (convenio_id, cliente_id, desconto) VALUES (?, ?, ?)',
           [convenioId, id, descontoFinal]
         );

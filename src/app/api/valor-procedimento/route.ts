@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createValorProcedimentoSchema, updateValorProcedimentoSchema } from "./schema/formSchemaValorProcedimento";
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
         ORDER BY p.nome ASC
       `;
       
-      const valorRows = await executeWithRetry(gestorPool, query, [convenioId, tipoCliente]);
+      const valorRows = await executeWithRetry(accessPool, query, [convenioId, tipoCliente]);
       
       // Transformar os dados para o formato esperado pelo frontend
       const valorProcedimentosFormatados = (valorRows as Array<{
@@ -89,6 +89,7 @@ export async function GET(request: NextRequest) {
     // Debug logs removidos para evitar spam
 
     // 3. Monte a query para buscar os dados.
+    const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
       ${baseQuery}
@@ -101,7 +102,7 @@ export async function GET(request: NextRequest) {
       parseInt(limit),
       (parseInt(page) - 1) * parseInt(limit),
     ];
-    const valorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
+    const valorRows = await executeWithRetry(accessPool, dataQuery, dataParams);
 
     // 4. Transformar os dados para o formato esperado pelo frontend
     const valorProcedimentosFormatados = (valorRows as Array<{
@@ -138,7 +139,7 @@ export async function GET(request: NextRequest) {
 
     // 6. Monte a query para contar o total de registros (sem repetir código).
     const countQuery = `SELECT COUNT(vp.id) as total ${baseQuery} ${whereString}`;
-    await executeWithRetry(gestorPool, countQuery, params);
+    await executeWithRetry(accessPool, countQuery, params);
     
     // Debug logs removidos para evitar spam
 
@@ -166,7 +167,7 @@ export async function POST(request: NextRequest) {
     const body: CreateValorProcedimentoDTO = await request.json();
 
     // Inserir valor de procedimento
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO valor_procedimentos (
         valor, tipo, tabela_faturamento_id, procedimento_id
       ) VALUES (?, ?, ?, ?)`,
@@ -204,7 +205,7 @@ export async function PATCH(request: NextRequest) {
 
     // Se for para deletar (remover o registro)
     if (body.delete === true) {
-      await gestorPool.execute(
+      await accessPool.execute(
         'DELETE FROM valor_procedimentos WHERE id = ?',
         [id]
       );
@@ -238,7 +239,7 @@ export async function PATCH(request: NextRequest) {
       updateValues.push(id);
       const updateQuery = `UPDATE valor_procedimentos SET ${updateFields.join(', ')} WHERE id = ?`;
       
-      await gestorPool.execute(updateQuery, updateValues);
+      await accessPool.execute(updateQuery, updateValues);
       return NextResponse.json({ success: true, message: 'Valor de procedimento atualizado com sucesso' });
     }
 

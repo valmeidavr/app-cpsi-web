@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar procedimentos por convênio e tipo de cliente
 export async function GET(request: NextRequest) {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     console.log("🔍 Query SQL:", query);
     console.log("🔍 Parâmetros:", [convenio_id, tipoCliente]);
     
-    const [procedimentoRows] = await gestorPool.execute(query, [convenio_id, tipoCliente]);
+    const [procedimentoRows] = await accessPool.execute(query, [convenio_id, tipoCliente]);
     
     console.log("🔍 Procedimentos encontrados:", procedimentoRows);
     

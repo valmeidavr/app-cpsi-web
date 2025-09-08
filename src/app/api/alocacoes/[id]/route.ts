@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { updateAlocacaoSchema } from "../shema/formSchemaAlocacao";
 import { z } from "zod";
 import { Alocacao } from "@/app/types/Alocacao";
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const rows = await executeWithRetry(gestorPool,
+    const rows = await executeWithRetry(accessPool,
       'SELECT * FROM alocacoes WHERE id = ?',
       [id]
     );
@@ -56,7 +56,7 @@ export async function PUT(
     const { ...payload } = validatedData.data;
 
     // Atualizar alocacao
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE alocacoes SET 
         unidade_id = ?, especialidade_id = ?, prestador_id = ?
        WHERE id = ?`,
@@ -88,7 +88,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Excluir alocacao
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       'DELETE FROM alocacoes WHERE id = ?',
       [id]
     );

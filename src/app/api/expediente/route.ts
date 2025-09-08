@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createExpedienteSchema, updateExpedienteSchema } from "./schema/formSchemaExpedientes";
 
@@ -57,10 +57,10 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY u.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const expedienteRows = await executeWithRetry(gestorPool, query, params);
+    const expedienteRows = await executeWithRetry(accessPool, query, params);
     
     // Debug: verificar dados retornados
     console.log("🔍 Query executada:", query);
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       countParams.push(parseInt(alocacao_id));
     }
 
-    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     
     // Debug: verificar contagem
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     console.log("🔍 Criando expediente:", payload);
 
     // 1. Inserir expediente
-    const expedienteResult = await executeWithRetry(gestorPool,
+    const expedienteResult = await executeWithRetry(accessPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
         semana, alocacao_id
@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     console.log("✅ Expediente criado com ID:", expedienteId);
 
     // 2. Buscar dados da alocação
-    const alocacaoRows = await executeWithRetry(gestorPool,
+    const alocacaoRows = await executeWithRetry(accessPool,
       `SELECT 
         a.unidade_id,
         a.especialidade_id,
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
         agenda.tipo
       ]);
 
-      await executeWithRetry(gestorPool,
+      await executeWithRetry(accessPool,
         `INSERT INTO agendas (
           dtagenda, situacao, expediente_id, prestador_id, 
           unidade_id, especialidade_id, tipo
@@ -352,7 +352,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar expediente
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE expedientes SET 
         dtinicio = ?, dtfinal = ?, hinicio = ?, hfinal = ?,
         intervalo = ?, semana = ?, alocacao_id = ?
@@ -393,7 +393,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       'UPDATE expedientes SET status = "Inativo" WHERE id = ?',
       [id]
     );

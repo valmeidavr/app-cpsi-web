@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAgendaSchema, updateAgendaSchema } from "./schema/formSchemaAgendas";
 import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
@@ -75,10 +75,10 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY c.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const agendaRows = await executeWithRetry(gestorPool, query, params);
+    const agendaRows = await executeWithRetry(accessPool, query, params);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Debug: log da query de contagem
-    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     
     return NextResponse.json({
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir agenda
-    const result = await executeWithRetry(gestorPool,
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO agendas (
         dtagenda, situacao, cliente_id, convenio_id, procedimento_id,
         expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       // Buscar informações do cliente para a descrição
       let clienteNome = 'Cliente não informado';
       if (payload.cliente_id) {
-        const [clienteRows] = await gestorPool.execute(
+        const [clienteRows] = await accessPool.execute(
           'SELECT nome FROM clientes WHERE id = ?',
           [payload.cliente_id]
         );
@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       // Buscar informações do procedimento para a descrição
       let procedimentoNome = 'Procedimento não informado';
       if (payload.procedimento_id) {
-        const [procedimentoRows] = await gestorPool.execute(
+        const [procedimentoRows] = await accessPool.execute(
           'SELECT nome FROM procedimentos WHERE id = ?',
           [payload.procedimento_id]
         );
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Buscar o primeiro caixa ativo disponível
-      const [caixaRows] = await gestorPool.execute(
+      const [caixaRows] = await accessPool.execute(
         'SELECT id FROM caixas WHERE status = "Ativo" LIMIT 1'
       );
       
@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Buscar o primeiro plano de conta ativo disponível
-      const [planoContaRows] = await gestorPool.execute(
+      const [planoContaRows] = await accessPool.execute(
         'SELECT id FROM plano_contas WHERE status = "Ativo" LIMIT 1'
       );
       
@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       // Buscar o primeiro usuário ativo disponível (usuário da sessão)
       let usuarioId = 'admin'; // Usuário padrão se não houver nenhum
       try {
-        const [usuarioRows] = await gestorPool.execute(
+        const [usuarioRows] = await accessPool.execute(
           'SELECT login FROM usuarios WHERE status = "Ativo" LIMIT 1'
         );
         if ((usuarioRows as Array<{ login: string }>).length > 0) {
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
       const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
       const dataAtual = getCurrentUTCISO();
 
-      await executeWithRetry(gestorPool,
+      await executeWithRetry(accessPool,
         `INSERT INTO lancamentos (
           valor, descricao, data_lancamento, tipo, forma_pagamento,
           status_pagamento, cliente_id, plano_conta_id, caixa_id,
@@ -306,7 +306,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar agenda
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?,
         procedimento_id = ?, expediente_id = ?, prestador_id = ?,
@@ -349,7 +349,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como cancelado
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       'UPDATE agendas SET situacao = "Cancelado" WHERE id = ?',
       [id]
     );

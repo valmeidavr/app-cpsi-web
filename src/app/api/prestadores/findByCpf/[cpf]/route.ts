@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +9,7 @@ export async function GET(
     const { cpf } = await params;
     const cpfDecoded = decodeURIComponent(cpf);
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT id FROM prestadores WHERE cpf = ? AND status = "Ativo"',
       [cpfDecoded]
     );

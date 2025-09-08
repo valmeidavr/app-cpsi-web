@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { createAlunoTurmaSchema } from "./schema/formSchemaAlunosTurmas";
+import { z } from "zod";
 
 // GET - Listar alunos de turmas com paginação e busca
 export async function GET(request: NextRequest) {
@@ -17,7 +18,6 @@ export async function GET(request: NextRequest) {
         at.turma_id,
         at.cliente_id,
         at.data_inscricao,
-        at.status,
         at.createdAt,
         at.updatedAt,
         JSON_OBJECT(
@@ -46,10 +46,10 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY c.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const [alunoTurmaRows] = await gestorPool.execute(query, params);
+    const [alunoTurmaRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Inserir aluno em turma
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO alunos_turmas (
         cliente_id, turma_id, data_inscricao, status
       ) VALUES (?, ?, ?, ?)`,

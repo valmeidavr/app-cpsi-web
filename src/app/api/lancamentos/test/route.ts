@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET() {
   try {
@@ -7,7 +7,7 @@ export async function GET() {
     
     // Verificar estrutura da tabela lancamentos no banco gestor
     try {
-      const [lancamentosStructure] = await gestorPool.execute('DESCRIBE lancamentos');
+      const [lancamentosStructure] = await accessPool.execute('DESCRIBE lancamentos');
       console.log('🔍 Teste - Estrutura da tabela lancamentos:', lancamentosStructure);
     } catch (error) {
       console.error('🔍 Teste - Erro ao verificar lancamentos:', error);
@@ -15,7 +15,7 @@ export async function GET() {
 
     // Verificar estrutura da tabela usuarios no banco cpsi_acesso
     try {
-      const [usuariosStructure] = await gestorPool.execute('DESCRIBE usuarios');
+      const [usuariosStructure] = await accessPool.execute('DESCRIBE usuarios');
       console.log('🔍 Teste - Estrutura da tabela usuarios:', usuariosStructure);
     } catch (error) {
       console.error('🔍 Teste - Erro ao verificar usuarios:', error);
@@ -23,7 +23,7 @@ export async function GET() {
 
     // Verificar foreign keys da tabela lancamentos
     try {
-      const [foreignKeys] = await gestorPool.execute(`
+      const [foreignKeys] = await accessPool.execute(`
         SELECT 
           CONSTRAINT_NAME,
           COLUMN_NAME,
@@ -41,14 +41,14 @@ export async function GET() {
 
     // Verificar dados de exemplo
     try {
-      const [lancamentosSample] = await gestorPool.execute('SELECT * FROM lancamentos LIMIT 3');
+      const [lancamentosSample] = await accessPool.execute('SELECT * FROM lancamentos LIMIT 3');
       console.log('🔍 Teste - Amostra de lançamentos:', lancamentosSample);
     } catch (error) {
       console.error('🔍 Teste - Erro ao buscar lançamentos:', error);
     }
 
     try {
-      const [usuariosSample] = await gestorPool.execute('SELECT * FROM usuarios LIMIT 3');
+      const [usuariosSample] = await accessPool.execute('SELECT * FROM usuarios LIMIT 3');
       console.log('🔍 Teste - Amostra de usuários:', usuariosSample);
     } catch (error) {
       console.error('🔍 Teste - Erro ao buscar usuários:', error);

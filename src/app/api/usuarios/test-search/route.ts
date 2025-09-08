@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Teste Busca - Query:', query);
     console.log('🔍 Teste Busca - Parâmetros:', params);
     
-    const [rows] = await gestorPool.execute(query, params);
+    const [rows] = await accessPool.execute(query, params);
     const usuarios = rows as Array<{
       login: string;
       nome: string;
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     if (search) {
       console.log('🔍 Teste Busca - Testando busca específica...');
       
-      const [testRows] = await gestorPool.execute(
+      const [testRows] = await accessPool.execute(
         'SELECT COUNT(*) as total FROM usuarios WHERE nome LIKE ? AND status = "Ativo"',
         [`%${search}%`]
       );

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar valor de procedimento por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM valor_procedimentos WHERE id = ?',
       [id]
     );
@@ -59,7 +59,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar valor de procedimento
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE valor_procedimentos SET 
         valor = ?, tipo = ?, tabela_faturamento_id = ?, procedimento_id = ?
        WHERE id = ?`,

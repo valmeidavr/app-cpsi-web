@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar lancamento por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM lancamentos WHERE id = ?',
       [id]
     );
@@ -69,7 +69,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar lancamento
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE lancamentos SET 
         descricao = ?, valor = ?, data_lancamento = ?, forma_pagamento = ?, 
         status_pagamento = ?, clientes_id = ?, plano_contas_id = ?, caixas_id = ?, usuario_id = ?
@@ -83,6 +83,47 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Erro ao atualizar lancamento:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Atualizar status do lançamento
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    // Verificar se o lançamento existe
+    const [existingRows] = await accessPool.execute(
+      'SELECT id FROM lancamentos WHERE id = ?',
+      [id]
+    );
+
+    if ((existingRows as Array<{ id: number }>).length === 0) {
+      return NextResponse.json(
+        { error: 'Lançamento não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Atualizar apenas o status
+    await accessPool.execute(
+      'UPDATE lancamentos SET status = ? WHERE id = ?',
+      [body.status, id]
+    );
+
+    return NextResponse.json({ 
+      success: true, 
+      message: `Lançamento ${body.status === 'Ativo' ? 'ativado' : 'desativado'} com sucesso` 
+    });
+  } catch (error) {
+    console.error('Erro ao atualizar status do lançamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

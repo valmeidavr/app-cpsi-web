@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import {
   createClienteSchema,
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // 2. Query para contar o total de registros (usando a cláusula WHERE)
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
     
-    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     `;
     const dataParams = [...queryParams];
     
-    const clienteRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
+    const clienteRows = await executeWithRetry(accessPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: (clienteRows as Array<{
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Inserir cliente
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO clientes (
         nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
         uf, telefone1, telefone2, status, sexo, tipo
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
             ? descontoValue
             : 0;
 
-        await gestorPool.execute(
+        await accessPool.execute(
           "INSERT INTO convenios_clientes (convenio_id, cliente_id, desconto) VALUES (?, ?, ?)",
           [convenioId, clienteId, descontoFinal]
         );
@@ -215,7 +215,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Atualizar cliente
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE clientes SET 
         nome = ?, email = ?, cpf = ?, dtnascimento = ?, cep = ?,
         logradouro = ?, bairro = ?, cidade = ?, uf = ?, telefone1 = ?, telefone2 = ?
@@ -239,7 +239,7 @@ export async function PUT(request: NextRequest) {
     // Atualizar convênios do cliente
     if (convenios && convenios.length > 0) {
       // Remover convênios existentes
-      await gestorPool.execute(
+      await accessPool.execute(
         "DELETE FROM convenios_clientes WHERE cliente_id = ?",
         [id]
       );
@@ -252,7 +252,7 @@ export async function PUT(request: NextRequest) {
             ? descontoValue
             : 0;
 
-        await gestorPool.execute(
+        await accessPool.execute(
           "INSERT INTO convenios_clientes (convenio_id, cliente_id, desconto) VALUES (?, ?, ?)",
           [convenioId, id, descontoFinal]
         );
@@ -289,7 +289,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE clientes SET status = "Inativo" WHERE id = ?',
       [id]
     );

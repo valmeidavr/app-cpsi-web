@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar prestador por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
     console.log(id)
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM prestadores WHERE id = ? AND status = "Ativo"',
       [id]
     );
@@ -83,7 +83,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar prestador
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE prestadores SET 
         nome = ?, rg = ?, cpf = ?, sexo = ?, dtnascimento = ?, 
         cep = ?, logradouro = ?, numero = ?, bairro = ?, 

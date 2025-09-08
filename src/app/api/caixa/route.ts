@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createCaixaSchema, updateCaixaSchema } from "./schema/formSchemaCaixa";
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const caixaRows = await executeWithRetry(gestorPool, query, params);
+    const caixaRows = await executeWithRetry(accessPool, query, params);
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM caixas WHERE 1=1';
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`);
     }
 
-    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir caixa
-    const result = await executeWithRetry(gestorPool,
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO caixas (
         nome, tipo, saldo
       ) VALUES (?, ?, ?)`,

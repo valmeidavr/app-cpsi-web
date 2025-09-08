@@ -216,10 +216,10 @@ export default function UsuariosPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
-                        {usuario.sistemas && usuario.sistemas.length > 0 ? (
-                          usuario.sistemas.map((sistema, index) => (
+                        {usuario.grupos && usuario.grupos.length > 0 ? (
+                          usuario.grupos.map((grupo, index) => (
                             <Badge key={index} variant="secondary">
-                              {sistema.nome}: {sistema.nivel}
+                              {grupo}
                             </Badge>
                           ))
                         ) : (

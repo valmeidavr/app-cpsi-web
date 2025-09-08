@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { updateCaixaSchema } from "../schema/formSchemaCaixa";
 import { z } from "zod";
 import { Caixa } from "@/app/types/Caixa";
@@ -12,7 +12,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM caixas WHERE id = ?',
       [id]
     );
@@ -56,7 +56,7 @@ export async function PUT(
     const { ...payload } = validatedData.data;
 
     // Atualizar caixa
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE caixas SET 
         nome = ?, tipo = ?, saldo = ?
        WHERE id = ?`,
@@ -88,7 +88,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE caixas SET status = "Inativo" WHERE id = ?',
       [id]
     );

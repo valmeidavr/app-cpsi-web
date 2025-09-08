@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
 
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY l.data_lancamento DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query
 
-    const lancamentoRows = await executeWithRetry(gestorPool, query, params);
+    const lancamentoRows = await executeWithRetry(accessPool, query, params);
 
     // Agora buscar os nomes dos usuários do banco cpsi_acesso
     const lancamentosComUsuarios = await Promise.all(
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       }>).map(async (lancamento) => {
         try {
           if (lancamento.usuario_id) {
-            const [userRows] = await gestorPool.execute(
+            const [userRows] = await accessPool.execute(
               'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
               [lancamento.usuario_id]
             );
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
       countParams.push(data_inicio, data_fim);
     }
 
-    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário existe no banco cpsi_acesso
     try {
-      const [userRows] = await gestorPool.execute(
+      const [userRows] = await accessPool.execute(
         'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
         [payload.usuario_id]
       );
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Inserir lançamento com campos corretos
-    const result = await executeWithRetry(gestorPool,
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO lancamentos (
         valor, descricao, data_lancamento, tipo, forma_pagamento,
         status_pagamento, cliente_id, plano_conta_id, caixa_id,
@@ -249,7 +249,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar lançamento com campos corretos
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE lancamentos SET 
         valor = ?, descricao = ?, tipo = ?, data_lancamento = ?,
         forma_pagamento = ?, status_pagamento = ?, cliente_id = ?,
@@ -292,7 +292,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       'UPDATE lancamentos SET status = "Inativo" WHERE id = ?',
       [id]
     );

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -14,12 +14,12 @@ export async function GET() {
     const userId = session.user.id;
 
     // Buscar sistemas disponíveis
-    const [sistemasRows] = await gestorPool.execute(
+    const [sistemasRows] = await accessPool.execute(
       'SELECT id, nome FROM sistemas WHERE nome = "sistemaCPSI"'
     );
 
     // Buscar acesso do usuário ao sistema CPSI
-    const [acessoRows] = await gestorPool.execute(
+    const [acessoRows] = await accessPool.execute(
       `SELECT us.sistemas_id, us.nivel, s.nome as sistema_nome 
        FROM usuario_sistema us 
        INNER JOIN sistemas s ON us.sistemas_id = s.id 

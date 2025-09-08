@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createEspecialidadeSchema, updateEspecialidadeSchema } from "./schema/formSchemaEspecialidade";
 
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       
       try {
         // Primeiro, tentar buscar com filtro de status
-        const [rows] = await gestorPool.execute(
+        const [rows] = await accessPool.execute(
           'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
         );
         console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as Array<{
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         
         // Se não encontrar especialidades ativas, buscar todas
         console.log('🔍 Debug - Nenhuma especialidade ativa encontrada, buscando todas...');
-        const [allRows] = await gestorPool.execute(
+        const [allRows] = await accessPool.execute(
           'SELECT * FROM especialidades ORDER BY nome ASC'
         );
         console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as Array<{
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         
         // Tentar query mais simples como fallback
         try {
-          const [simpleRows] = await gestorPool.execute(
+          const [simpleRows] = await accessPool.execute(
             'SELECT id, nome FROM especialidades ORDER BY nome ASC'
           );
           console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as Array<{
@@ -143,7 +143,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Query para contar o total de registros
     const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
@@ -154,7 +154,7 @@ export async function GET(request: NextRequest) {
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
-    const especialidadeRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
+    const especialidadeRows = await executeWithRetry(accessPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: especialidadeRows,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir especialidade
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO especialidades (
         nome, codigo, status
       ) VALUES (?, ?, ?)`,
@@ -244,7 +244,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar especialidade
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE especialidades SET 
         nome = ?, codigo = ?
        WHERE id = ?`,
@@ -283,7 +283,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE especialidades SET status = "Inativo" WHERE id = ?',
       [id]
     );

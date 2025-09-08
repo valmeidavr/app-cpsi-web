@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 
 // GET - Buscar agenda por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const rows = await executeWithRetry(gestorPool,
+    const rows = await executeWithRetry(accessPool,
       'SELECT id, dtagenda, situacao, cliente_id, convenio_id, procedimento_id, expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente, createdAt, updatedAt FROM agendas WHERE id = ?',
       [id]
     );
@@ -73,7 +73,7 @@ export async function PATCH(
     const body = await request.json();
 
     // Atualizar apenas a situação da agenda
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE agendas SET situacao = ? WHERE id = ?`,
       [body.situacao, id]
     );
@@ -98,7 +98,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar agenda com campos corretos
-    await executeWithRetry(gestorPool,
+    await executeWithRetry(accessPool,
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?, 
         procedimento_id = ?, expediente_id = ?, prestador_id = ?, 

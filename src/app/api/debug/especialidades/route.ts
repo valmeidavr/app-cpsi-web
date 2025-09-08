@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
     console.log('🔍 Testando conexão com o banco...');
     
     // Verificar se a tabela existe
-    const [tables] = await gestorPool.execute(
+    const [tables] = await accessPool.execute(
       "SHOW TABLES LIKE 'especialidades'"
     );
     console.log('🔍 Tabela especialidades existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
@@ -17,25 +17,25 @@ export async function GET() {
     if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela especialidades não encontrada',
-        tables: await gestorPool.execute("SHOW TABLES")
+        tables: await accessPool.execute("SHOW TABLES")
       }, { status: 404 });
     }
     
     // Verificar estrutura da tabela
-    const [columns] = await gestorPool.execute(
+    const [columns] = await accessPool.execute(
       "DESCRIBE especialidades"
     );
     console.log('🔍 Estrutura da tabela:', columns);
     
     // Verificar se há dados
-    const [countResult] = await gestorPool.execute(
+    const [countResult] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM especialidades"
     );
     const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
     console.log('🔍 Total de especialidades:', total);
     
     // Tentar buscar especialidades ativas
-    const [especialidades] = await gestorPool.execute(
+    const [especialidades] = await accessPool.execute(
       'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
     );
     console.log('🔍 Especialidades ativas encontradas:', (especialidades as Array<{
@@ -48,7 +48,7 @@ export async function GET() {
     }>).length);
     
     // Verificar se há especialidades com status diferente
-    const [statusCount] = await gestorPool.execute(
+    const [statusCount] = await accessPool.execute(
       'SELECT status, COUNT(*) as count FROM especialidades GROUP BY status'
     );
     console.log('🔍 Contagem por status:', statusCount);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createTurmaSchema, updateTurmaSchema } from "./schema/formSchemaTurmas";
 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const [turmaRows] = await gestorPool.execute(query, params);
+    const [turmaRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = `
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
     console.log('🔍 Debug - Dados recebidos:', payload);
 
     // Inserir turma
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO turmas (
         nome, horario_inicio, horario_fim, data_inicio, data_fim, limite_vagas, 
         procedimento_id, prestador_id
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar turma
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE turmas SET 
         nome = ?, horario_inicio = ?, horario_fim = ?, data_inicio = ?,
         limite_vagas = ?, procedimento_id = ?, prestador_id = ?
@@ -201,7 +201,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE turmas SET status = "Inativo" WHERE id = ?',
       [id]
     );

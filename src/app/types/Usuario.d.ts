@@ -27,6 +27,6 @@ export type Usuario = {
   email: string;
   status?: string;
   sistemas?: Sistema[];
-  grupos?: { grupo: Grupo }[];
+  grupos?: string[];
 };
 

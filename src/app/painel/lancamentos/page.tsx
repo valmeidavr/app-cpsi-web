@@ -165,7 +165,7 @@ export default function Lancamentos() {
 
     try {
       const novoStatus =
-        lancamentoSelecionado.status === "ATIVO" ? "INATIVO" : "ATIVO";
+        lancamentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
       console.log(lancamentoSelecionado.id, novoStatus);
       await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
         method: "PATCH",
@@ -177,7 +177,7 @@ export default function Lancamentos() {
 
       toast.success(
         `Lançamento ${
-          novoStatus === "ATIVO" ? "ativado" : "desativado"
+          novoStatus === "Ativo" ? "ativado" : "desativado"
         } com sucesso!`
       );
 
@@ -191,7 +191,7 @@ export default function Lancamentos() {
     }
   };
 
-  const isAtivando = lancamentoSelecionado?.status === "INATIVO";
+  const isAtivando = lancamentoSelecionado?.status === "Inativo";
 
   useEffect(() => {
     fetchCaixas();
@@ -468,7 +468,7 @@ export default function Lancamentos() {
                             <Button
                               size="icon"
                               variant={
-                                lancamento.status === "ATIVO"
+                                lancamento.status === "Ativo"
                                   ? "destructive"
                                   : "outline"
                               }
@@ -477,7 +477,7 @@ export default function Lancamentos() {
                                 setIsDialogOpen(true);
                               }}
                             >
-                              {lancamento.status === "ATIVO" ? (
+                              {lancamento.status === "Ativo" ? (
                                 <ToggleLeft className="h-5 w-5 " />
                               ) : (
                                 <ToggleRight className="h-5 w-5 text-green-500" />
@@ -489,7 +489,7 @@ export default function Lancamentos() {
                               side="top"
                               className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                             >
-                              {lancamento.status === "ATIVO"
+                              {lancamento.status === "Ativo"
                                 ? "Desativar Lançamento"
                                 : "Ativar Lançamento"}
                             </Tooltip.Content>

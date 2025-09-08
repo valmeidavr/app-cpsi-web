@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar unidade por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM unidades WHERE id = ?',
       [id]
     );
@@ -55,7 +55,7 @@ export async function PUT(
     const body = await request.json();
 
     // Atualizar unidade
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE unidades SET 
         nome = ?
        WHERE id = ?`,

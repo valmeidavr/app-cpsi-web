@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { updateUsuarioSchema } from "../../schema/formShemaUpdateUsuario";
 import bcrypt from 'bcrypt';
@@ -14,7 +14,7 @@ export async function GET(
   try {
     const { id } = await params;
     
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
       [id]
     );
@@ -104,7 +104,7 @@ export async function PUT(
     await accessPool.execute(query, queryParams);
     
     // Atualizar grupos do usuário
-    if (validatedData.grupos && validatedData.grupos.length > 0) {
+    if (validatedData.data.grupos && validatedData.data.grupos.length > 0) {
       // Remover grupos atuais
       await accessPool.execute(
         'DELETE FROM usuariogrupo WHERE usuario_login = ?',
@@ -112,7 +112,7 @@ export async function PUT(
       );
       
       // Inserir novos grupos
-      for (const grupoId of validatedData.grupos) {
+      for (const grupoId of validatedData.data.grupos) {
         await accessPool.execute(
           'INSERT INTO usuariogrupo (usuario_login, grupo_id) VALUES (?, ?)',
           [id, grupoId]
@@ -145,7 +145,7 @@ export async function DELETE(
     const { id } = await params;
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE usuarios SET status = "Inativo" WHERE login = ?',
       [id]
     );

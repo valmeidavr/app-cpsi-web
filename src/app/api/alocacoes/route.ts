@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAlocacaoSchema, updateAlocacaoSchema } from "./shema/formSchemaAlocacao";
 
@@ -58,13 +58,13 @@ export async function GET(request: NextRequest) {
 
     // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY e.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
     console.log("🔍 Query de alocações:", query);
     console.log("🔍 Parâmetros:", params);
     
-    const alocacaoRows = await executeWithRetry(gestorPool, query, params);
+    const alocacaoRows = await executeWithRetry(accessPool, query, params);
     
     console.log("✅ Alocações encontradas:", (alocacaoRows as Array<{
       id: number;
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    const countRows = await executeWithRetry(gestorPool, countQuery, countParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // Transformar os dados para incluir objetos aninhados e campos diretos
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir alocação
-    const result = await executeWithRetry(gestorPool,
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO alocacoes (
         unidade_id, especialidade_id, prestador_id
       ) VALUES (?, ?, ?)`,

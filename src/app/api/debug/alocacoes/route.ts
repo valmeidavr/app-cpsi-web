@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET() {
   try {
@@ -9,7 +9,7 @@ export async function GET() {
     console.log('🔍 Testando conexão com o banco...');
     
     // Verificar se a tabela existe
-    const [tables] = await gestorPool.execute(
+    const [tables] = await accessPool.execute(
       "SHOW TABLES LIKE 'alocacoes'"
     );
     console.log('🔍 Tabela alocacoes existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
@@ -17,25 +17,25 @@ export async function GET() {
     if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela alocacoes não encontrada',
-        tables: await gestorPool.execute("SHOW TABLES")
+        tables: await accessPool.execute("SHOW TABLES")
       }, { status: 404 });
     }
     
     // Verificar estrutura da tabela
-    const [columns] = await gestorPool.execute(
+    const [columns] = await accessPool.execute(
       "DESCRIBE alocacoes"
     );
     console.log('🔍 Estrutura da tabela alocacoes:', columns);
     
     // Verificar se há dados
-    const [countResult] = await gestorPool.execute(
+    const [countResult] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM alocacoes"
     );
     const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
     console.log('🔍 Total de alocações:', total);
     
     // Tentar buscar alocações com JOIN
-    const [alocacoes] = await gestorPool.execute(`
+    const [alocacoes] = await accessPool.execute(`
       SELECT 
         a.*,
         e.id as especialidade_id,
@@ -61,13 +61,13 @@ export async function GET() {
     }>).length);
     
     // Verificar se há problemas com as tabelas relacionadas
-    const [especialidadesCount] = await gestorPool.execute(
+    const [especialidadesCount] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM especialidades"
     );
-    const [unidadesCount] = await gestorPool.execute(
+    const [unidadesCount] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM unidades"
     );
-    const [prestadoresCount] = await gestorPool.execute(
+    const [prestadoresCount] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM prestadores"
     );
     

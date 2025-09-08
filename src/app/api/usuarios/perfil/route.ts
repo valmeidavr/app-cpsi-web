@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { updateUsuarioSchema } from "../schema/formShemaUpdateUsuario";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Função para buscar usuário por ID (sem bcrypt)
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT id, nome, email, status FROM usuarios WHERE id = ? AND status = "Ativo"',
       [id]
     );
@@ -74,7 +74,7 @@ export async function PUT(request: NextRequest) {
     query = query.slice(0, -2) + ' WHERE id = ?';
     params.push(id);
     
-    await gestorPool.execute(query, params);
+    await accessPool.execute(query, params);
     
     return NextResponse.json({ success: true });
   } catch (error) {

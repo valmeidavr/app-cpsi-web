@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createProcedimentoSchema, updateProcedimentoSchema } from "./schema/formSchemaProcedimentos";
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query
 
-    const [procedimentoRows] = await gestorPool.execute(query, params);
+    const [procedimentoRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM procedimentos WHERE status = "Ativo"';
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir procedimento
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO procedimentos (
         nome, codigo, tipo, especialidade_id, status
       ) VALUES (?, ?, ?, ?, ?)`,
@@ -129,7 +129,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar procedimento
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE procedimentos SET 
         nome = ?, codigo = ?, tipo = ?, especialidade_id = ?
        WHERE id = ?`,
@@ -168,7 +168,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE procedimentos SET status = "Inativo" WHERE id = ?',
       [id]
     );

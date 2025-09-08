@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "../schema/formSchemaUsuarios";
 import bcrypt from 'bcrypt';
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     const validatedData = createUsuarioSchema.parse(body);
     
     // Verificar se o usuário já existe
-    const [existingUser] = await gestorPool.execute(
+    const [existingUser] = await accessPool.execute(
       'SELECT login FROM usuarios WHERE email = ?',
       [validatedData.email]
     );
@@ -28,11 +28,41 @@ export async function POST(request: NextRequest) {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
     
-    // Gerar login único (usando timestamp + random)
-    const userLogin = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    // Função para gerar login mais amigável
+    const generateFriendlyLogin = (nome: string, email: string): string => {
+      // Usar apenas o primeiro nome + números do email
+      const nomeParts = nome.trim().toLowerCase().split(' ').filter(part => part.length > 0);
+      const primeiroNome = nomeParts[0] || 'user';
+      
+      // Pegar números do email ou gerar números aleatórios
+      const emailNumbers = email.replace(/[^0-9]/g, '');
+      const numbers = emailNumbers ? emailNumbers.substring(0, 3) : Math.floor(Math.random() * 999).toString().padStart(3, '0');
+      
+      return primeiroNome + numbers;
+    };
+    
+    // Usar a versão mais amigável por padrão
+    let userLogin = generateFriendlyLogin(validatedData.nome, validatedData.email);
+    
+    // Verificar se o login já existe e adicionar sufixo se necessário
+    let loginExists = true;
+    let counter = 1;
+    while (loginExists) {
+      const [existingLogin] = await accessPool.execute(
+        'SELECT login FROM usuarios WHERE login = ?',
+        [userLogin]
+      );
+      
+      if ((existingLogin as Array<{ login: string }>).length === 0) {
+        loginExists = false;
+      } else {
+        userLogin = generateFriendlyLogin(validatedData.nome, validatedData.email) + counter.toString();
+        counter++;
+      }
+    }
     
     // Inserir usuário
-    await gestorPool.execute(
+    await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [userLogin, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );

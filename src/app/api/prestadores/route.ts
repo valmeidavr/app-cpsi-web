@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createPrestadorSchema, updatePrestadorSchema } from "./schema/formSchemaPretadores";
 
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     // Se for para retornar todos os prestadores (sem paginação)
     if (all === 'true' || limit === '1000') {
       console.log('🔍 Debug - Buscando todos os prestadores ativos');
-      const [rows] = await gestorPool.execute(
+      const [rows] = await accessPool.execute(
         'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC'
       );
       console.log('🔍 Debug - Prestadores encontrados:', (rows as Array<{
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 
     // 2. Query para contar o total de registros
     const countQuery = `SELECT COUNT(*) as total FROM prestadores${whereClause}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
+    const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     // 3. Query para buscar os dados com paginação
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
-    const prestadorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
+    const prestadorRows = await executeWithRetry(accessPool, dataQuery, dataParams);
 
     return NextResponse.json({
       data: prestadorRows,
@@ -152,7 +152,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir prestador
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO prestadores (
         nome, rg, cpf, sexo, dtnascimento, cep, logradouro, numero, 
         bairro, cidade, uf, telefone, celular, complemento, status
@@ -210,7 +210,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Atualizar prestador
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE prestadores SET 
         nome = ?, rg = ?, cpf = ?, sexo = ?, dtnascimento = ?, cep = ?,
         logradouro = ?, numero = ?, bairro = ?, cidade = ?, uf = ?,
@@ -266,7 +266,7 @@ export async function PATCH(request: NextRequest) {
     const { status } = validatedData.data;
 
     // Atualizar status do prestador
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE prestadores SET status = ? WHERE id = ?',
       [status, id]
     );
@@ -301,7 +301,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE prestadores SET status = "Inativo" WHERE id = ?',
       [id]
     );

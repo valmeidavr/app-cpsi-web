@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 // GET - Buscar convenio por ID
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT id, nome, desconto, regras, tabelaFaturamentosId as tabela_faturamento_id FROM convenios WHERE id = ?',
       [id]
     );
@@ -66,7 +66,7 @@ export async function PUT(
     const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
 
     // Atualizar convenio
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE convenios SET 
         nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
        WHERE id = ?`,

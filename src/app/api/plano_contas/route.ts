@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createPlanosSchema, updatePlanosSchema } from "./schema/formSchemaPlanos";
 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     // Parâmetros de paginação inseridos diretamente na query;
 
-    const [planoRows] = await gestorPool.execute(query, params);
+    const [planoRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM plano_contas ';
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const { ...payload } = validatedData.data;
 
     // Inserir plano de conta
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO plano_contas (
         nome, tipo, categoria, descricao
       ) VALUES (?, ?, ?, ?)`,

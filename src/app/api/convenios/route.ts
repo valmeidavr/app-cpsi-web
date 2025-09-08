@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createConvenioSchema, updateConvenioSchema } from "./schema/formSchemaConvenios";
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
 
-    const [convenioRows] = await gestorPool.execute(query, params);
+    const [convenioRows] = await accessPool.execute(query, params);
 
     // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM convenios';
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       countParams.push(`%${search}%`, `%${search}%`);
     }
 
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
 
     return NextResponse.json({
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     const desconto = payload.desconto !== undefined ? Number(payload.desconto) : 0;
 
     // Inserir convênio
-    const [result] = await gestorPool.execute(
+    const [result] = await accessPool.execute(
       `INSERT INTO convenios (
         nome, desconto, regras, tabelaFaturamentosId
       ) VALUES (?, ?, ?, ?)`,
@@ -134,7 +134,7 @@ export async function PUT(request: NextRequest) {
     const desconto = payload.desconto !== undefined ? Number(payload.desconto) : 0;
 
     // Atualizar convênio
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE convenios SET 
         nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
        WHERE id = ?`,
@@ -173,7 +173,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE convenios SET status = "Inativo" WHERE id = ?',
       [id]
     );

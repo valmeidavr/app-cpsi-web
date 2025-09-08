@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     console.log('🔍 Cliente ID solicitado:', clienteId);
     
     // Verificar se a tabela existe
-    const [tables] = await gestorPool.execute(
+    const [tables] = await accessPool.execute(
       "SHOW TABLES LIKE 'convenios_clientes'"
     );
     console.log('🔍 Tabela convenios_clientes existe:', (tables as Array<{ Tables_in_gestor: string }>).length > 0);
@@ -19,18 +19,18 @@ export async function GET(request: NextRequest) {
     if ((tables as Array<{ Tables_in_gestor: string }>).length === 0) {
       return NextResponse.json({
         error: 'Tabela convenios_clientes não encontrada',
-        tables: await gestorPool.execute("SHOW TABLES")
+        tables: await accessPool.execute("SHOW TABLES")
       }, { status: 404 });
     }
     
     // Verificar estrutura da tabela
-    const [columns] = await gestorPool.execute(
+    const [columns] = await accessPool.execute(
       "DESCRIBE convenios_clientes"
     );
     console.log('🔍 Estrutura da tabela convenios_clientes:', columns);
     
     // Verificar se há dados
-    const [countResult] = await gestorPool.execute(
+    const [countResult] = await accessPool.execute(
       "SELECT COUNT(*) as total FROM convenios_clientes"
     );
     const total = (countResult as Array<{ total: number }>)[0]?.total || 0;
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     if (clienteId) {
       console.log('🔍 Buscando convênios para cliente ID:', clienteId);
       
-      const [clienteConvenios] = await gestorPool.execute(
+      const [clienteConvenios] = await accessPool.execute(
         `SELECT cc.*, c.nome as convenio_nome 
          FROM convenios_clientes cc
          INNER JOIN convenios c ON cc.convenio_id = c.id
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Buscar amostra de todos os registros
-    const [amostra] = await gestorPool.execute(
+    const [amostra] = await accessPool.execute(
       `SELECT cc.*, c.nome as convenio_nome, cl.nome as cliente_nome
        FROM convenios_clientes cc
        INNER JOIN convenios c ON cc.convenio_id = c.id

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
@@ -16,27 +16,19 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || ''
     const all = searchParams.get('all') || ''
 
-    // Verificar a estrutura da tabela
     try {
       await accessPool.execute('DESCRIBE usuarios');
     } catch (structureError) {
       console.error('Erro ao verificar estrutura da tabela:', structureError);
       return NextResponse.json(
-        { error: 'Erro ao verificar estrutura da tabela', details: structureError.message },
+        { error: 'Erro ao verificar estrutura da tabela', details: (structureError as Error).message },
         { status: 500 }
       );
     }
 
-    // Para o cadastro de lançamentos, sempre retornar todos os usuários
     if ((limit === '1000' || all === 'true') && !search) {
       try {
         const [rows] = await accessPool.execute(
-        // Primeiro, vamos ver a estrutura real da tabela
-        const [structureRows] = await gestorPool.execute('DESCRIBE usuarios');
-        console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
-        
-        // Buscar usuários com a estrutura correta
-        const [rows] = await gestorPool.execute(
           'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
         );
         const usuarios = rows as Array<{
@@ -61,7 +53,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Lógica para busca com paginação - versão sem parâmetros preparados
     let query = 'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo"'
 
     if (search) {
@@ -72,9 +63,6 @@ export async function GET(request: NextRequest) {
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
 
     const [userRows] = await accessPool.execute(query)
-    // Debug logs removidos para evitar spam
-
-    const [userRows] = await gestorPool.execute(query, params)
     const usuarios = userRows as Array<{
       login: string;
       nome: string;
@@ -82,7 +70,33 @@ export async function GET(request: NextRequest) {
       status: string;
     }>;
 
-    // Buscar total de registros para paginação
+    const usuariosComGrupos = await Promise.all(
+      usuarios.map(async (usuario) => {
+        try {
+          const [grupoRows] = await accessPool.execute(
+            `SELECT g.nome as grupo_nome 
+             FROM usuariogrupo ug 
+             LEFT JOIN grupos g ON ug.grupo_id = g.id 
+             WHERE ug.usuario_login = ?`,
+            [usuario.login]
+          );
+          
+          const grupos = (grupoRows as Array<{ grupo_nome: string }>).map(g => g.grupo_nome);
+          
+          return {
+            ...usuario,
+            grupos: grupos
+          };
+        } catch (error) {
+          console.error(`Erro ao buscar grupos para usuário ${usuario.login}:`, error);
+          return {
+            ...usuario,
+            grupos: []
+          };
+        }
+      })
+    );
+
     let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE status = "Ativo"'
 
     if (search) {
@@ -90,12 +104,11 @@ export async function GET(request: NextRequest) {
     }
 
     const [countRows] = await accessPool.execute(countQuery)
-    const [countRows] = await gestorPool.execute(countQuery, countParams)
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
 
     return NextResponse.json({
-      data: usuarios,
+      data: usuariosComGrupos,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -126,11 +139,9 @@ export async function POST(request: NextRequest) {
 
     const { ...payload } = validatedData.data;
 
-    // Hash da senha
     const hashedPassword = await bcrypt.hash(payload.senha, 10);
     
-    // Inserir usuário - usando email como login já que o schema não tem campo login
-    await gestorPool.execute(
+    await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [payload.email, payload.nome, payload.email, hashedPassword, 'Ativo']
     );
@@ -195,7 +206,7 @@ export async function PUT(request: NextRequest) {
     query = query.slice(0, -2) + ' WHERE login = ?';
     params.push(login);
     
-    await gestorPool.execute(query, params);
+    await accessPool.execute(query, params);
     
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -228,7 +239,7 @@ export async function DELETE(request: NextRequest) {
       [login]
     );
     
-    if (!(existingUser as any[]).length) {
+    if (!(existingUser as Array<{ login: string }>).length) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
     
