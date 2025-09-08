@@ -79,10 +79,10 @@ export async function POST(request: NextRequest) {
     // Inserir convênio
     const [result] = await accessPool.execute(
       `INSERT INTO convenios (
-        nome, desconto, regras, tabelaFaturamentosId
+        nome, desconto, regras, tabela_faturamento_id
       ) VALUES (?, ?, ?, ?)`,
       [
-        payload.nome, desconto, payload.regras, payload.tabelaFaturamentosId
+        payload.nome, desconto, payload.regras, payload.tabela_faturamento_id
       ]
     );
 
@@ -136,10 +136,10 @@ export async function PUT(request: NextRequest) {
     // Atualizar convênio
     await accessPool.execute(
       `UPDATE convenios SET 
-        nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
+        nome = ?, desconto = ?, regras = ?, tabela_faturamento_id = ?
        WHERE id = ?`,
       [
-        payload.nome, desconto, payload.regras, payload.tabelaFaturamentosId, id
+        payload.nome, desconto, payload.regras, payload.tabela_faturamento_id, id
       ]
     );
 
