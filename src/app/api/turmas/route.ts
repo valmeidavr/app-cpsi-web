@@ -6,19 +6,30 @@ export type CreateTurmaDTO = z.infer<typeof createTurmaSchema>;
 export type UpdateTurmaDTO = z.infer<typeof updateTurmaSchema>;
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 [TURMAS API] Iniciando requisição GET');
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
+    
+    console.log('📊 [TURMAS API] Parâmetros:', { page, limit, search });
     let query = `
       SELECT 
-        t.*,
-        p.nome as procedimento_nome,
-        pr.nome as prestador_nome
+        t.id,
+        t.nome,
+        t.horario as horario_inicio,
+        t.horario as horario_fim,
+        t.dataInicio as data_inicio,
+        t.dataFim as data_fim,
+        t.limiteVagas as limite_vagas,
+        t.procedimento_id,
+        t.prestador_id,
+        COALESCE(p.nome, 'Procedimento não definido') as procedimento_nome,
+        COALESCE(pr.nome, 'Prestador não definido') as prestador_nome
       FROM turmas t
       LEFT JOIN procedimentos p ON t.procedimento_id = p.id
       LEFT JOIN prestadores pr ON t.prestador_id = pr.id
-      WHERE 1=1
+      WHERE t.status IS NULL OR t.status != 'Inativo'
     `;
     const params: (string | number)[] = [];
     if (search) {
@@ -27,22 +38,34 @@ export async function GET(request: NextRequest) {
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    
+    console.log('🔍 [TURMAS API] Query principal:', query);
+    console.log('📊 [TURMAS API] Parâmetros da query:', params);
+    
     const [turmaRows] = await accessPool.execute(query, params);
+    console.log('✅ [TURMAS API] Query executada com sucesso. Resultados:', turmaRows);
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM turmas t
       LEFT JOIN procedimentos p ON t.procedimento_id = p.id
       LEFT JOIN prestadores pr ON t.prestador_id = pr.id
-      WHERE 1=1
+      WHERE t.status IS NULL OR t.status != 'Inativo'
     `;
     const countParams: (string | number)[] = [];
     if (search) {
       countQuery += ' AND (t.nome LIKE ? OR p.nome LIKE ? OR pr.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
+    console.log('🔍 [TURMAS API] Query de contagem:', countQuery);
+    console.log('📊 [TURMAS API] Parâmetros da contagem:', countParams);
+    
     const [countRows] = await accessPool.execute(countQuery, countParams);
+    console.log('✅ [TURMAS API] Query de contagem executada. Resultado:', countRows);
+    
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-    return NextResponse.json({
+    console.log('📊 [TURMAS API] Total de registros:', total);
+    
+    const response = {
       data: turmaRows,
       pagination: {
         page: parseInt(page),
@@ -50,10 +73,15 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / parseInt(limit))
       }
-    });
+    };
+    
+    console.log('✅ [TURMAS API] Resposta final:', response);
+    return NextResponse.json(response);
   } catch (error) {
+    console.error('❌ [TURMAS API] Erro na execução:', error);
+    console.error('❌ [TURMAS API] Stack trace:', error instanceof Error ? error.stack : 'N/A');
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

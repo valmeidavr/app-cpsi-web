@@ -48,7 +48,7 @@ export default function NovoTurma() {
   });
   const fetchPrestadores = async () => {
     try {
-      const response = await fetch("/api/prestadores?limit=1000");
+      const response = await fetch("/api/prestadores?all=true");
       const data = await response.json();
       if (response.ok) {
         setPrestadores(data.data);
@@ -290,4 +290,4 @@ export default function NovoTurma() {
       </Form>
     </div>
   );
-}
+}

@@ -12,6 +12,7 @@ export const createConnection = async () => {
     database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'prevsaude',
   })
 }
+console.log(dbConfig)
 export const createAccessConnection = createConnection
 export const createGestorConnection = createConnection
 export const pool = mysql.createPool({
@@ -82,4 +83,4 @@ export const executeWithRetry = async <T>(
     throw lastError
   }
   throw new Error('Erro desconhecido durante a execução da query')
-}
+}

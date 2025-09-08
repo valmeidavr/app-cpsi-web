@@ -158,14 +158,16 @@ const TabelaExpediente = ({
           </TableRow>
         </TableHeader>
         {CarregandoDadosExpediente ? (
-          <TableRow>
-            <TableCell colSpan={6}>
-              <div className="flex justify-center items-center h-20">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-                <span className="ml-2 text-gray-500">Carregando ...</span>
-              </div>
-            </TableCell>
-          </TableRow>
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={6}>
+                <div className="flex justify-center items-center h-20">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
+                  <span className="ml-2 text-gray-500">Carregando ...</span>
+                </div>
+              </TableCell>
+            </TableRow>
+          </TableBody>
         ) : (
           <TableBody className="text-center uppercase">
             {expedientes.length > 0 ? (
@@ -412,4 +414,4 @@ const TabelaExpediente = ({
     </>
   );
 };
-export default TabelaExpediente;
+export default TabelaExpediente;

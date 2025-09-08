@@ -87,7 +87,7 @@ export default function EditarTurma() {
   };
   const fetchPrestadores = async () => {
     try {
-      const response = await fetch("/api/prestadores");
+      const response = await fetch("/api/prestadores?all=true");
       const data = await response.json();
       if (response.ok) {
         setPrestadores(data.data);
@@ -350,4 +350,4 @@ export default function EditarTurma() {
       )}
     </div>
   );
-}
+}

@@ -37,9 +37,33 @@ import {
 } from "@/components/ui/form";
 import { toast } from "sonner";
 import { http } from "@/util/http";
-import { formatDate } from "date-fns";
+import { formatDate, parseISO, isValid } from "date-fns";
 import { Turma } from "@/app/types/Turma";
 import AdicionarAlunosModal from "./_components/AdicionarAlunosModalComponent";
+
+// Helper function to safely format dates
+const safeFormatDate = (dateString: string | null | undefined, format: string): string => {
+  if (!dateString) return "N/A";
+  
+  try {
+    // Try to parse as ISO string first
+    let date = parseISO(dateString);
+    
+    // If that fails, try to create a new Date
+    if (!isValid(date)) {
+      date = new Date(dateString);
+    }
+    
+    // If still invalid, return N/A
+    if (!isValid(date)) {
+      return "N/A";
+    }
+    
+    return formatDate(date, format);
+  } catch (error) {
+    return "N/A";
+  }
+};
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -179,7 +203,7 @@ export default function Turmas() {
                   <TableCell>{turma.nome}</TableCell>
                   <TableCell>
                     <Badge className="text-[13px]" variant="outline">
-                      {turma.procedimento?.nome || (
+                      {turma.procedimento_nome || (
                         <span className="text-gray-400 italic">
                           Procedimento não definido
                         </span>
@@ -188,9 +212,9 @@ export default function Turmas() {
                   </TableCell>
                   <TableCell>
                     <Badge className="text-[13px]" variant="outline">
-                      {turma.prestador?.nome ? (
+                      {turma.prestador_nome ? (
                         (() => {
-                          const nomeArray = turma.prestador.nome.split(" ");
+                          const nomeArray = turma.prestador_nome.split(" ");
                           const primeiroUltimoNome = `${nomeArray[0]} ${
                             nomeArray[nomeArray.length - 1]
                           }`;
@@ -204,16 +228,16 @@ export default function Turmas() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge>{formatDate(turma.data_inicio, "dd/MM/yyyy")}</Badge>
+                    <Badge>{safeFormatDate(turma.data_inicio, "dd/MM/yyyy")}</Badge>
                   </TableCell>
                   <TableCell className={`${turma.data_fim ? "text-white" : ""}`}>
                     <Badge className={`${turma.data_fim ? "bg-red-500" : ""}`}>
                       {turma.data_fim
-                        ? formatDate(turma.data_fim, "dd/MM/yyyy")
+                        ? safeFormatDate(turma.data_fim, "dd/MM/yyyy")
                         : "--------"}
                     </Badge>
                   </TableCell>
-                                      <TableCell>{turma.limite_vagas}</TableCell>
+                  <TableCell>{turma.limite_vagas}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     {}
                     <Tooltip.Provider>
@@ -400,4 +424,4 @@ export default function Turmas() {
       />
     </div>
   );
-}
+}

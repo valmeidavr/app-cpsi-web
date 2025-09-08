@@ -155,7 +155,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
   const fetchPrestadores = async () => {
     try {
-      const response = await fetch("/api/prestadores?limit=1000");
+      const response = await fetch("/api/prestadores?all=true");
       if (response.ok) {
         const data = await response.json();
         setPrestadores(data.data || []);

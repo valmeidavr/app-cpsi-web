@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN especialidades e ON a.especialidade_id = e.id
       LEFT JOIN unidades u ON a.unidade_id = u.id
       LEFT JOIN prestadores p ON a.prestador_id = p.id
-      WHERE 1=1
+      WHERE (p.status IS NULL OR p.status = 'Ativo')
     `;
     const params: (string | number)[] = [];
     if (search) {
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN especialidades e ON a.especialidade_id = e.id
       LEFT JOIN unidades u ON a.unidade_id = u.id
       LEFT JOIN prestadores p ON a.prestador_id = p.id
-      WHERE 1=1
+      WHERE (p.status IS NULL OR p.status = 'Ativo')
     `;
     const countParams: string[] = [];
     if (search) {

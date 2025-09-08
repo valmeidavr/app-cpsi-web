@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
         }
       });
     }
-    let whereClause = '';
+    let whereClause = ' WHERE (status IS NULL OR status = "Ativo")';
     const queryParams: (string | number)[] = [];
     if (search) {
-      whereClause = ' WHERE (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
+      whereClause += ' AND (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     const countQuery = `SELECT COUNT(*) as total FROM prestadores${whereClause}`;
