@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -17,30 +16,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
-
 export default function Home() {
   const router = useRouter();
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     setErrorMessage(null);
     setLoading(true);
-  
     try {
       const result = await signIn("credentials", {
         login,
         password: senha,
         redirect: false,
       });
-
       if (result?.error) {
         setErrorMessage("Credenciais inválidas. Verifique seu login e senha.");
       } else if (result?.ok) {
-        // Login bem-sucedido, redirecionar para o painel
         router.replace("/painel");
       }
     } catch {
@@ -49,7 +43,6 @@ export default function Home() {
       setLoading(false);
     }
   }
-  
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -115,4 +108,4 @@ export default function Home() {
       </Card>
     </main>
   );
-}
+}

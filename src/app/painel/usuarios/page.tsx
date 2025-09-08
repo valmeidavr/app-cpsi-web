@@ -1,7 +1,5 @@
 "use client";
-//React
 import { useEffect, useState } from "react";
-//Components
 import {
   Table,
   TableBody,
@@ -26,12 +24,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-//API
 import { http } from "@/util/http";
-//Types
 import { Usuario } from "@/app/types/Usuario";
-
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -44,8 +38,6 @@ export default function UsuariosPage() {
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-
-
   const fetchUsers = async () => {
     try {
       setLoading(true)
@@ -54,37 +46,13 @@ export default function UsuariosPage() {
         limit: '5',
         search: termoBusca,
       })
-
       const response = await fetch(`/api/usuarios?${searchParams.toString()}`)
-      console.log('Response status:', response.status)
-      
-      if (response.ok) {
-        const data = await response.json()
-        console.log('Data received:', data)
-        setUsuarios(data.data || data) // Ajuste para a nova estrutura da API
-        setTotalUsuarios(data.pagination?.total || 0)
-        setTotalPaginas(data.pagination?.totalPages || 1)
-      } else {
-        console.error('Erro na resposta:', response.status, response.statusText)
-      }
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-
-  const formatarPalavra = (palavra: string): string => {
-    return palavra.replace("U", "Ú");
   };
-
   useEffect(() => {
     fetchUsers();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -93,25 +61,20 @@ export default function UsuariosPage() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     fetchUsers();
   };
-
   const deletarUsuario = async () => {
     if (!usuarioSelecionado) return;
     setLoadingInativar(true);
     try {
-      // Por enquanto, apenas remove da lista local
-      // TODO: Implementar API de delete quando necessário
       setUsuarios((prevUsuarios) =>
         prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
       );
       toast.success("Usuário removido da lista!");
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao deletar usuário:", error);
       toast.error("Erro ao deletar usuário");
     } finally {
       setLoadingInativar(false);
@@ -126,8 +89,7 @@ export default function UsuariosPage() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Usuários</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Usuario */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -142,17 +104,15 @@ export default function UsuariosPage() {
             Buscar
           </Button>
         </div>
-
         <div className="flex gap-2">
-          {/* ✅ Botão Gerenciar Acesso */}
+          {}
           <Button variant="outline" asChild>
             <Link href="/painel/usuarios/gerenciar-acesso">
               <Users className="h-5 w-5 mr-2" />
               Gerenciar Acesso
             </Link>
           </Button>
-          
-          {/* ✅ Botão Novo Usuario */}
+          {}
           <Button asChild>
             <Link href="/painel/usuarios/novo">
               <Plus className="h-5 w-5 mr-2" />
@@ -161,7 +121,6 @@ export default function UsuariosPage() {
           </Button>
         </div>
       </div>
-
       <div>
         {loading ? (
           <div className="flex justify-center items-center w-full h-40">
@@ -227,7 +186,6 @@ export default function UsuariosPage() {
                         )}
                       </div>
                     </TableCell>
-                   
                     <TableCell className="flex gap-2 justify-center items-center h-[83px] w-full">
                       <Tooltip.Provider>
                         <Tooltip.Root>
@@ -280,15 +238,13 @@ export default function UsuariosPage() {
                 ))}
               </TableBody>
             </Table>
-
-            {/* Totalizador de Usuarios */}
+            {}
             <div className="flex justify-between items-center ml-1 mt-4">
               <div className="text-sm text-gray-600">
                 Mostrando {Math.min((paginaAtual + 1) * 5, totalUsuarios)} de{" "}
                 {totalUsuarios} usuários
               </div>
             </div>
-
             <div className="flex justify-center mt-4">
               <ReactPaginate
                 previousLabel={
@@ -357,9 +313,8 @@ export default function UsuariosPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Modal de detalhes */}
+        {}
       </div>
     </div>
   );
-}
+}

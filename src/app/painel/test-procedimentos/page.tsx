@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 interface Cliente {
   id: number;
   nome: string;
@@ -19,19 +17,16 @@ interface Cliente {
   email?: string;
   tipoCliente: string;
 }
-
 interface Convenio {
   id: number;
   nome: string;
   desconto?: number;
 }
-
 interface Procedimento {
   id: number;
   nome: string;
   codigo?: string;
 }
-
 interface ValorProcedimento {
   id: number;
   procedimento: Procedimento;
@@ -39,7 +34,6 @@ interface ValorProcedimento {
   convenio_id: number;
   tipo_cliente: string;
 }
-
 interface TestInfo {
   clientes: Cliente[];
   convenios: Convenio[];
@@ -50,7 +44,6 @@ interface TestInfo {
   loading: boolean;
   error?: string;
 }
-
 export default function TestProcedimentos() {
   const [testInfo, setTestInfo] = useState<TestInfo>({
     clientes: [],
@@ -61,30 +54,19 @@ export default function TestProcedimentos() {
     tipoClienteSelecionado: "NSOCIO",
     loading: false
   });
-
   const [searchCliente, setSearchCliente] = useState("");
   const [searchConvenio, setSearchConvenio] = useState("");
-
-  // Debug: monitorar mudanças nos convênios
   useEffect(() => {
-    console.log('🔍 Estado dos convênios mudou:', testInfo.convenios);
   }, [testInfo.convenios]);
-
-  // Debug: monitorar mudanças nos procedimentos
   useEffect(() => {
-    console.log('🔍 Estado dos procedimentos mudou:', testInfo.procedimentos);
   }, [testInfo.procedimentos]);
-
-  // Carregar clientes ao iniciar
   useEffect(() => {
     fetchClientes();
   }, []);
-
   const fetchClientes = async () => {
     try {
       setTestInfo(prev => ({ ...prev, loading: true }));
       const response = await fetch("/api/clientes?limit=1000");
-      
       if (response.ok) {
         const data = await response.json();
         setTestInfo(prev => ({ 
@@ -96,7 +78,6 @@ export default function TestProcedimentos() {
         throw new Error("Erro ao carregar clientes");
       }
     } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
       setTestInfo(prev => ({ 
         ...prev, 
         error: error instanceof Error ? error.message : 'Erro ao carregar clientes',
@@ -104,27 +85,14 @@ export default function TestProcedimentos() {
       }));
     }
   };
-
   const fetchConvenios = async (clienteId: number) => {
     try {
-      console.log('🔍 Buscando convênios para cliente ID:', clienteId);
-      
       const response = await fetch(`/api/convenios-clientes?cliente_id=${clienteId}`);
-      console.log('🔍 Resposta da API convenios-clientes:', response.status, response.statusText);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Dados recebidos da API convenios-clientes:', data);
-        
-        // Mapear os dados corretamente baseado na estrutura retornada
         let conveniosMapeados = [];
-        
         if (data.data && Array.isArray(data.data)) {
-          // Mapear baseado na estrutura real retornada pela API
           conveniosMapeados = data.data.map((item: { convenioId: number; nome: string; desconto?: number }) => {
-            console.log('🔍 Mapeando item:', item);
-            
-            // A API retorna: convenioId, nome, desconto
             return {
               id: item.convenioId, // ID do convênio (não do registro da tabela)
               nome: item.nome,      // Nome do convênio
@@ -132,64 +100,43 @@ export default function TestProcedimentos() {
             };
           });
         }
-        
-        console.log('🔍 Convênios mapeados:', conveniosMapeados);
-        
         setTestInfo(prev => ({ 
           ...prev, 
           convenios: conveniosMapeados 
         }));
-        
-        console.log('🔍 Convênios atualizados no estado:', conveniosMapeados);
       } else {
         const errorData = await response.json();
-        console.error("❌ Erro ao carregar convênios:", errorData);
         throw new Error("Erro ao carregar convênios");
       }
     } catch (error) {
-      console.error("❌ Erro ao carregar convênios:", error);
       setTestInfo(prev => ({ 
         ...prev, 
         convenios: [] 
       }));
     }
   };
-
   const fetchProcedimentos = async (tipoCliente: string, convenioId: number) => {
     try {
-      console.log('🔍 Buscando procedimentos para:', { tipoCliente, convenioId });
-      
       const response = await fetch(
         `/api/valor-procedimento?convenio_id=${convenioId}&tipoCliente=${tipoCliente}`
       );
-      
-      console.log('🔍 Resposta da API valor-procedimento:', response.status, response.statusText);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('🔍 Dados recebidos da API valor-procedimento:', data);
-        console.log('🔍 Procedimentos encontrados:', data.data?.length || 0);
-        
         setTestInfo(prev => ({ 
           ...prev, 
           procedimentos: data || [] 
         }));
-        
-        console.log('🔍 Procedimentos atualizados no estado:', data || []);
       } else {
         const errorData = await response.json();
-        console.error("❌ Erro ao carregar procedimentos:", errorData);
         throw new Error("Erro ao carregar procedimentos");
       }
     } catch (error) {
-      console.error("❌ Erro ao carregar procedimentos:", error);
       setTestInfo(prev => ({ 
         ...prev, 
         procedimentos: [] 
       }));
     }
   };
-
   const handleClienteSelect = (cliente: Cliente) => {
     setTestInfo(prev => ({ 
       ...prev, 
@@ -198,81 +145,49 @@ export default function TestProcedimentos() {
     }));
     fetchConvenios(cliente.id);
   };
-
   const handleConvenioSelect = (convenio: Convenio) => {
-    console.log('🔍 Convênio selecionado:', convenio);
-    console.log('🔍 Tipo de cliente atual:', testInfo.tipoClienteSelecionado);
-    
     setTestInfo(prev => ({ 
       ...prev, 
       convenioSelecionado: convenio 
     }));
-    
-    // Buscar procedimentos automaticamente
     if (testInfo.tipoClienteSelecionado) {
-      console.log('🔍 Chamando fetchProcedimentos com:', {
-        tipoCliente: testInfo.tipoClienteSelecionado,
-        convenioId: convenio.id
-      });
       fetchProcedimentos(testInfo.tipoClienteSelecionado, convenio.id);
     } else {
-      console.log('⚠️ Tipo de cliente não definido, não buscando procedimentos');
     }
   };
-
   const handleTipoClienteChange = (tipo: string) => {
     setTestInfo(prev => ({ 
       ...prev, 
       tipoClienteSelecionado: tipo 
     }));
-    
-    // Recarregar procedimentos se já há convênio selecionado
     if (testInfo.convenioSelecionado) {
       fetchProcedimentos(tipo, testInfo.convenioSelecionado.id);
     }
   };
-
   const testAllProcedimentos = async () => {
-    console.log('🧪 Testando todos os procedimentos...');
-    
     try {
-      // Testar com diferentes combinações
       const tiposCliente = ["SOCIO", "NSOCIO", "PARCEIRO", "FUNCIONARIO"];
-      
       for (const tipo of tiposCliente) {
-        console.log(`🧪 Testando tipo: ${tipo}`);
-        
-        // Buscar todos os convênios
         const conveniosResponse = await fetch("/api/convenios?limit=1000");
         if (conveniosResponse.ok) {
           const conveniosData = await conveniosResponse.json();
-          
           for (const convenio of conveniosData.data || []) {
-            console.log(`🧪 Testando convênio: ${convenio.nome} (ID: ${convenio.id})`);
-            
             const procedimentosResponse = await fetch(
               `/api/valor-procedimento?convenio_id=${convenio.id}&tipoCliente=${tipo}`
             );
-            
             if (procedimentosResponse.ok) {
               const procedimentosData = await procedimentosResponse.json();
               const count = procedimentosData.data?.length || 0;
-              
               if (count > 0) {
-                console.log(`✅ Encontrados ${count} procedimentos para ${tipo} + ${convenio.nome}`);
-                console.log('📋 Primeiros procedimentos:', procedimentosData.data.slice(0, 3));
               } else {
-                console.log(`❌ Nenhum procedimento para ${tipo} + ${convenio.nome}`);
               }
             }
           }
         }
       }
     } catch (error) {
-      console.error('❌ Erro no teste:', error);
     }
   };
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -282,39 +197,22 @@ export default function TestProcedimentos() {
             type="button" 
             variant="outline" 
             onClick={() => {
-              console.log('🔍 Debug - Estado atual:', {
-                clienteSelecionado: testInfo.clienteSelecionado,
-                convenios: testInfo.convenios,
-                tipoCliente: testInfo.tipoClienteSelecionado
-              });
-              
-              // Testar API de convênios-clientes
               if (testInfo.clienteSelecionado) {
-                console.log('🔍 Testando API para cliente:', testInfo.clienteSelecionado.id);
-                
-                // Testar a API diretamente
                 fetch(`/api/convenios-clientes?cliente_id=${testInfo.clienteSelecionado.id}`)
                   .then(res => res.json())
                   .then(data => {
-                    console.log('🔍 Resposta direta da API:', data);
-                    
-                    // Testar o mapeamento
                     if (data.data && Array.isArray(data.data)) {
                       const conveniosMapeados = data.data.map((item: { convenioId?: number; id?: number; nome?: string; convenio_nome?: string; desconto?: number }) => ({
                         id: item.convenioId || item.id || 0,
                         nome: item.nome || item.convenio_nome || '',
                         desconto: item.desconto
                       }));
-                      console.log('🔍 Convênios mapeados no debug:', conveniosMapeados);
                     }
                   })
                   .catch(err => console.error('❌ Erro no debug:', err));
-                
-                // Testar API de debug
                 fetch(`/api/debug/convenios-clientes?clienteId=${testInfo.clienteSelecionado.id}`)
                   .then(res => res.json())
                   .then(data => {
-                    console.log('🔍 Debug convênios-clientes:', data);
                   })
                   .catch(err => console.error('❌ Erro no debug:', err));
               }
@@ -337,7 +235,6 @@ export default function TestProcedimentos() {
           </Button>
         </div>
       </div>
-
       {testInfo.error && (
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
@@ -351,9 +248,8 @@ export default function TestProcedimentos() {
           </CardContent>
         </Card>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Seleção de Cliente */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -372,7 +268,6 @@ export default function TestProcedimentos() {
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            
             <div className="max-h-60 overflow-y-auto space-y-2">
               {testInfo.clientes
                 .filter(cliente => 
@@ -404,8 +299,7 @@ export default function TestProcedimentos() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Seleção de Convênio */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -425,7 +319,6 @@ export default function TestProcedimentos() {
                 disabled={!testInfo.clienteSelecionado}
               />
             </div>
-            
             <div className="max-h-60 overflow-y-auto space-y-2">
               {testInfo.convenios
                 .filter(convenio => 
@@ -455,8 +348,7 @@ export default function TestProcedimentos() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Tipo de Cliente */}
+        {}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -482,8 +374,7 @@ export default function TestProcedimentos() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Resultados */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -524,8 +415,7 @@ export default function TestProcedimentos() {
           )}
         </CardContent>
       </Card>
-
-      {/* Informações de Debug */}
+      {}
       <Card>
         <CardHeader>
           <CardTitle>📋 Informações de Debug</CardTitle>
@@ -544,5 +434,4 @@ export default function TestProcedimentos() {
       </Card>
     </div>
   );
-}
-
+}

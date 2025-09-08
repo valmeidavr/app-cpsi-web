@@ -5,7 +5,6 @@ import {
 } from "@/app/api/agendas/schema/formSchemaAgendas";
 import { Cliente } from "@/app/types/Cliente";
 import { TipoCliente as TipoClienteValorProcedimento } from "@/app/types/ValorProcedimento";
-
 import { Procedimento } from "@/app/types/Procedimento";
 import {
   Command,
@@ -55,7 +54,6 @@ import { useAgenda } from "../AgendaContext";
 import { Convenio } from "@/app/types/Convenios";
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
 import { Loader2 } from "lucide-react";
-
 interface ModalAgendamentoProps {
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -70,7 +68,6 @@ interface ModalAgendamentoProps {
   horaSelecionada: string | null;
   dataSelecionada: Date | null;
 }
-
 const ModalAgendamento = ({
   open,
   setOpen,
@@ -97,7 +94,6 @@ const ModalAgendamento = ({
       tipo_cliente: undefined, // Inicialmente undefined
     },
   });
-
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [procedimentos, setProcedimentos] = useState<ValorProcedimento[]>([]);
@@ -118,16 +114,13 @@ const ModalAgendamento = ({
   const [searchCliente, setSearchCliente] = useState("");
   const [searchProcedimento, setSearchProcedimento] = useState("");
   const [searchConvenio, setSearchConvenio] = useState("");
-
   useEffect(() => {
     if (open) {
       fetchClientes();
-      // Resetar o tipo de cliente quando o modal é aberto
       setTipoClienteSelecionado(null);
       form.setValue("tipo_cliente", undefined);
     }
   }, [open]);
-
   useEffect(() => {
     if (clienteSelecionado) {
       fetchConvenios(clienteSelecionado.id);
@@ -138,7 +131,6 @@ const ModalAgendamento = ({
       form.setValue("procedimento_id", 0);
     }
   }, [clienteSelecionado]);
-
   useEffect(() => {
     if (convenioSelecionado && tipoClienteSelecionado) {
       fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
@@ -147,38 +139,30 @@ const ModalAgendamento = ({
       form.setValue("procedimento_id", 0);
     }
   }, [tipoClienteSelecionado, convenioSelecionado]);
-
   const fetchClientes = async () => {
     try {
       const response = await fetch("/api/clientes");
-      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Erro ao carregar clientes: ${response.status} - ${errorData.error || 'Erro desconhecido'}`);
       }
-      
       const data = await response.json();
-      
       if (data.data && Array.isArray(data.data)) {
         setClientes(data.data);
       } else {
         setClientes([]);
       }
     } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
       toast.error("Erro ao carregar clientes");
       setClientes([]);
     }
   };
-
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
       const response = await fetch(`/api/convenios-clientes?cliente_id=${clienteId}`);
-      
       if (response.ok) {
         const data = await response.json();
-        
         if (data.data && data.data.length > 0) {
           const conveniosList = data.data.map((item: {
             convenioId: number;
@@ -193,7 +177,6 @@ const ModalAgendamento = ({
             tabela_faturamento_id: item.tabela_faturamentos_id,
             desconto: item.desconto
           })) as Convenio[];
-
           setConvenios(conveniosList);
           setConvenioSelecionado(null);
           form.setValue("convenio_id", 0);
@@ -202,10 +185,7 @@ const ModalAgendamento = ({
           return;
         }
       }
-      
-      // Fallback: buscar todos os convênios se não houver convênios específicos do cliente
       const fallbackResponse = await fetch("/api/convenios?limit=1000");
-      
       if (fallbackResponse.ok) {
         const fallbackData = await fallbackResponse.json();
         setConvenios(fallbackData.data || []);
@@ -216,9 +196,7 @@ const ModalAgendamento = ({
       } else {
         throw new Error("Erro ao carregar convênios");
       }
-      
     } catch (error) {
-      console.error("❌ Erro ao carregar convênios:", error);
       toast.error("Erro ao carregar convênios para este cliente.");
       setConvenios([]);
       setConvenioSelecionado(null);
@@ -227,7 +205,6 @@ const ModalAgendamento = ({
       form.setValue("procedimento_id", 0);
     }
   };
-
   const fetchProcedimentos = async (
     tipoCliente: TipoClienteValorProcedimento,
     convenio_id: number
@@ -236,13 +213,9 @@ const ModalAgendamento = ({
       const response = await fetch(
         `/api/valor-procedimento?convenio_id=${convenio_id}&tipoCliente=${String(tipoCliente)}`
       );
-      
       if (response.ok) {
         const data = await response.json();
-        
-        // A API retorna um array diretamente, não data.data
         if (Array.isArray(data)) {
-          // Mapear os dados corretamente baseado na estrutura real retornada
           const procedimentosMapeados = data.map((item: {
             id: number;
             valor: number;
@@ -269,7 +242,6 @@ const ModalAgendamento = ({
             procedimento_id: item.procedimento_id,
             createdAt: item.createdAt ? new Date(item.createdAt) : new Date(),
             updatedAt: item.updatedAt ? new Date(item.updatedAt) : new Date(),
-            // A API já retorna o procedimento com nome e código
             procedimento: {
               id: item.procedimento.id,
               nome: item.procedimento.nome,
@@ -297,7 +269,6 @@ const ModalAgendamento = ({
               updated_at: new Date().toISOString()
             }
           }));
-          
           setProcedimentos(procedimentosMapeados);
         } else {
           setProcedimentos([]);
@@ -306,28 +277,22 @@ const ModalAgendamento = ({
         throw new Error("Erro ao carregar procedimentos");
       }
     } catch (e) {
-      console.error("❌ Erro ao carregar procedimentos:", e);
       toast.error("Nenhum procedimento encontrado");
       setProcedimentos([]);
     }
   };
-
   useEffect(() => {
     if (dataSelecionada && horaSelecionada) {
-      // Usar a função utilitária para criar a data UTC ISO
       const dtagenda = localDateToUTCISO(dataSelecionada, horaSelecionada);
       form.setValue("dtagenda", dtagenda);
       form.setValue("horario", horaSelecionada);
     }
-
     if (prestador) form.setValue("prestador_id", prestador.id);
     if (unidade) form.setValue("unidade_id", unidade.id);
     if (especialidade) form.setValue("especialidade_id", especialidade.id);
   }, [dataSelecionada, horaSelecionada, prestador, unidade, especialidade]);
-
   const onSubmit = async (values: z.infer<typeof updateAgendaSchema>) => {
     setLoading(true);
-
     try {
       if (!unidade?.id || !prestador?.id || !especialidade?.id) {
         toast.error("Unidade, Prestador e Especialidade devem ser selecionados na tela principal antes de agendar.");
@@ -349,14 +314,10 @@ const ModalAgendamento = ({
         setLoading(false);
         return;
       }
-
-      // Formatar a data para UTC ISO
       const dataFormatada = localDateToUTCISO(dataSelecionada);
       const dataComHorario = new Date(dataFormatada);
       const [horas, minutos] = horaSelecionada.split(':');
       dataComHorario.setHours(parseInt(horas), parseInt(minutos), 0, 0);
-
-      // Preparar dados para envio
       const dadosParaEnviar = {
         ...values,
         dtagenda: dataComHorario.toISOString(),
@@ -365,12 +326,9 @@ const ModalAgendamento = ({
         especialidade_id: especialidade?.id,
         situacao: "AGENDADO",
       };
-
-      // Enviar para a API
       if (!agendamentoSelecionado) {
         throw new Error("Agendamento não selecionado");
       }
-      
       const response = await fetch(`/api/agendas?id=${agendamentoSelecionado.id}`, {
         method: "PUT",
         headers: {
@@ -378,7 +336,6 @@ const ModalAgendamento = ({
         },
         body: JSON.stringify(dadosParaEnviar),
       });
-
       if (response.ok) {
         toast.success("Agendamento atualizado com sucesso!");
         setOpen(false);
@@ -388,28 +345,21 @@ const ModalAgendamento = ({
         throw new Error(errorData.error || "Erro ao atualizar agendamento");
       }
     } catch (error) {
-      console.error("❌ Erro ao atualizar agendamento:", error);
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar agendamento");
     } finally {
       setLoading(false);
     }
   };
-
-  // Filtrar clientes baseado na pesquisa
   const filteredClientes = clientes.filter(cliente => {
     const searchLower = searchCliente.toLowerCase();
     const nomeLower = cliente.nome.toLowerCase();
     const emailLower = cliente.email?.toLowerCase() || '';
     const cpfLower = cliente.cpf?.toLowerCase() || '';
-    
-    // Busca mais específica para evitar seleções múltiplas
     if (searchLower.length < 2) return true; // Mostrar todos se busca muito curta
-    
     return nomeLower.includes(searchLower) || 
            emailLower.includes(searchLower) || 
            cpfLower.includes(searchLower);
   });
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-2xl">
@@ -435,10 +385,8 @@ const ModalAgendamento = ({
                         onValueChange={(value) => {
                           field.onChange(value);
                           setTipoClienteSelecionado(value as TipoClienteValorProcedimento);
-                          // Limpar procedimento selecionado quando tipo mudar
                           setProcedimentoSelecionado(null);
                           form.setValue("procedimento_id", 0);
-                          // Recarregar procedimentos se já há convênio selecionado
                           if (convenioSelecionado) {
                             fetchProcedimentos(value as TipoClienteValorProcedimento, convenioSelecionado.id);
                           }
@@ -461,7 +409,6 @@ const ModalAgendamento = ({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -504,27 +451,18 @@ const ModalAgendamento = ({
                                     value={`${cliente.id}-${cliente.nome}`}
                                     key={`cliente-${cliente.id}-${cliente.nome}`}
                                     onSelect={() => {
-                                      console.log("🔍 Cliente selecionado:", cliente.id, cliente.nome);
-                                      
-                                      // Limpar seleções anteriores
                                       setClienteSelecionado(null);
                                       setConvenioSelecionado(null);
                                       setProcedimentoSelecionado(null);
                                       setConvenios([]);
                                       setProcedimentos([]);
-                                      
-                                      // Definir novo cliente
                                       field.onChange(cliente.id);
                                       form.setValue("convenio_id", 0);
                                       form.setValue("procedimento_id", 0);
-                                      
                                       setClienteSelecionado(cliente);
                                       setTipoClienteSelecionado((cliente.tipoCliente as unknown as TipoClienteValorProcedimento) || null);
                                       form.setValue("tipo_cliente", cliente.tipoCliente || undefined);
-                                      
-                                      // Buscar convênios do cliente
                                       fetchConvenios(cliente.id);
-                                      
                                       setOpenSelectClientes(false);
                                       setSearchCliente("");
                                     }}
@@ -553,7 +491,6 @@ const ModalAgendamento = ({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="convenio_id"
@@ -626,7 +563,6 @@ const ModalAgendamento = ({
                   )}
                 />
               </div>
-
               <div className="space-y-6">
                 <FormField
                   control={form.control}
@@ -711,7 +647,6 @@ const ModalAgendamento = ({
                   )}
                 />
               </div>
-
               <DialogFooter className="pt-6 border-t border-gray-200">
                 <Button
                   type="button"
@@ -743,5 +678,4 @@ const ModalAgendamento = ({
     </Dialog>
   );
 };
-
-export default ModalAgendamento;
+export default ModalAgendamento;

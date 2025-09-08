@@ -1,11 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-//Components
 import {
   Table,
   TableBody,
@@ -53,14 +50,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-//Helpers
-// Removido import http - usando fetch direto
-//API
-//Types
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
-
 export default function Lancamentos() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -86,15 +78,12 @@ export default function Lancamentos() {
       params.append('page', (paginaAtual + 1).toString());
       params.append('limit', '5');
       params.append('search', termoBusca);
-
       if (filters?.caixa_id && filters.caixa_id != 0) {
         params.append('caixa_id', filters.caixa_id.toString());
       }
-
       if (filters?.plano_conta_id && filters.plano_conta_id != 0) {
         params.append('plano_conta_id', filters.plano_conta_id.toString());
       }
-
       if (
         filters?.data_inicio &&
         filters.data_inicio.trim() !== "" &&
@@ -104,19 +93,15 @@ export default function Lancamentos() {
         params.append('data_inicio', filters.data_inicio);
         params.append('data_fim', filters.data_fim);
       }
-
       const response = await fetch(`/api/lancamentos?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setLancamentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalLancamentos(data.pagination.total);
       } else {
-        console.error("Erro ao buscar lançamentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar lançamentos:", error);
     } finally {
       setCarregando(false);
     }
@@ -134,39 +119,30 @@ export default function Lancamentos() {
     try {
       const response = await fetch("/api/caixa");
       const data = await response.json();
-      
       if (response.ok) {
         setCaixas(data.data);
       } else {
-        console.error("Erro ao buscar caixas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar caixas:", error);
     }
   };
   const fetchPlanoContas = async () => {
     try {
       const response = await fetch("/api/plano_contas");
       const data = await response.json();
-      
       if (response.ok) {
         setPlanoConta(data.data);
       } else {
-        console.error("Erro ao buscar plano de contas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar plano de contas:", error);
     }
   };
-
   const handleUpdateStatus = async () => {
     if (!lancamentoSelecionado) return;
     setLoadingAction(true);
-
     try {
       const novoStatus =
         lancamentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
-      console.log(lancamentoSelecionado.id, novoStatus);
       await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
         method: "PATCH",
         headers: {
@@ -174,32 +150,26 @@ export default function Lancamentos() {
         },
         body: JSON.stringify({ status: novoStatus }),
       });
-
       toast.success(
         `Lançamento ${
           novoStatus === "Ativo" ? "ativado" : "desativado"
         } com sucesso!`
       );
-
       await carregarLancamentos(form.getValues());
     } catch (error) {
-      console.error("Erro ao alterar status do lançamento:", error);
       toast.error("Erro ao tentar alterar o status do lançamento.");
     } finally {
       setLoadingAction(false);
       setIsDialogOpen(false);
     }
   };
-
   const isAtivando = lancamentoSelecionado?.status === "Inativo";
-
   useEffect(() => {
     fetchCaixas();
     fetchPlanoContas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -208,17 +178,19 @@ export default function Lancamentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = (values: {
     caixa_id: number;
     plano_conta_id: number;
     data_inicio: string;
     data_fim: string;
   }) => {
+    if (!values.data_inicio && !values.data_fim) {
+      toast.error("Selecione pelo menos uma data (início ou fim) para buscar os lançamentos");
+      return;
+    }
     setPaginaAtual(0);
     carregarLancamentos(values);
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -228,7 +200,6 @@ export default function Lancamentos() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
-
       <Form {...form}>
         <div className="border bg-card text-card-foreground p-6 rounded-lg shadow-sm mb-8">
           <form onSubmit={form.handleSubmit(handleSearch)}>
@@ -265,7 +236,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -298,7 +268,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -313,7 +282,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -328,7 +296,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="flex items-center gap-2 lg:col-span-1">
                 <Button className="w-full" variant="default" type="submit">
                   <Search className="w-4 h-4 mr-2" />
@@ -368,7 +335,7 @@ export default function Lancamentos() {
           </Link>
         </Badge>
       </div>
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -379,7 +346,10 @@ export default function Lancamentos() {
           {lancamentos.length === 0 ? (
             <div className="flex justify-center items-center w-full h-40">
               <span className="ml-2 text-gray-500">
-                Nenhuma lançamento encontrado ...
+                {!form.watch('data_inicio') && !form.watch('data_fim') 
+                  ? "Selecione uma data início e fim para buscar os lançamentos"
+                  : "Nenhum lançamento encontrado para os filtros selecionados"
+                }
               </span>
             </div>
           ) : (
@@ -406,7 +376,6 @@ export default function Lancamentos() {
                     <TableCell>
                       {formatDate(lancamento.data_lancamento, "dd/MM/yyyy")}
                     </TableCell>
-
                     <TableCell>
                       <Badge variant="outline">
                         {lancamento.caixa ? lancamento.caixa.nome : "N/A"}
@@ -426,7 +395,6 @@ export default function Lancamentos() {
                         </Badge>
                       )}
                     </TableCell>
-
                     <TableCell>
                       <Badge variant="default">
                         <div>
@@ -461,7 +429,6 @@ export default function Lancamentos() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -502,16 +469,15 @@ export default function Lancamentos() {
               </TableBody>
             </Table>
           )}
-          {/* Totalizador de Lancamentos */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalLancamentos)} de{" "}
               {totalLancamentos} lançamentos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -552,7 +518,6 @@ export default function Lancamentos() {
           </div>
         </>
       )}
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -590,4 +555,4 @@ export default function Lancamentos() {
       </Dialog>
     </div>
   );
-}
+}

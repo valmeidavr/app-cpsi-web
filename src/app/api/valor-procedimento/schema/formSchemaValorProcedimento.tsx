@@ -22,6 +22,5 @@ export const createValorProcedimentoSchema = z.object({
   tabela_faturamento_id: z.coerce.number().min(1, "Tabela é obrigatória"),
   procedimento_id: z.coerce.number().min(1, "Procedimento é obrigatório"),
 });
-
 export const updateValorProcedimentoSchema =
-  createValorProcedimentoSchema.partial();
+  createValorProcedimentoSchema.partial();

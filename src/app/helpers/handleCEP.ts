@@ -4,7 +4,6 @@ const formatCEP = (value: string) => {
     .replace(/^(\d{5})(\d{1,3})?$/, "$1-$2") // Insere a máscara corretamente
     .slice(0, 9); // Limita a 9 caracteres (00000-000)
 };
-
 export const handleCEPChange = async (
   e: React.ChangeEvent<HTMLInputElement>,
   form: {
@@ -15,17 +14,14 @@ export const handleCEPChange = async (
 ) => {
   const rawCEP = e.target.value;
   const formattedCEP = formatCEP(rawCEP); 
-
   form.setValue("cep", formattedCEP); 
   const onlyNumbers = formattedCEP.replace(/\D/g, ""); 
-
   if (onlyNumbers.length === 8) {
     try {
       const response = await fetch(
         `https://viacep.com.br/ws/${onlyNumbers}/json/`
       );
       const data = await response.json();
-
       if (!data.erro) {
         form.setValue("logradouro", data.logradouro || "");
         form.setValue("bairro", data.bairro || "");
@@ -45,4 +41,4 @@ export const handleCEPChange = async (
       });
     }
   }
-};
+};

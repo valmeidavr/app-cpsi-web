@@ -1,17 +1,14 @@
 "use client";
-
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
-
 interface Especialidade {
   id: number;
   nome: string;
   codigo?: string;
   status?: string;
 }
-
 interface DebugInfo {
   especialidades: Especialidade[];
   alocacoes: { 
@@ -24,56 +21,29 @@ interface DebugInfo {
   error?: string;
   loading: boolean;
 }
-
 export default function TestEspecialidades() {
   const [debugInfo, setDebugInfo] = useState<DebugInfo>({
     especialidades: [],
     alocacoes: [],
     loading: false
   });
-
   const testEspecialidades = async () => {
     setDebugInfo(prev => ({ ...prev, loading: true, error: undefined }));
-    
     try {
-      console.log('🧪 Iniciando teste de especialidades...');
-      
-      // Teste 1: API de especialidades direta
-      console.log('🧪 Teste 1: API de especialidades direta');
       const especialidadesResponse = await fetch("/api/especialidades?all=true");
       const especialidadesData = await especialidadesResponse.json();
-      
-      console.log('🧪 Resposta da API de especialidades:', especialidadesData);
-      
-      // Teste 2: API de alocações
-      console.log('🧪 Teste 2: API de alocações');
       const alocacoesResponse = await fetch("/api/alocacoes?limit=1000");
       const alocacoesData = await alocacoesResponse.json();
-      
-      console.log('🧪 Resposta da API de alocações:', alocacoesData);
-      
-      // Teste 3: Debug de especialidades
-      console.log('🧪 Teste 3: Debug de especialidades');
       const debugResponse = await fetch("/api/debug/especialidades");
       const debugData = await debugResponse.json();
-      
-      console.log('🧪 Resposta do debug:', debugData);
-      
-      // Teste 4: Debug de alocações
-      console.log('🧪 Teste 4: Debug de alocações');
       const debugAlocacoesResponse = await fetch("/api/debug/alocacoes");
       const debugAlocacoesData = await debugAlocacoesResponse.json();
-      
-      console.log('🧪 Resposta do debug de alocações:', debugAlocacoesData);
-      
       setDebugInfo({
         especialidades: especialidadesData.data || [],
         alocacoes: alocacoesData.data || [],
         loading: false
       });
-      
     } catch (error) {
-      console.error('❌ Erro no teste:', error);
       setDebugInfo(prev => ({
         ...prev,
         error: error instanceof Error ? error.message : 'Erro desconhecido',
@@ -81,34 +51,22 @@ export default function TestEspecialidades() {
       }));
     }
   };
-
   const testDatabaseConnection = async () => {
     try {
-      console.log('🧪 Testando conexão com o banco...');
-      
-      // Testar se as APIs estão respondendo
       const response = await fetch("/api/debug/especialidades");
       const data = await response.json();
-      
-      console.log('🧪 Teste de conexão:', data);
-      
       if (data.success) {
         alert('✅ Conexão com o banco funcionando!');
       } else {
         alert('❌ Problema na conexão com o banco');
       }
-      
     } catch (error) {
-      console.error('❌ Erro no teste de conexão:', error);
       alert('❌ Erro ao testar conexão com o banco');
     }
   };
-
   useEffect(() => {
-    // Executar teste automaticamente ao carregar a página
     testEspecialidades();
   }, []);
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -129,7 +87,6 @@ export default function TestEspecialidades() {
           </Button>
         </div>
       </div>
-
       {debugInfo.error && (
         <Card className="border-red-200 bg-red-50">
           <CardHeader>
@@ -143,7 +100,6 @@ export default function TestEspecialidades() {
           </CardContent>
         </Card>
       )}
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -172,7 +128,6 @@ export default function TestEspecialidades() {
             )}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -207,7 +162,6 @@ export default function TestEspecialidades() {
           </CardContent>
         </Card>
       </div>
-
       <Card>
         <CardHeader>
           <CardTitle>📋 Logs do Console</CardTitle>
@@ -221,5 +175,4 @@ export default function TestEspecialidades() {
       </Card>
     </div>
   );
-}
-
+}

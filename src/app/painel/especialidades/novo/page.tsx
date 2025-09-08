@@ -1,14 +1,8 @@
 "use client";
-
-//React
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -22,16 +16,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { createEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
-
-//Helpers
 import { useRouter } from "next/navigation";
-
 export default function NovaEspecialidade() {
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(createEspecialidadeSchema),
@@ -41,7 +29,6 @@ export default function NovaEspecialidade() {
       codigo: "",
     },
   });
-
   const onSubmit = async (
     values: z.infer<typeof createEspecialidadeSchema>
   ) => {
@@ -54,19 +41,14 @@ export default function NovaEspecialidade() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao salvar especialidade");
       }
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Especialidade salva com sucesso!");
-
       router.push(`/painel/especialidades?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao salvar especialidade";
@@ -75,7 +57,6 @@ export default function NovaEspecialidade() {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -86,10 +67,9 @@ export default function NovaEspecialidade() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">Nova Especialidade</h1>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Campos de Nome e Código */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
@@ -111,7 +91,6 @@ export default function NovaEspecialidade() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="codigo"
@@ -133,8 +112,7 @@ export default function NovaEspecialidade() {
               )}
             />
           </div>
-
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -154,4 +132,4 @@ export default function NovaEspecialidade() {
       </Form>
     </div>
   );
-}
+}

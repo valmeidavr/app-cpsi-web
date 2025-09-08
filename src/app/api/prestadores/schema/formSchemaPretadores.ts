@@ -1,12 +1,10 @@
 import * as z from "zod";
 import { validarCPF } from "@/app/helpers/cpfValidator";
-
 export const createPrestadorSchema = z.object({
   nome: z
     .string()
     .min(3, { message: "O nome deve ter pelo menos 3 caracteres" })
 ,
-
   rg: z
     .string()
     .min(9, { message: "O RG deve ter pelo menos 9 caracteres" })
@@ -19,7 +17,6 @@ export const createPrestadorSchema = z.object({
       },
       { message: "Formato de RG inválido" }
     ),
-
   cpf: z
     .string()
     .min(14, { message: "O CPF deve ter 14 caracteres" })
@@ -42,47 +39,34 @@ export const createPrestadorSchema = z.object({
       },
       { message: "CPF inválido - dígitos verificadores incorretos" }
     ),
-
   sexo: z.string().min(1, { message: "O campo sexo é obrigatório" }).optional(),
-
   dtnascimento: z
     .string()
     .min(2, { message: "O campo data de nascimento é obrigatório" })
     .refine(
       (value) => {
         if (!value) return true;
-        
-        // Aceitar formato DD/MM/AAAA
         if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
           return true;
         }
-        
-        // Aceitar formato YYYY-MM-AA (formato MySQL)
         if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
           return true;
         }
-        
         return false;
       },
       { message: "Formato de data inválido. Use DD/MM/AAAA ou YYYY-MM-AA" }
     )
     .transform((value) => {
       if (!value) return null;
-      
-      // Se for DD/MM/AAAA, converter para YYYY-MM-DD
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
         const [day, month, year] = value.split('/');
         return `${year}-${month}-${day}`;
       }
-      
-      // Se já for YYYY-MM-DD, retornar como está
       if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         return value;
       }
-      
       return null; // Caso não seja nenhum dos formatos esperados
     }),
-
   cep: z
     .string()
     .optional()
@@ -95,13 +79,11 @@ export const createPrestadorSchema = z.object({
       },
       { message: "Formato de CEP inválido" }
     ),
-
   logradouro: z.string().optional(),
   numero: z.string().optional(),
   bairro: z.string().optional(),
   cidade: z.string().optional(),
   uf: z.string().optional(),
-
   telefone: z
     .string()
     .optional()
@@ -114,7 +96,6 @@ export const createPrestadorSchema = z.object({
       },
       { message: "Formato de telefone inválido" }
     ),
-
   celular: z
     .string()
     .optional()
@@ -127,7 +108,6 @@ export const createPrestadorSchema = z.object({
       },
       { message: "Formato de celular inválido" }
     ),
-
   complemento: z.string().optional(),
 });
 export const updatePrestadorSchema = createPrestadorSchema.partial();

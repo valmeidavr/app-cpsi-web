@@ -1,11 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-//Components
 import {
   Table,
   TableBody,
@@ -37,10 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-//Helpers
-// Removido import http - usando fetch direto
-//API
-
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
 import { Procedimento } from "@/app/types/Procedimento";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
@@ -58,13 +51,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatValor } from "@/app/helpers/format";
-
 export default function ValorProcedimentos() {
   const [valorProcedimentos, setValorProcedimentos] = useState<
     ValorProcedimento[]
   >([]);
-  
-  // Garantir que valorProcedimentos seja sempre um array
   const valorProcedimentosSeguro = Array.isArray(valorProcedimentos) ? valorProcedimentos : [];
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -78,28 +68,22 @@ export default function ValorProcedimentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
     TabelaFaturamento[]
   >([]);
-
   const [procedimentoSelecionado, setProcedimentoSelecionado] =
     useState<Procedimento | null>();
-
   const [tabelaSelecionado, setTabelaSelecionado] =
     useState<TabelaFaturamento | null>();
-
   const [convenios, setConvenios] = useState<{ id: number; nome: string }[]>([]);
   const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string } | null>(null);
   const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("SOCIO");
-
   useEffect(() => {
     if (tabelaSelecionado && convenioSelecionado) {
       carregarValorProcedimentos();
     } else {
-      // Limpar dados quando não há tabela ou convênio selecionado
       setValorProcedimentos([]);
       setTotalPaginas(0);
       setTotalValorProcedimentos(0);
     }
   }, [tabelaSelecionado, convenioSelecionado, procedimentoSelecionado]);
-
   const carregarValorProcedimentos = async (filters?: {
     page?: number;
     limit?: number;
@@ -110,13 +94,11 @@ export default function ValorProcedimentos() {
     setCarregando(true);
     try {
       if (!tabelaSelecionado || !convenioSelecionado) {
-        console.log('🔍 Debug - Tabela ou convênio não selecionado, retornando...');
         setValorProcedimentos([]);
         setTotalPaginas(0);
         setTotalValorProcedimentos(0);
         return;
       }
-      
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
       params.append('limit', '5');
@@ -125,42 +107,31 @@ export default function ValorProcedimentos() {
       if (procedimentoSelecionado) {
         params.append('procedimento_id', procedimentoSelecionado.id.toString());
       }
-
-      // Debug logs removidos para evitar spam
       const response = await fetch(`/api/valor-procedimento?${params}`);
       const data = await response.json();
-
               if (response.ok) {
           if (data.data && Array.isArray(data.data)) {
-            // Debug logs removidos para evitar spam
-            
-            // Verificar se os dados têm a estrutura correta
             const dadosValidos = data.data.filter((item: { id: number; procedimento: { nome: string } }) => 
               item && item.id && item.procedimento && item.procedimento.nome
             );
-          
           setValorProcedimentos(dadosValidos);
           setTotalPaginas(data.pagination?.totalPages || 1);
           setTotalValorProcedimentos(data.pagination?.total || 0);
         } else {
-          console.error("🔍 Debug - Formato de dados inesperado:", data);
           setValorProcedimentos([]);
           setTotalPaginas(0);
           setTotalValorProcedimentos(0);
         }
       } else {
-        console.error("Erro ao buscar valores de procedimentos:", data.error);
         setValorProcedimentos([]);
         setTotalPaginas(0);
         setTotalValorProcedimentos(0);
       }
     } catch (error) {
-      console.error("Erro ao buscar lançamentos:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const form = useForm({
     resolver: zodResolver(createValorProcedimentoSchema),
     mode: "onChange",
@@ -172,7 +143,6 @@ export default function ValorProcedimentos() {
       valor: 0,
     },
   });
-
   const formUpdate = useForm({
     resolver: zodResolver(updateValorProcedimentoSchema),
     mode: "onChange",
@@ -184,13 +154,11 @@ export default function ValorProcedimentos() {
       valor: 0,
     },
   });
-
   useEffect(() => {
     async function fetchData() {
       setCarregando(true);
       try {
         if (!valorProcedimentoSelecionado) return;
-
         formUpdate.reset({
           convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
           tipo: valorProcedimentoSelecionado.tipo,
@@ -200,32 +168,22 @@ export default function ValorProcedimentos() {
           valor: +valorProcedimentoSelecionado.valor,
         });
       } catch (error) {
-        console.error("Erro ao carregar valor procedimento:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, [valorProcedimentoSelecionado]);
-
-
-
   const fetchProcedimentos = async () => {
     try {
-      // Para criação de novos valores, sempre buscar todos os procedimentos disponíveis
-      // O filtro por convênio será aplicado na validação do backend
       const response = await fetch("/api/procedimentos");
       const data = await response.json();
-
       if (response.ok) {
         setProcedimentos(data.data);
-        console.log("✅ Todos os procedimentos carregados:", data.data);
       } else {
-        console.error("Erro ao buscar procedimentos:", data.error);
         setProcedimentos([]);
       }
     } catch (error) {
-      console.error("Erro ao buscar procedimentos:", error);
       setProcedimentos([]);
     }
   };
@@ -233,32 +191,24 @@ export default function ValorProcedimentos() {
     try {
       const response = await fetch("/api/tabela_faturamentos");
       const data = await response.json();
-
       if (response.ok) {
         setTabelaFaturamentos(data.data);
       } else {
-        console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar tabela de faturamentos:", error);
     }
   };
-
   const fetchConvenios = async () => {
     try {
       const response = await fetch("/api/convenios");
       const data = await response.json();
-
       if (response.ok) {
         setConvenios(data.data);
       } else {
-        console.error("Erro ao buscar convênios:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar convênios:", error);
     }
   };
-
   useEffect(() => {
     fetchProcedimentos();
     fetchTabelaFaturamentos();
@@ -266,7 +216,6 @@ export default function ValorProcedimentos() {
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -275,28 +224,22 @@ export default function ValorProcedimentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, []); // Removido paginaAtual para carregar apenas uma vez
-
-  // Recarregar dados quando a página mudar
   useEffect(() => {
     if (tabelaSelecionado && convenioSelecionado) {
       carregarValorProcedimentos();
     }
   }, [paginaAtual]);
-
   const onSubmit = async (
     values: z.infer<typeof createValorProcedimentoSchema>
   ) => {
     setCarregando(true);
     try {
-      // Usar o tipo do campo tipo_cliente para o campo tipo
       const dadosParaEnviar = {
         ...values,
         tipo: values.tipo_cliente,
-        // Remover campos que não são enviados para a API
         convenio_id: undefined,
         tipo_cliente: undefined
       };
-      
       const response = await fetch("/api/valor-procedimento", {
         method: 'POST',
         headers: {
@@ -304,13 +247,10 @@ export default function ValorProcedimentos() {
         },
         body: JSON.stringify(dadosParaEnviar),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         toast.success("Valor de procedimento criado com sucesso");
         await carregarValorProcedimentos();
-        // Limpar o formulário
         form.reset({
           convenio_id: 0,
           tipo_cliente: "SOCIO",
@@ -318,7 +258,6 @@ export default function ValorProcedimentos() {
           procedimento_id: 0,
           valor: 0,
         });
-        // Limpar estados
         setConvenioSelecionado(null);
         setProcedimentoSelecionado(null);
         setTabelaSelecionado(null);
@@ -326,18 +265,15 @@ export default function ValorProcedimentos() {
         toast.error(data.error || "Erro ao criar valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao criar:", error);
       toast.error("Erro ao criar valor de procedimento");
     } finally {
       setCarregando(false);
     }
   };
-
   const handleDeleteValor = async (valorId: number) => {
     if (!confirm("Tem certeza que deseja deletar este valor de procedimento?")) {
       return;
     }
-    
     setCarregando(true);
     try {
       const response = await fetch(`/api/valor-procedimento?id=${valorId}`, {
@@ -347,9 +283,7 @@ export default function ValorProcedimentos() {
         },
         body: JSON.stringify({ status: "Inativo" }),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         toast.success(data.message || "Valor de procedimento deletado com sucesso");
         await carregarValorProcedimentos();
@@ -357,21 +291,17 @@ export default function ValorProcedimentos() {
         toast.error(data.error || "Erro ao deletar valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao deletar:", error);
       toast.error("Erro ao deletar valor de procedimento");
     } finally {
       setCarregando(false);
     }
   };
-
   const onSubmitUpdate = async (
     values: z.infer<typeof updateValorProcedimentoSchema>
   ) => {
     setCarregando(true);
     try {
       if (!valorProcedimentoSelecionado) return;
-      
-      // Preparar dados para atualização
       const updateData: {
         valor?: number;
         tipo?: string;
@@ -382,7 +312,6 @@ export default function ValorProcedimentos() {
       if (values.tipo_cliente !== undefined) updateData.tipo = values.tipo_cliente;
       if (values.tabela_faturamento_id !== undefined) updateData.tabela_faturamento_id = values.tabela_faturamento_id;
       if (values.procedimento_id !== undefined) updateData.procedimento_id = values.procedimento_id;
-      
       const response = await fetch(`/api/valor-procedimento?id=${valorProcedimentoSelecionado.id}`, {
         method: 'PATCH',
         headers: {
@@ -390,9 +319,7 @@ export default function ValorProcedimentos() {
         },
         body: JSON.stringify(updateData),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         toast.success(data.message || "Valor de procedimento atualizado com sucesso");
         await carregarValorProcedimentos();
@@ -401,7 +328,6 @@ export default function ValorProcedimentos() {
         toast.error(data.error || "Erro ao atualizar valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao atualizar:", error);
       toast.error("Erro ao atualizar valor de procedimento");
     } finally {
       setCarregando(false);
@@ -418,7 +344,6 @@ export default function ValorProcedimentos() {
       <h1 className="text-2xl font-bold mb-4 mt-5">
         Lista de Valor de Procedimentos
       </h1>
-
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-2 items-end">
@@ -433,7 +358,6 @@ export default function ValorProcedimentos() {
                       field.onChange(value);
                       const convenio = convenios.find((item) => item.id == +value);
                       setConvenioSelecionado(convenio || null);
-                      // Limpar procedimento selecionado quando convênio mudar
                       setProcedimentoSelecionado(null);
                       form.setValue("procedimento_id", 0);
                     }}
@@ -469,7 +393,6 @@ export default function ValorProcedimentos() {
                     onValueChange={(value) => {
                       field.onChange(value);
                       setTipoClienteSelecionado(value);
-                      // Limpar procedimento selecionado quando tipo mudar
                       setProcedimentoSelecionado(null);
                       form.setValue("procedimento_id", 0);
                     }}
@@ -564,7 +487,6 @@ export default function ValorProcedimentos() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="valor"
@@ -600,7 +522,7 @@ export default function ValorProcedimentos() {
           </div>
         </form>
       </Form>
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -649,8 +571,7 @@ export default function ValorProcedimentos() {
                     <TableCell>{formatValor(valorProcedimento.valor)}</TableCell>
                     <TableCell>{valorProcedimento.tipo}</TableCell>
                     <TableCell className="flex gap-3 justify-center">
-                      {/* ✅ Botão Editar com Tooltip */}
-
+                      {}
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -677,8 +598,7 @@ export default function ValorProcedimentos() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-                      {/* ✅ Botão Editar com Tooltip */}
-
+                      {}
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -708,7 +628,7 @@ export default function ValorProcedimentos() {
               </TableBody>
             </Table>
           )}
-          {/* Totalizador de ValorProcedimentos */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando{" "}
@@ -716,9 +636,8 @@ export default function ValorProcedimentos() {
               {totalValorProcedimentos} valores de procedimentos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -759,7 +678,6 @@ export default function ValorProcedimentos() {
           </div>
         </>
       )}
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <FormProvider {...formUpdate}>
           <DialogContent className="w-full max-w-2xl">
@@ -927,7 +845,6 @@ export default function ValorProcedimentos() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={formUpdate.control}
                   name="valor"
@@ -981,4 +898,4 @@ export default function ValorProcedimentos() {
       </Dialog>
     </div>
   );
-}
+}

@@ -1,14 +1,8 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -22,10 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//Helpers
 import { useRouter, useSearchParams } from "next/navigation";
-
 import {
   Select,
   SelectContent,
@@ -34,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createCaixaSchema } from "@/app/api/caixa/schema/formSchemaCaixa";
-
 export default function NovoCaixa() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -42,7 +32,6 @@ export default function NovoCaixa() {
     { value: "CAIXA", label: "CAIXA" },
     { value: "BANCO", label: "BANCO" },
   ];
-
   const form = useForm({
     resolver: zodResolver(createCaixaSchema),
     defaultValues: {
@@ -51,7 +40,6 @@ export default function NovoCaixa() {
       tipo: "",
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createCaixaSchema>) => {
     setLoading(true);
     try {
@@ -62,19 +50,14 @@ export default function NovoCaixa() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao salvar caixa!");
       }
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Caixa salvo com sucesso!");
-
       router.push(`/painel/caixas?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao salvar caixa!";
@@ -83,7 +66,6 @@ export default function NovoCaixa() {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -94,11 +76,10 @@ export default function NovoCaixa() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">Novo Caixa</h1>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {" "}
-          {/* Campos do fomulário*/}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <FormField
               control={form.control}
@@ -140,10 +121,7 @@ export default function NovoCaixa() {
                 </FormItem>
               )}
             />
-            
           </div>
-
-
           <FormField
               control={form.control}
               name="tipo"
@@ -153,7 +131,6 @@ export default function NovoCaixa() {
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
-                    
                   >
                     <FormControl
                       className={
@@ -178,7 +155,7 @@ export default function NovoCaixa() {
                 </FormItem>
               )}
             />
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -198,4 +175,4 @@ export default function NovoCaixa() {
       </Form>
     </div>
   );
-}
+}

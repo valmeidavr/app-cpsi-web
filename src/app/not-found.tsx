@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/card";
 import { FileQuestion, Home, MoveLeft } from "lucide-react";
 import { cookies } from "next/headers";
-
 export default async function NotFound() {
   const cookiesStore = await cookies(); 
   const token = cookiesStore.get("accessToken")?.value;
@@ -57,4 +56,4 @@ export default async function NotFound() {
       </p>
     </div>
   );
-}
+}

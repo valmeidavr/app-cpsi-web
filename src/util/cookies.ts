@@ -1,13 +1,11 @@
 import * as cookie from "cookie";
 import Cookies from "js-cookie";
-
 export function parseCookies(req?: { headers?: { cookie?: string } }) {
   if (!req || !req.headers) {
     return {};
   }
   return cookie.parse(req.headers.cookie || "");
 }
-
 export function setCookie(
   key: string,
   value: string | object,
@@ -22,19 +20,13 @@ export function setCookie(
     expires: 1, // Expira em 1 dia
   });
 }
-
 export function getCookie(key: string) {
-  // Verificar se estamos no lado do cliente
   if (typeof window !== "undefined") {
     return Cookies.get(key);
   }
-  
-  // No lado do servidor, retornar null
-  // O token será obtido de outras formas no servidor
   return null;
 }
-
 export function delCookie(): void {
   Cookies.remove("accessToken", { path: "/" });
   Cookies.remove("userGroups", { path: "/" });
-}
+}

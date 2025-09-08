@@ -1,19 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
-
-// GET - Buscar lancamento por ID
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
     const [rows] = await accessPool.execute(
       'SELECT * FROM lancamentos WHERE id = ?',
       [id]
     );
-
     if ((rows as Array<{
       id: number;
       descricao: string;
@@ -33,7 +29,6 @@ export async function GET(
         { status: 404 }
       );
     }
-
     const lancamento = (rows as Array<{
       id: number;
       descricao: string;
@@ -48,18 +43,14 @@ export async function GET(
       createdAt: Date;
       updatedAt: Date;
     }>)[0];
-
     return NextResponse.json(lancamento);
   } catch (error) {
-    console.error('Erro ao buscar lancamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PUT - Atualizar lancamento
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -67,8 +58,6 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    // Atualizar lancamento
     await accessPool.execute(
       `UPDATE lancamentos SET 
         descricao = ?, valor = ?, data_lancamento = ?, forma_pagamento = ?, 
@@ -79,18 +68,14 @@ export async function PUT(
         body.status_pagamento, body.clientes_id, body.plano_contas_id, body.caixas_id, body.usuario_id, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar lancamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PATCH - Atualizar status do lançamento
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -98,32 +83,25 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    // Verificar se o lançamento existe
     const [existingRows] = await accessPool.execute(
       'SELECT id FROM lancamentos WHERE id = ?',
       [id]
     );
-
     if ((existingRows as Array<{ id: number }>).length === 0) {
       return NextResponse.json(
         { error: 'Lançamento não encontrado' },
         { status: 404 }
       );
     }
-
-    // Atualizar apenas o status
     await accessPool.execute(
       'UPDATE lancamentos SET status = ? WHERE id = ?',
       [body.status, id]
     );
-
     return NextResponse.json({ 
       success: true, 
       message: `Lançamento ${body.status === 'Ativo' ? 'ativado' : 'desativado'} com sucesso` 
     });
   } catch (error) {
-    console.error('Erro ao atualizar status do lançamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

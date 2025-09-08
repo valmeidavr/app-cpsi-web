@@ -1,10 +1,6 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
-
-//Components
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
@@ -29,12 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-//API
-// Removido import http - usando fetch direto
-//Types
 import { Especialidade } from "@/app/types/Especialidade";
 import { Procedimento } from "@/app/types/Procedimento";
-
 export default function Procedimentos() {
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -55,40 +47,31 @@ export default function Procedimentos() {
         limit: '5',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/procedimentos?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setProcedimentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalProcedimentos(data.pagination.total);
       } else {
-        console.error("Erro ao buscar procedimentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar procedimentos:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const fetchEspecialidades = async () => {
     try {
       const response = await fetch("/api/especialidades");
-      
       if (!response.ok) {
         throw new Error("Erro ao carregar especialidades");
       }
-      
       const data = await response.json();
       setEspecialidades(data.data);
     } catch (error) {
-      console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar lista de especialidades");
     }
   };
-
   const alterarStatusProcedimento = async () => {
     if (!procedimentoSelecionado) return;
     setLoadingInativar(true);
@@ -116,19 +99,16 @@ export default function Procedimentos() {
         : toast.error(`Status do procedimento alterado para ${novoStatus}!`);
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao alterar status do procedimento:", error);
     } finally {
       setLoadingInativar(false);
     }
   };
-
   useEffect(() => {
     fetchEspecialidades();
     carregarProcedimentos();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -137,12 +117,10 @@ export default function Procedimentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarProcedimentos();
   };
-
   return (
     <>
       <Breadcrumb
@@ -152,8 +130,7 @@ export default function Procedimentos() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Procedimentos</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Procedimento */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -168,8 +145,7 @@ export default function Procedimentos() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Procedimento */}
+        {}
         <Button asChild>
           <Link href="/painel/procedimentos/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -177,8 +153,7 @@ export default function Procedimentos() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -186,7 +161,7 @@ export default function Procedimentos() {
         </div>
       ) : (
         <>
-          {/* Tabela de Procedimentos */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -227,7 +202,7 @@ export default function Procedimentos() {
                     </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
+                    {}
                     {procedimento.status === "Ativo" && (
                       <Tooltip.Provider>
                         <Tooltip.Root>
@@ -251,7 +226,7 @@ export default function Procedimentos() {
                         </Tooltip.Root>
                       </Tooltip.Provider>
                     )}
-                    {/* ✅ Botão Ativar/Inativar com Tooltip */}
+                    {}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -289,16 +264,15 @@ export default function Procedimentos() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Procedimentos */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalProcedimentos)} de{" "}
               {totalProcedimentos} procedimentos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -339,8 +313,7 @@ export default function Procedimentos() {
           </div>
         </>
       )}
-
-      {/* ✅ Diálogo de Confirmação */}
+      {}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -379,4 +352,4 @@ export default function Procedimentos() {
       </Dialog>
     </>
   );
-}
+}

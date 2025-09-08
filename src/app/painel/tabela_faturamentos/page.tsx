@@ -1,12 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { useRouter } from "next/navigation";
-
-//Components
 import {
   Table,
   TableBody,
@@ -31,18 +27,11 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-//API
 import { http } from "@/util/http";
 import { createTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
-//Helpers
-// Removido import http - usando fetch direto
-//Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-
 export default function TabelaFaturamentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
     TabelaFaturamento[]
@@ -53,7 +42,6 @@ export default function TabelaFaturamentos() {
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
-
   const carregarTabelaFaturamentos = async () => {
     setCarregando(true);
     try {
@@ -62,31 +50,24 @@ export default function TabelaFaturamentos() {
         limit: '5',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/tabela_faturamentos?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setTabelaFaturamentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalTabelaFaturamentos(data.pagination.total);
       } else {
-        console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar tabelaFaturamentos:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarTabelaFaturamentos();
   };
-
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(createTabelaFaturamentoSchema),
@@ -95,7 +76,6 @@ export default function TabelaFaturamentos() {
       nome: "",
     },
   });
-
   const onSubmit = async (
     values: z.infer<typeof createTabelaFaturamentoSchema>
   ) => {
@@ -108,21 +88,17 @@ export default function TabelaFaturamentos() {
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erro ao salvar Tabela";
-
-      // Exibindo toast de erro
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
     setLoading(false);
   };
-
   useEffect(() => {
     carregarTabelaFaturamentos();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -131,11 +107,9 @@ export default function TabelaFaturamentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const toggleForm = () => {
     setIsFormVisible(!isFormVisible);
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -144,8 +118,7 @@ export default function TabelaFaturamentos() {
           { label: "Tabelas Faturamentos" },
         ]}
       />
-
-      {/* Formulário condicional */}
+      {}
       {isFormVisible && (
         <div className="space-y-4 animate-fade-in mb-8">
           <div className="border-b">
@@ -176,7 +149,6 @@ export default function TabelaFaturamentos() {
                       </FormItem>
                     )}
                   />
-
                   <Button
                     type="submit"
                     disabled={loading}
@@ -198,10 +170,8 @@ export default function TabelaFaturamentos() {
           </div>
         </div>
       )}
-
       <h1 className="text-2xl font-bold mb-4 mt-5">Tabelas Faturamentos</h1>
-
-      {/* Barra de Pesquisa e Botão Nova Tabela */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -216,7 +186,6 @@ export default function TabelaFaturamentos() {
             Buscar
           </Button>
         </div>
-
         <div className="flex justify-start w-fit">
           <Button onClick={toggleForm} className="flex items-center gap-2">
             {isFormVisible ? (
@@ -233,8 +202,7 @@ export default function TabelaFaturamentos() {
           </Button>
         </div>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -242,7 +210,7 @@ export default function TabelaFaturamentos() {
         </div>
       ) : (
         <>
-          {/* Tabela de TabelaFaturamentos */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -264,8 +232,7 @@ export default function TabelaFaturamentos() {
                     </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
-
+                    {}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -292,7 +259,7 @@ export default function TabelaFaturamentos() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Tabelas */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando{" "}
@@ -300,9 +267,8 @@ export default function TabelaFaturamentos() {
               {totalTabelaFaturamentos} tabelas
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -345,4 +311,4 @@ export default function TabelaFaturamentos() {
       )}
     </div>
   );
-}
+}

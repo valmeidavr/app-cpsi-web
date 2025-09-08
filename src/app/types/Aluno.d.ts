@@ -1,6 +1,5 @@
 import { Cliente } from "./Cliente";
 import { Turma } from "./Turma";
-
 export type Aluno = {
   id: number;
   turma_id: number;
@@ -10,4 +9,4 @@ export type Aluno = {
   updatedAt: string;
   cliente: Cliente;
   turma: Turma;
-};
+};

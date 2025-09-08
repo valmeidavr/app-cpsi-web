@@ -1,12 +1,9 @@
 'use client'
-
 import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-
 export default function ProtectedExamplePage() {
   const { session, isAuthenticated, isAdmin, logout } = useAuth()
-
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -21,7 +18,6 @@ export default function ProtectedExamplePage() {
       </div>
     )
   }
-
   return (
     <div className="container mx-auto p-6">
       <Card>
@@ -42,7 +38,6 @@ export default function ProtectedExamplePage() {
               <p><strong>É Admin:</strong> {isAdmin ? 'Sim' : 'Não'}</p>
             </div>
           </div>
-          
           {isAdmin && (
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <h4 className="font-semibold text-blue-800">Área de Administrador</h4>
@@ -51,7 +46,6 @@ export default function ProtectedExamplePage() {
               </p>
             </div>
           )}
-          
           <div className="flex gap-4">
             <Button onClick={logout} variant="outline">
               Sair

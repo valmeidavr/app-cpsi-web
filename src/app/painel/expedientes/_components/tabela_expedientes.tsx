@@ -1,5 +1,4 @@
 "use client";
-
 import { Expediente } from "@/app/types/Expediente";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
@@ -50,12 +49,10 @@ import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 import { updateExpedienteSchema } from "@/app/api/expediente/schema/formSchemaExpedientes";
-
 import { formatDate } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { Agenda } from "@/app/types/Agenda";
 import { formatDateAsUTC } from "@/app/helpers/format";
-
 interface TabelaExpedienteProps {
   expedientes: Expediente[];
   CarregandoDadosExpediente: boolean;
@@ -64,7 +61,6 @@ interface TabelaExpedienteProps {
   prestador: Prestador | null;
   unidade: Unidade | null;
 }
-
 const TabelaExpediente = ({
   expedientes,
   CarregandoDadosExpediente,
@@ -77,8 +73,6 @@ const TabelaExpediente = ({
     useState<Expediente | null>(null);
   const [loading, setloading] = useState<boolean>(false);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-
-  //Validação dos campos do formulário
   const form = useForm({
     resolver: zodResolver(updateExpedienteSchema),
     mode: "onChange",
@@ -92,20 +86,16 @@ const TabelaExpediente = ({
       alocacao_id: 0,
     },
   });
-
   const excluirExpediente = async (ExpedienteId: number) => {
     try {
       setloading(true);
-
       const response = await fetch(`/api/expediente?id=${ExpedienteId}`, {
         method: "DELETE",
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao excluir expediente");
       }
-
       toast.success("Expediente excluído com sucesso!");
       await fetchExpedientes();
     } catch (error) {
@@ -115,12 +105,10 @@ const TabelaExpediente = ({
       setIsDeleteModalOpen(false);
     }
   };
-
   const handleOpenUpdateModal = (expediente: Expediente) => {
     setExpedienteSelecionado(expediente);
     const dtinicioFormatada = formatDate(expediente.dtinicio, "yyyy-MM-dd");
     const dtfinalFormatada = formatDate(expediente.dtfinal, "yyyy-MM-dd");
-
     form.reset({
       dtinicio: dtinicioFormatada,
       dtfinal: dtfinalFormatada,
@@ -132,13 +120,10 @@ const TabelaExpediente = ({
     });
     setIsUpdateModalOpen(true);
   };
-
   const onSubmit = async (values: z.infer<typeof updateExpedienteSchema>) => {
     if (!expedienteSelecionado) return;
-
     try {
       setloading(true);
-      
       const response = await fetch(`/api/expediente?id=${expedienteSelecionado.id}`, {
         method: "PUT",
         headers: {
@@ -146,12 +131,10 @@ const TabelaExpediente = ({
         },
         body: JSON.stringify(values),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao atualizar expediente");
       }
-
       await fetchExpedientes();
       toast.success("Expediente atualizado com sucesso!");
       setIsUpdateModalOpen(false);
@@ -161,7 +144,6 @@ const TabelaExpediente = ({
       setloading(false);
     }
   };
-
   return (
     <>
       <Table className="text-xs min-w-full">
@@ -207,7 +189,6 @@ const TabelaExpediente = ({
                       <p><strong>Especialidade:</strong> {row.especialidade_nome || 'N/A'}</p>
                     </div>
                   </TableCell>
-
                   <TableCell className="flex justify-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -217,7 +198,7 @@ const TabelaExpediente = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="p-2">
-                        {/* AJUSTE: Usando a nova função handleOpenUpdateModal */}
+                        {}
                         <DropdownMenuItem
                           className="flex items-center gap-2 cursor-pointer"
                           onSelect={() => handleOpenUpdateModal(row)}
@@ -255,8 +236,7 @@ const TabelaExpediente = ({
           </TableBody>
         )}
       </Table>
-
-      {/* MODAL DE DELEÇÃO (AJUSTADO) */}
+      {}
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -285,7 +265,7 @@ const TabelaExpediente = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      {/* MODAL DE ATUALIZAÇÃO (CORRIGIDO) */}
+      {}
       <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -338,7 +318,6 @@ const TabelaExpediente = ({
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="dtfinal"
@@ -408,7 +387,6 @@ const TabelaExpediente = ({
                   )}
                 />
               </div>
-
               <DialogFooter className="pt-4">
                 <Button
                   type="button"
@@ -434,5 +412,4 @@ const TabelaExpediente = ({
     </>
   );
 };
-
-export default TabelaExpediente;
+export default TabelaExpediente;

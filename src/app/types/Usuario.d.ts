@@ -7,19 +7,16 @@ export type SistemaComGrupos = {
     sistemaId: number;
   }[];
 };
-
 export type Sistema = {
   id: number;
   nome: string;
   nivel?: string;
 };
-
 export type Grupo = {
   id: number;
   nome: string;
   sistema: Sistema;
 };
-
 export type Usuario = {
   id?: number;
   login: string;
@@ -28,5 +25,4 @@ export type Usuario = {
   status?: string;
   sistemas?: Sistema[];
   grupos?: string[];
-};
-
+};

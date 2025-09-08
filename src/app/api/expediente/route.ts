@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createExpedienteSchema, updateExpedienteSchema } from "./schema/formSchemaExpedientes";
-
 export type CreateExpedienteDTO = z.infer<typeof createExpedienteSchema>;
 export type UpdateExpedienteDTO = z.infer<typeof updateExpedienteSchema>;
-
-// GET - Listar expedientes com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,7 +11,6 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const alocacao_id = searchParams.get('alocacao_id');
-
     let query = `
       SELECT 
         e.id,
@@ -40,31 +36,18 @@ export async function GET(request: NextRequest) {
       LEFT JOIN prestadores p ON a.prestador_id = p.id
       WHERE 1=1
     `;
-    
-    // Debug: log da query construída
-    console.log("Query construída:", query);
     const params: (string | number)[] = [];
-
     if (search) {
       query += ' AND (e.dtinicio LIKE ? OR e.dtfinal LIKE ? OR e.semana LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     if (alocacao_id) {
       query += ' AND e.alocacao_id = ?';
       params.push(parseInt(alocacao_id));
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY u.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
-    // Parâmetros de paginação inseridos diretamente na query;
-
     const expedienteRows = await executeWithRetry(accessPool, query, params);
-    
-    // Debug: verificar dados retornados
-    console.log("🔍 Query executada:", query);
-    console.log("🔍 Parâmetros:", params);
     console.log("✅ Expedientes encontrados:", (expedienteRows as Array<{
       id: number;
       dtinicio: string;
@@ -89,33 +72,22 @@ export async function GET(request: NextRequest) {
       createdAt: Date;
       updatedAt: Date;
     }>)?.[0]);
-
-    // Buscar total de registros para paginação
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM expedientes e
       WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
-
     if (search) {
       countQuery += ' AND (e.dtinicio LIKE ? OR e.dtfinal LIKE ? OR e.semana LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     if (alocacao_id) {
       countQuery += ' AND e.alocacao_id = ?';
       countParams.push(parseInt(alocacao_id));
     }
-
     const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-    
-    // Debug: verificar contagem
-    console.log("🔍 Query de contagem:", countQuery);
-    console.log("🔍 Parâmetros de contagem:", countParams);
-    console.log("✅ Total de expedientes:", total);
-
     return NextResponse.json({
       data: expedienteRows,
       pagination: {
@@ -126,32 +98,23 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar expedientes:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar expediente
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createExpedienteSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    console.log("🔍 Criando expediente:", payload);
-
-    // 1. Inserir expediente
     const expedienteResult = await executeWithRetry(accessPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
@@ -162,11 +125,7 @@ export async function POST(request: NextRequest) {
         payload.intervalo, payload.semana, payload.alocacao_id
       ]
     );
-
     const expedienteId = (expedienteResult as { insertId: number }).insertId;
-    console.log("✅ Expediente criado com ID:", expedienteId);
-
-    // 2. Buscar dados da alocação
     const alocacaoRows = await executeWithRetry(accessPool,
       `SELECT 
         a.unidade_id,
@@ -176,7 +135,6 @@ export async function POST(request: NextRequest) {
        WHERE a.id = ?`,
       [payload.alocacao_id]
     );
-
     if (!alocacaoRows || (alocacaoRows as Array<{
       unidade_id: number;
       especialidade_id: number;
@@ -184,15 +142,11 @@ export async function POST(request: NextRequest) {
     }>).length === 0) {
       throw new Error(`Alocação com ID ${payload.alocacao_id} não encontrada`);
     }
-
     const alocacao = (alocacaoRows as Array<{
       unidade_id: number;
       especialidade_id: number;
       prestador_id: number;
     }>)[0];
-    console.log("✅ Dados da alocação:", alocacao);
-
-    // 3. Mapear dias da semana
     const diasDaSemana: Record<string, number> = {
       "Domingo": 0,
       "Segunda": 1,
@@ -202,44 +156,29 @@ export async function POST(request: NextRequest) {
       "Sexta": 5,
       "Sábado": 6
     };
-
     if (!payload.semana || !(payload.semana in diasDaSemana)) {
       throw new Error(`Dia da semana inválido: ${payload.semana}`);
     }
-
     const semanaIndex = diasDaSemana[payload.semana];
-    console.log("✅ Índice da semana:", semanaIndex);
-
-    // 4. Gerar datas válidas
     const dataInicial = new Date(payload.dtinicio);
     const dataFinal = new Date(payload.dtfinal);
-
-    // Validar se as datas são válidas
     if (isNaN(dataInicial.getTime()) || isNaN(dataFinal.getTime())) {
       return NextResponse.json(
         { error: "Datas inválidas fornecidas" },
         { status: 400 }
       );
     }
-
-    // Gerar datas entre dataInicial e dataFinal
     const datasValidas: Date[] = [];
     const dataAtual = new Date(dataInicial);
-    
     while (dataAtual <= dataFinal) {
       datasValidas.push(new Date(dataAtual));
       dataAtual.setDate(dataAtual.getDate() + 1);
     }
-
     if (datasValidas.length === 0) {
       throw new Error(
         `Não existe nenhuma data correspondente à semana "${payload.semana}" entre ${payload.dtinicio} e ${payload.dtfinal}.`
       );
     }
-
-    console.log("✅ Datas válidas encontradas:", datasValidas.length);
-
-    // 5. Gerar agendamentos
     const agendasToCreate: Array<{
       dtagenda: Date;
       situacao: string;
@@ -250,21 +189,16 @@ export async function POST(request: NextRequest) {
       tipo: string;
     }> = [];
     const intervaloMin = parseInt(payload.intervalo, 10);
-
     for (const data of datasValidas) {
       const [hStart, mStart] = payload.hinicio.split(':').map(Number);
       const [hEnd, mEnd] = payload.hfinal.split(':').map(Number);
-
       let startMinutes = hStart * 60 + mStart;
       const endMinutes = hEnd * 60 + mEnd;
-
       while (startMinutes + intervaloMin <= endMinutes) {
         const hora = Math.floor(startMinutes / 60);
         const minuto = startMinutes % 60;
-
         const agendaDate = new Date(data);
         agendaDate.setHours(hora, minuto, 0, 0);
-
         agendasToCreate.push({
           dtagenda: agendaDate,
           situacao: "LIVRE",
@@ -274,14 +208,9 @@ export async function POST(request: NextRequest) {
           especialidade_id: alocacao.especialidade_id,
           tipo: "PROCEDIMENTO"
         });
-
         startMinutes += intervaloMin;
       }
     }
-
-    console.log("✅ Agendamentos a serem criados:", agendasToCreate.length);
-
-    // 6. Inserir agendamentos em lote
     if (agendasToCreate.length > 0) {
       const values = agendasToCreate.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
       const params = agendasToCreate.flatMap(agenda => [
@@ -293,7 +222,6 @@ export async function POST(request: NextRequest) {
         agenda.especialidade_id,
         agenda.tipo
       ]);
-
       await executeWithRetry(accessPool,
         `INSERT INTO agendas (
           dtagenda, situacao, expediente_id, prestador_id, 
@@ -301,10 +229,7 @@ export async function POST(request: NextRequest) {
         ) VALUES ${values}`,
         params
       );
-
-      console.log("✅ Agendamentos criados com sucesso");
     }
-
     return NextResponse.json({ 
       success: true, 
       expedienteId,
@@ -312,7 +237,6 @@ export async function POST(request: NextRequest) {
       message: 'Expediente e agendamentos criados com sucesso'
     });
   } catch (error) {
-    console.error('❌ Erro ao criar expediente:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -325,33 +249,25 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// PUT - Atualizar expediente
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do expediente é obrigatório' },
         { status: 400 }
       );
     }
-
     const body = await request.json();
     const validatedData = updateExpedienteSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Atualizar expediente
     await executeWithRetry(accessPool,
       `UPDATE expedientes SET 
         dtinicio = ?, dtfinal = ?, hinicio = ?, hfinal = ?,
@@ -362,10 +278,8 @@ export async function PUT(request: NextRequest) {
         payload.intervalo, payload.semana, payload.alocacao_id, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar expediente:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -378,29 +292,22 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
-// DELETE - Excluir expediente
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do expediente é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
     await executeWithRetry(accessPool,
       'UPDATE expedientes SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao excluir expediente:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

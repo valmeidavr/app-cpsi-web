@@ -1,14 +1,9 @@
 "use client";
-
-//React
 import { use, useEffect, useMemo, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-//Zod
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-//Components
 import {
   Form,
   FormControl,
@@ -18,10 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-//API
-
-//Helpers
-// Removido import http - usando fetch direto
 import {
   Select,
   SelectContent,
@@ -32,7 +23,6 @@ import {
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Especialidade } from "@/app/types/Especialidade";
-
 import { Alocacao } from "@/app/types/Alocacao";
 import { Button } from "@/components/ui/button";
 import { SaveIcon } from "lucide-react";
@@ -45,15 +35,12 @@ export default function AlocacaoPage() {
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
-
   const [unidade, setUnidade] = useState<Unidade | null>(null);
   const [prestador, setPrestador] = useState<Prestador | null>(null);
   const [especialidade, setEspecialidade] = useState<Especialidade | null>(
     null
   );
   const [alocacoes, setAlocacoes] = useState<Alocacao[]>([]);
-
-  //Buscando dados estrangerios
   useEffect(() => {
     const carregarDados = async () => {
       try {
@@ -64,16 +51,12 @@ export default function AlocacaoPage() {
           fetchUnidades(),
         ]);
       } catch (error) {
-        console.error("Erro ao carregar dados:", error);
       } finally {
         setCarregando(false);
       }
     };
-
     carregarDados();
   }, []);
-
-  //Validação dos campos do formulário
   const form = useForm({
     resolver: zodResolver(createAlocacaoSchema),
     mode: "onChange",
@@ -83,7 +66,6 @@ export default function AlocacaoPage() {
       especialidade_id: 0,
     },
   });
-
   useEffect(() => {
     fetchAlocacoes();
   }, [prestador, unidade, especialidade]);
@@ -95,76 +77,59 @@ export default function AlocacaoPage() {
       if (prestador) params.append('prestadorId', prestador.id.toString());
       if (especialidade) params.append('especialidade_id', especialidade.id.toString());
       if (unidade) params.append('unidadeId', unidade.id.toString());
-      
       const response = await fetch(`/api/alocacoes?${params}`);
       const data = await response.json();
-      
       if (response.ok) {
         setAlocacoes(data.data);
       } else {
-        console.error("Erro ao carregar alocações:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar dados de alocações: ", error);
     } finally {
       setCarregandoDadosAlocacao(false);
     }
   };
-
   const fetchPrestadores = async () => {
     try {
       const response = await fetch("/api/prestadores");
       const data = await response.json();
-      
       if (response.ok) {
         setPrestadores(data.data);
       } else {
-        console.error("Erro ao carregar prestadores:", data.error);
         toast.error("Erro ao carregar dados dos Prestadores");
       }
     } catch (error) {
-      console.error("Erro ao carregar prestadores:", error);
       toast.error("Erro ao carregar dados dos Prestadores");
     }
   };
-  
   const fetchUnidades = async () => {
     try {
       const response = await fetch("/api/unidades");
       const data = await response.json();
-      
       if (response.ok) {
         setUnidades(data.data);
       } else {
-        console.error("Erro ao carregar unidades:", data.error);
         toast.error("Erro ao carregar dados das Unidades");
       }
     } catch (error) {
-      console.error("Erro ao carregar unidades:", error);
       toast.error("Erro ao carregar dados das Unidades");
     }
   };
-  
   const fetchEspecialidades = async () => {
     try {
       const response = await fetch("/api/especialidades");
       const data = await response.json();
-      
       if (response.ok) {
         setEspecialidades(data.data);
       } else {
-        console.error("Erro ao carregar especialidades:", data.error);
         toast.error("Erro ao carregar dados das Especialidades");
       }
     } catch (error) {
-      console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar dados das Especialidades");
     }
   };
   const onSubmit = async (values: z.infer<typeof createAlocacaoSchema>) => {
     try {
       setCarregandoDadosAlocacao(true);
-      
       const response = await fetch("/api/alocacoes", {
         method: 'POST',
         headers: {
@@ -172,16 +137,13 @@ export default function AlocacaoPage() {
         },
         body: JSON.stringify(values),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao criar alocação");
       }
-
       await fetchAlocacoes();
       toast.success("Alocação criada com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar alocação:", error);
       toast.error(error instanceof Error ? error.message : "Não foi possível criar a Alocação!");
     } finally {
       setCarregandoDadosAlocacao(false);
@@ -344,7 +306,6 @@ export default function AlocacaoPage() {
                   </FormItem>
                 )}
               />
-
               <Button type="submit" variant="default">
                 <SaveIcon /> Adicionar
               </Button>
@@ -364,4 +325,4 @@ export default function AlocacaoPage() {
       </div>
     </div>
   );
-}
+}

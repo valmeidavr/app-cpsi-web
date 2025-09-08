@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 export const createAgendaSchema = z.object({
   dtagenda: z.string(),
   horario: z.string({ required_error: "Horário é obrigatório" }), // Campo para seleção de horário no frontend
@@ -39,5 +38,4 @@ export const createAgendaSchema = z.object({
     .int({ message: "Especialidade deve ser um número inteiro" }),
   tipo: z.enum(["PROCEDIMENTO", "ENCAIXE"]),
 });
-
-export const updateAgendaSchema = createAgendaSchema.partial();
+export const updateAgendaSchema = createAgendaSchema.partial();

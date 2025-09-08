@@ -1,12 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
-
-//Components
 import {
   Table,
   TableBody,
@@ -21,15 +17,8 @@ import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
-
-//Helpers
-// Removido import http - usando fetch direto
-
-//Types
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import { Convenio } from "@/app/types/Convenios";
-
-// ✅ Definir o tipo convenio
 export default function Convenios() {
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -40,7 +29,6 @@ export default function Convenios() {
   const [tabelaFaturamentos, setTabelaFaturamento] = useState<
     TabelaFaturamento[]
   >([]);
-
   const carregarConvenios = async () => {
     setCarregando(true);
     try {
@@ -49,46 +37,36 @@ export default function Convenios() {
         limit: '5',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/convenios?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setConvenios(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalconvenios(data.pagination.total);
       } else {
-        console.error("Erro ao buscar convênios:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar convenios:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const fetchTabelaFaturamento = async () => {
     try {
       const response = await fetch("/api/tabela_faturamentos");
       const data = await response.json();
-      
       if (response.ok) {
         setTabelaFaturamento(data.data);
       } else {
-        console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar tabela de faturamentos:", error);
     }
   };
-
   useEffect(() => {
     fetchTabelaFaturamento();
     carregarConvenios();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -97,12 +75,10 @@ export default function Convenios() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarConvenios();
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -112,8 +88,7 @@ export default function Convenios() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Convênios</h1>
-
-      {/* Barra de Pesquisa e Botão Nova convenio */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -128,8 +103,7 @@ export default function Convenios() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Cliente */}
+        {}
         <Button asChild>
           <Link href="/painel/convenios/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -137,8 +111,7 @@ export default function Convenios() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -146,7 +119,7 @@ export default function Convenios() {
         </div>
       ) : (
         <>
-          {/* Tabela de convenios */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -184,7 +157,6 @@ export default function Convenios() {
                     <Badge className="bg-green-600 text-white">
                       {convenio.desconto}%
                     </Badge>
-                    
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
@@ -213,16 +185,15 @@ export default function Convenios() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de convenios */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalconvenios)} de{" "}
               {totalconvenios} convênios
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -265,4 +236,4 @@ export default function Convenios() {
       )}
     </div>
   );
-}
+}

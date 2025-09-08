@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
@@ -14,8 +13,6 @@ import { toast } from 'sonner'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-
-// Schema de validação
 const createUsuarioSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
@@ -26,12 +23,10 @@ const createUsuarioSchema = z.object({
   message: 'As senhas não coincidem',
   path: ['confirmedsenha']
 })
-
 interface Grupo {
   id: number
   nome: string
 }
-
 export default function UsuarioRegistrationForm() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -39,7 +34,6 @@ export default function UsuarioRegistrationForm() {
   const [grupos, setGrupos] = useState<Grupo[]>([])
   const [loadingGrupos, setLoadingGrupos] = useState(true)
   const router = useRouter()
-
   const form = useForm({
     resolver: zodResolver(createUsuarioSchema),
     defaultValues: {
@@ -50,8 +44,6 @@ export default function UsuarioRegistrationForm() {
       grupos: []
     }
   })
-
-  // Carregar grupos disponíveis
   useEffect(() => {
     const carregarGrupos = async () => {
       try {
@@ -67,10 +59,8 @@ export default function UsuarioRegistrationForm() {
         setLoadingGrupos(false)
       }
     }
-
     carregarGrupos()
   }, [])
-
   const onSubmit = async (values: z.infer<typeof createUsuarioSchema>) => {
     setLoading(true)
     try {
@@ -81,7 +71,6 @@ export default function UsuarioRegistrationForm() {
         },
         body: JSON.stringify(values),
       })
-
       if (response.ok) {
         toast.success('Usuário criado com sucesso!')
         router.push('/painel/usuarios?type=success&message=Usuário criado com sucesso!')
@@ -96,7 +85,6 @@ export default function UsuarioRegistrationForm() {
       setLoading(false)
     }
   }
-
   return (
     <div className="container mx-auto p-6">
       <Breadcrumb
@@ -106,7 +94,6 @@ export default function UsuarioRegistrationForm() {
           { label: "Novo Usuário" },
         ]}
       />
-
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Novo Usuário</CardTitle>
@@ -117,7 +104,7 @@ export default function UsuarioRegistrationForm() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Nome */}
+              {}
               <FormField
                 control={form.control}
                 name="nome"
@@ -134,8 +121,7 @@ export default function UsuarioRegistrationForm() {
                   </FormItem>
                 )}
               />
-
-              {/* Email */}
+              {}
               <FormField
                 control={form.control}
                 name="email"
@@ -153,8 +139,7 @@ export default function UsuarioRegistrationForm() {
                   </FormItem>
                 )}
               />
-
-              {/* Senha */}
+              {}
               <FormField
                 control={form.control}
                 name="senha"
@@ -187,8 +172,7 @@ export default function UsuarioRegistrationForm() {
                   </FormItem>
                 )}
               />
-
-              {/* Confirmar Senha */}
+              {}
               <FormField
                 control={form.control}
                 name="confirmedsenha"
@@ -221,8 +205,7 @@ export default function UsuarioRegistrationForm() {
                   </FormItem>
                 )}
               />
-
-              {/* Seleção de Grupos */}
+              {}
               <FormField
                 control={form.control}
                 name="grupos"
@@ -260,8 +243,7 @@ export default function UsuarioRegistrationForm() {
                   </FormItem>
                 )}
               />
-
-              {/* Botões */}
+              {}
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
@@ -291,4 +273,4 @@ export default function UsuarioRegistrationForm() {
       </Card>
     </div>
   )
-}
+}

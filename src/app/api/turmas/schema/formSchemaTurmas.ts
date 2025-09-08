@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 export const createTurmaSchema = z.object({
   nome: z.string().min(3, "O nome deve ter pelo menos 3 caracteres"),
   horario_inicio: z.string().min(1, "Horário de início é obrigatório"),
@@ -17,5 +16,4 @@ export const createTurmaSchema = z.object({
     .transform((val) => Number(val))
     .refine((val) => val > 0, { message: "Prestador é obrigatório" }),
 });
-
 export const updateTurmaSchema = createTurmaSchema.partial();

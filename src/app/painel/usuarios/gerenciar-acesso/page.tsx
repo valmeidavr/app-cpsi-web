@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,25 +8,21 @@ import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Loader2, Save, Users } from 'lucide-react'
-
 interface Sistema {
   id: number
   nome: string
 }
-
 interface UsuarioSistema {
   [key: number]: {
     nivel: string
     sistema_nome: string
   }
 }
-
 interface Usuario {
   login: string
   nome: string
   email: string
 }
-
 export default function GerenciarAcessoPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [sistemas, setSistemas] = useState<Sistema[]>([])
@@ -37,28 +32,18 @@ export default function GerenciarAcessoPage() {
   const [saving, setSaving] = useState(false)
   const [searchValue, setSearchValue] = useState('')
   const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(null)
-
-  // Estados para controle dos checkboxes e níveis
   const [accessConfig, setAccessConfig] = useState<{[key: number]: {hasAccess: boolean, nivel: string}}>({})
-
   useEffect(() => {
     fetchSistemas()
-    // Não carrega usuários no início
   }, [])
-
-  // Função para buscar usuários quando digitar
   const handleSearchChange = (value: string) => {
     console.log('🔍 Debug - handleSearchChange chamado com:', value, 'length:', value.length)
     setSearchValue(value)
-    
-    // Limpar timeout anterior
     if (searchTimeout) {
       clearTimeout(searchTimeout)
       console.log('🔍 Debug - Timeout anterior limpo')
     }
-    
     if (value.length >= 3) {
-      // Debounce de 300ms
       console.log('🔍 Debug - Configurando timeout para buscar usuários')
       const timeout = setTimeout(() => {
         console.log('🔍 Debug - Timeout executado, buscando usuários com:', value)
@@ -66,20 +51,16 @@ export default function GerenciarAcessoPage() {
       }, 300)
       setSearchTimeout(timeout)
     } else {
-      // Limpa a lista se tem menos de 3 caracteres
       console.log('🔍 Debug - Limpando lista de usuários (menos de 3 caracteres)')
       setUsuarios([])
     }
   }
-
   const fetchSistemas = async () => {
     try {
       const response = await fetch('/api/usuarios/sistemas')
       if (response.ok) {
         const data = await response.json()
         setSistemas(data)
-        
-        // Inicializar configuração de acesso
         const initialConfig = data.reduce((acc: Record<number, { hasAccess: boolean; nivel: string }>, sistema: Sistema) => {
           acc[sistema.id] = { hasAccess: false, nivel: 'Usuario' }
           return acc
@@ -91,23 +72,19 @@ export default function GerenciarAcessoPage() {
       toast.error('Erro ao carregar sistemas')
     }
   }
-
   const fetchUsuarios = async (search: string) => {
     try {
       const url = `/api/usuarios?search=${encodeURIComponent(search)}&limit=1000`
       console.log('🔍 Debug - Fazendo fetch para:', url)
-      
       const response = await fetch(url)
       console.log('🔍 Debug - Response status:', response.status)
       console.log('🔍 Debug - Response headers:', response.headers)
-      
       if (response.ok) {
         const data = await response.json()
         console.log('🔍 Debug - Dados recebidos:', data)
         console.log('🔍 Debug - Tipo de data:', typeof data)
         console.log('🔍 Debug - Data.data existe?', !!data.data)
         console.log('🔍 Debug - Data.data é array?', Array.isArray(data.data))
-        
         if (data.data && Array.isArray(data.data)) {
           setUsuarios(data.data)
           console.log('🔍 Debug - Usuários definidos:', data.data.length)
@@ -128,14 +105,12 @@ export default function GerenciarAcessoPage() {
       toast.error('Erro ao carregar usuários')
     }
   }
-
   const handleUserChange = async (userId: string) => {
     if (!userId) {
       setUserAccess({})
       setAccessConfig({})
       return
     }
-
     setLoading(true)
     try {
       const response = await fetch('/api/usuarios/sistemas', {
@@ -145,12 +120,9 @@ export default function GerenciarAcessoPage() {
         },
         body: JSON.stringify({ userId }),
       })
-
       if (response.ok) {
         const data = await response.json()
         setUserAccess(data.userAccess)
-        
-        // Atualizar configuração de acesso
         const newConfig = sistemas.reduce((acc: Record<number, { hasAccess: boolean; nivel: string }>, sistema: Sistema) => {
           const userAccessInfo = data.userAccess[sistema.id]
           acc[sistema.id] = {
@@ -162,131 +134,15 @@ export default function GerenciarAcessoPage() {
         setAccessConfig(newConfig)
       }
     } catch (error) {
-      console.error('Erro ao buscar acesso do usuário:', error)
-      toast.error('Erro ao carregar acesso do usuário')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleAccessChange = (sistemaId: number, hasAccess: boolean) => {
-    setAccessConfig(prev => ({
-      ...prev,
-      [sistemaId]: {
-        ...prev[sistemaId],
-        hasAccess
-      }
-    }))
-  }
-
-  const handleLevelChange = (sistemaId: number, nivel: string) => {
-    setAccessConfig(prev => ({
-      ...prev,
-      [sistemaId]: {
-        ...prev[sistemaId],
-        nivel
-      }
-    }))
-  }
-
-  const handleSave = async () => {
-    if (!selectedUser) {
-      toast.error('Selecione um usuário')
-      return
-    }
-
-    setSaving(true)
-    try {
-      const sistemasToUpdate = sistemas.map(sistema => ({
-        id: sistema.id,
-        hasAccess: accessConfig[sistema.id]?.hasAccess || false,
-        nivel: accessConfig[sistema.id]?.nivel || 'Usuario'
-      }))
-
-      const response = await fetch('/api/usuarios/sistemas', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: selectedUser,
-          sistemas: sistemasToUpdate
-        }),
-      })
-
-      if (response.ok) {
-        toast.success('Acesso do usuário atualizado com sucesso!')
-        // Recarregar dados do usuário
-        handleUserChange(selectedUser)
-      } else {
-        throw new Error('Erro ao atualizar acesso')
-      }
-    } catch (error) {
-      console.error('Erro ao salvar acesso:', error)
-      toast.error('Erro ao salvar acesso do usuário')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="container mx-auto p-6">
-      <Breadcrumb
-        items={[
-          { label: "Painel", href: "/painel" },
-          { label: "Usuários", href: "/painel/usuarios" },
-          { label: "Gerenciar Acesso" },
-        ]}
-      />
-
-      <div className="flex items-center gap-2 mb-6">
-        <Users className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Gerenciar Acesso dos Usuários</h1>
-      </div>
-
-      <div className="grid gap-6">
-        {/* Seleção de Usuário */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Selecionar Usuário</CardTitle>
-            <CardDescription>
-              Escolha um usuário para gerenciar seu acesso aos sistemas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Label htmlFor="user-select">Usuário</Label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    placeholder="Digite o nome ou email do usuário..."
-                    value={searchValue}
-                    onChange={(e) => handleSearchChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  
-                  {/* Botão de teste para debug */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
-                    onClick={async () => {
-                      try {
-                        const response = await fetch(`/api/usuarios/test-search?search=${encodeURIComponent(searchValue)}`);
                         const data = await response.json();
-                        console.log('🔍 Teste Busca - Resultado:', data);
                         toast.success('Teste de busca executado. Veja o console.');
                       } catch (error) {
-                        console.error('Erro no teste de busca:', error);
                         toast.error('Erro ao testar busca');
                       }
                     }}
                   >
                     Testar
                   </Button>
-                  
                   {searchValue.length >= 3 && usuarios.length > 0 && (
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto z-10">
                       {usuarios.map((usuario) => (
@@ -322,8 +178,7 @@ export default function GerenciarAcessoPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* Configuração de Acesso */}
+        {}
         {selectedUser && (
           <Card>
             <CardHeader>
@@ -354,7 +209,6 @@ export default function GerenciarAcessoPage() {
                           {sistema.nome}
                         </Label>
                       </div>
-                      
                       {accessConfig[sistema.id]?.hasAccess && (
                         <div className="ml-4">
                           <Label htmlFor={`nivel-${sistema.id}`}>Nível:</Label>
@@ -375,7 +229,6 @@ export default function GerenciarAcessoPage() {
                       )}
                     </div>
                   ))}
-                  
                   <div className="flex justify-end pt-4">
                     <Button onClick={handleSave} disabled={saving}>
                       {saving ? (

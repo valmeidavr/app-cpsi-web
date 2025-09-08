@@ -1,6 +1,4 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -9,12 +7,8 @@ import {
   useRouter,
   useSearchParams,
 } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -35,19 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-
-//Helpers
 import { formatValor } from "@/app/helpers/format";
-
-//Types
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
 import { Usuario } from "@/app/types/Usuario";
-
 export default function EditarLancamento() {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -87,52 +74,39 @@ export default function EditarLancamento() {
       usuario_id: undefined,
     },
   });
-
   const fetchCaixas = async () => {
     try {
       const response = await fetch("/api/caixa");
       const data = await response.json();
-      
       if (response.ok) {
         setCaixas(data.data);
       } else {
-        console.error("Erro ao carregar caixas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao carregar caixas:", error);
     }
   };
-
   const fetchPlanoContas = async () => {
     try {
       const response = await fetch("/api/plano_contas");
       const data = await response.json();
-      
       if (response.ok) {
         setPlanoConta(data.data);
       } else {
-        console.error("Erro ao carregar plano de contas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao carregar plano de contas:", error);
     }
   };
-
   const fetchUsuario = async () => {
     try {
       const response = await fetch("/api/usuarios");
       const data = await response.json();
-      
       if (response.ok) {
         setUsuarios(data.data);
       } else {
-        console.error("Erro ao carregar usuários:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao carregar usuários:", error);
     }
   };
-
   useEffect(() => {
     setLoadingData(true);
     async function fetchData() {
@@ -141,10 +115,8 @@ export default function EditarLancamento() {
         await fetchCaixas();
         await fetchPlanoContas();
         await fetchUsuario();
-        
         const response = await fetch(`/api/lancamentos/${lancamentoId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setLancamento(data);
           form.reset({
@@ -165,23 +137,19 @@ export default function EditarLancamento() {
             usuario_id: data.usuario_id,
           });
         } else {
-          console.error("Erro ao carregar lancamento:", data.error);
           toast.error("Erro ao carregar dados do lançamento");
         }
       } catch (error) {
-        console.error("Erro ao carregar lancamento:", error);
       } finally {
         setLoadingData(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (values: z.infer<typeof createLancamentoSchema>) => {
     setLoading(true);
     try {
       if (!lancamentoId) redirect("/painel/lancamentos");
-
       const response = await fetch(`/api/lancamentos/${lancamentoId}`, {
         method: 'PUT',
         headers: {
@@ -189,17 +157,13 @@ export default function EditarLancamento() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar lançamento.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Lançamento atualizado com sucesso!");
-
       router.push(`/painel/lancamentos?${queryParams.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar lançamento");
@@ -207,7 +171,6 @@ export default function EditarLancamento() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -290,7 +253,6 @@ export default function EditarLancamento() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="status_pagamento"
@@ -322,7 +284,6 @@ export default function EditarLancamento() {
                 )}
               />
             </div>
-
             <FormField
                 control={form.control}
                 name="tipo"
@@ -356,7 +317,6 @@ export default function EditarLancamento() {
                   </FormItem>
                 )}
             />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
@@ -498,7 +458,6 @@ export default function EditarLancamento() {
                 )}
               />
             </div>
-
             <FormField
                 control={form.control}
                 name="descricao"
@@ -520,7 +479,6 @@ export default function EditarLancamento() {
                   </FormItem>
                 )}
               />
-
             <Button
               type="submit"
               disabled={loading}
@@ -543,4 +501,4 @@ export default function EditarLancamento() {
       )}
     </div>
   );
-}
+}

@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,13 +54,11 @@ import { Turma } from "@/app/types/Turma";
 import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
 import AlunoDetalhesModal from "./detalhesAlunoModal";
 import { http } from "@/util/http";
-
 interface Props {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   turmaId: number;
 }
-
 const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }) => {
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -86,22 +83,18 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           search: termoBusca,
         },
       });
-
       setClientes(data.data);
     } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
     } finally {
       setLoading(false);
     }
   };
-
   const deleteAllAlunos = async () => {
     try {
       setLoadingDeleteAll(true);
       await http.delete(`/api/alunos_turmas/${turmaSelected}`);
       await carregarAlunos();
     } catch (error) {
-      console.error("Erro ao deletar todos os alunos:", error);
     } finally {
       setLoadingDeleteAll(false);
     }
@@ -132,12 +125,10 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       await http.delete(`/api/alunos_turmas/${alunoId}`);
       await carregarAlunos();
     } catch (error) {
-      console.error("Erro ao deletar alunos:", error);
     } finally {
       setLoadingAluno(false);
     }
   };
-
   const carregarAlunos = async () => {
     try {
       setLoadingAluno(true);
@@ -154,23 +145,18 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       );
       setAlunos(data.data);
     } catch (error) {
-      console.error("Erro ao carregar alunos:", error);
     } finally {
       setLoadingAluno(false);
     }
   };
-
   useEffect(() => {
     carregarAlunos();
   }, [paginaAtual]);
-
-  // Adicionar useEffect para carregar clientes quando o modal abre
   useEffect(() => {
     if (isOpen) {
       carregarClientes();
     }
   }, [isOpen]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarClientes();
@@ -179,7 +165,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     setPaginaAtual(0);
     carregarAlunos();
   };
-
   return (
     <div>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -310,7 +295,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
               </TableBody>
             </Table>
           </div>
-
           <div className="flex justify-between items-end mt-2 ">
             <div>
               <Label>Buscar Alunos: </Label>
@@ -449,7 +433,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Dialog
         open={isModalDeleteAllOpen}
         onOpenChange={setisModalDeleteAllOpen}
@@ -480,7 +463,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Dialog open={isModalDeleteOpen} onOpenChange={setisModalDeleteOpen}>
         <DialogContent>
           <DialogHeader>
@@ -511,7 +493,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <AlunoDetalhesModal
         isOpen={isDetalhesOpen}
         onOpenChange={setIsDetalhesOpen}
@@ -520,5 +501,4 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     </div>
   );
 }
-
 export default AdicionarAlunosModal;

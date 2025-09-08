@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createLancamentoSchema, updateLancamentoSchema } from "./schema/formSchemeLancamentos";
-
 export type CreateLancamentoDTO = z.infer<typeof createLancamentoSchema>;
 export type UpdateLancamentoDTO = z.infer<typeof updateLancamentoSchema>;
-
-// GET - Listar lançamentos com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -17,8 +14,6 @@ export async function GET(request: NextRequest) {
     const plano_conta_id = searchParams.get('plano_conta_id');
     const data_inicio = searchParams.get('data_inicio');
     const data_fim = searchParams.get('data_fim');
-
-    // Primeiro, buscar os lançamentos do banco gestor
     let query = `
       SELECT 
         l.*,
@@ -32,35 +27,25 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
-
     if (search) {
       query += ' AND (l.descricao LIKE ? OR l.tipo LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
-
     if (caixa_id) {
       query += ' AND l.caixa_id = ?';
       params.push(parseInt(caixa_id));
     }
-
     if (plano_conta_id) {
       query += ' AND l.plano_conta_id = ?';
       params.push(parseInt(plano_conta_id));
     }
-
     if (data_inicio && data_fim) {
       query += ' AND DATE(l.data_lancamento) BETWEEN ? AND ?';
       params.push(data_inicio, data_fim);
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY l.data_lancamento DESC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
-    // Parâmetros de paginação inseridos diretamente na query
-
     const lancamentoRows = await executeWithRetry(accessPool, query, params);
-
-    // Agora buscar os nomes dos usuários do banco cpsi_acesso
     const lancamentosComUsuarios = await Promise.all(
       (lancamentoRows as Array<{
         id: number;
@@ -91,7 +76,6 @@ export async function GET(request: NextRequest) {
             usuario_nome: 'Usuário não informado'
           };
         } catch (error) {
-          console.error('Erro ao buscar usuário:', error);
           return {
             ...lancamento,
             usuario_nome: 'Erro ao buscar usuário'
@@ -99,38 +83,30 @@ export async function GET(request: NextRequest) {
         }
       })
     );
-
-    // Buscar total de registros para paginação
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM lancamentos l
       WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
-
     if (search) {
       countQuery += ' AND (l.descricao LIKE ? OR l.tipo LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
-
     if (caixa_id) {
       countQuery += ' AND l.caixa_id = ?';
       countParams.push(parseInt(caixa_id));
     }
-
     if (plano_conta_id) {
       countQuery += ' AND l.plano_conta_id = ?';
       countParams.push(parseInt(plano_conta_id));
     }
-
     if (data_inicio && data_fim) {
       countQuery += ' AND DATE(l.data_lancamento) BETWEEN ? AND ?';
       countParams.push(data_inicio, data_fim);
     }
-
     const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-
     return NextResponse.json({
       data: lancamentosComUsuarios,
       pagination: {
@@ -141,56 +117,56 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar lançamentos:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar lançamento
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createLancamentoSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Debug logs removidos para evitar spam
-
-    // Debug logs removidos para evitar spam
-
-    // Verificar se o usuário existe no banco cpsi_acesso
-    try {
-      const [userRows] = await accessPool.execute(
-        'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
-        [payload.usuario_id]
-      );
-      console.log('🔍 Debug - Usuário encontrado:', userRows);
-      
-      if ((userRows as Array<{ login: string; nome: string }>).length === 0) {
+    let usuarioId = payload.usuario_id;
+    if (usuarioId) {
+      try {
+        const [userRows] = await accessPool.execute(
+          'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
+          [usuarioId]
+        );
+        if ((userRows as Array<{ login: string; nome: string }>).length === 0) {
+          return NextResponse.json(
+            { error: 'Usuário não encontrado ou inativo' },
+            { status: 400 }
+          );
+        }
+      } catch (error) {
         return NextResponse.json(
-          { error: 'Usuário não encontrado ou inativo' },
-          { status: 400 }
+          { error: 'Erro ao verificar usuário' },
+          { status: 500 }
         );
       }
-    } catch (error) {
-      console.error('🔍 Debug - Erro ao verificar usuário:', error);
+    } else {
+      usuarioId = 'admin';
+    }
+    const [planoContaRows] = await accessPool.execute(
+      'SELECT tipo FROM plano_contas WHERE id = ?',
+      [payload.plano_conta_id]
+    );
+    const planoConta = (planoContaRows as Array<{ tipo: string }>)[0];
+    if (!planoConta) {
       return NextResponse.json(
-        { error: 'Erro ao verificar usuário' },
-        { status: 500 }
+        { error: 'Plano de conta não encontrado' },
+        { status: 400 }
       );
     }
-
-    // Inserir lançamento com campos corretos
     const result = await executeWithRetry(accessPool,
       `INSERT INTO lancamentos (
         valor, descricao, data_lancamento, tipo, forma_pagamento,
@@ -198,18 +174,16 @@ export async function POST(request: NextRequest) {
         usuario_id, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        payload.valor, payload.descricao, payload.data_lancamento, payload.tipo,
+        payload.valor, payload.descricao, payload.data_lancamento, planoConta.tipo,
         payload.forma_pagamento, payload.status_pagamento, payload.cliente_id,
-        payload.plano_conta_id, payload.caixa_id, payload.usuario_id, 'Ativo'
+        payload.plano_conta_id, payload.caixa_id, usuarioId, 'Ativo'
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar lançamento:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -222,33 +196,25 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// PUT - Atualizar lançamento
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do lançamento é obrigatório' },
         { status: 400 }
       );
     }
-
     const body = await request.json();
     const validatedData = updateLancamentoSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Atualizar lançamento com campos corretos
     await executeWithRetry(accessPool,
       `UPDATE lancamentos SET 
         valor = ?, descricao = ?, tipo = ?, data_lancamento = ?,
@@ -261,10 +227,8 @@ export async function PUT(request: NextRequest) {
         payload.plano_conta_id, payload.caixa_id, payload.usuario_id, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar lançamento:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -277,29 +241,22 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
-// DELETE - Deletar lançamento
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do lançamento é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
     await executeWithRetry(accessPool,
       'UPDATE lancamentos SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar lançamento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

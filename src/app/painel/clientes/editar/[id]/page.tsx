@@ -1,10 +1,8 @@
 "use client";
-// React
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
@@ -28,13 +26,10 @@ import {
 import { format, isValid, parse } from "date-fns";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//API
 import { http } from "@/util/http";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
-//Types
 import { Cliente, TipoCliente } from "@/app/types/Cliente";
 import {
   Dialog,
@@ -54,13 +49,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
   { value: "Feminino", label: "Feminino" },
   { value: "outro", label: "Outro" },
 ];
-
 export default function EditarCliente() {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,8 +64,6 @@ export default function EditarCliente() {
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const router = useRouter();
   const [loadingInativar, setLoadingInativar] = useState(false);
-
-  //Definindo valores default com os dado do cliente
   const form = useForm<z.infer<typeof createClienteSchema>>({
     resolver: zodResolver(createClienteSchema),
     mode: "onChange",
@@ -97,20 +88,17 @@ export default function EditarCliente() {
   });
   useEffect(() => {
     const body = document.body;
-
     if (isDialogOpen) {
       body.style.pointerEvents = "auto"; // Corrige o bug
     } else {
       body.style.pointerEvents = ""; // Reseta quando fecha
     }
   }, [isDialogOpen]);
-  //Formatação dos Campos
   useEffect(() => {
     if (cliente) {
       const formattedPhone1 = formatTelefoneInput(cliente.telefone1 || "");
       const formattedPhone2 = formatTelefoneInput(cliente.telefone || "");
       const formattedCPF = formatCPFInput(cliente.cpf || "");
-
       form.setValue("telefone1", formattedPhone1);
       form.setValue("telefone2", formattedPhone2);
       form.setValue("cpf", formattedCPF);
@@ -122,20 +110,14 @@ export default function EditarCliente() {
       form.setValue("cidade", cliente.cidade || "");
     }
   }, [cliente, form]);
-
-  //Função de submeter os dados
   const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     try {
-      // Garantir que todos os convênios selecionados tenham desconto definido
       const descontosPreenchidos: Record<string, number> = {};
-
-      // Para cada convênio selecionado, garantir que tenha um desconto válido
       values.convenios.forEach((convenioId) => {
         const convenio = convenios.find(c => c.id === convenioId);
         if (convenio) {
           const descontoAtual = values.desconto[convenioId];
-          // Se não há desconto definido ou é inválido, usar o desconto padrão do convênio
           if (
             descontoAtual === undefined ||
             descontoAtual === null ||
@@ -147,13 +129,11 @@ export default function EditarCliente() {
           }
         }
       });
-
       const payload = {
         ...values,
         desconto: descontosPreenchidos,
       };
       if (!clienteId) throw new Error("ID do cliente não encontrado.");
-
       const response = await fetch(`/api/clientes/${clienteId}`, {
         method: 'PUT',
         headers: {
@@ -161,17 +141,13 @@ export default function EditarCliente() {
         },
         body: JSON.stringify(payload),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar cliente.");
       }
       const queryParams = new URLSearchParams();
-
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente atualizado com sucesso!");
-
       router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar cliente");
@@ -179,12 +155,9 @@ export default function EditarCliente() {
       setLoading(false);
     }
   };
-
-  //Função de buscar endereco com o CEP
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawCEP = e.target.value;
     const onlyNumbers = rawCEP.replace(/\D/g, "");
-    
     if (onlyNumbers.length === 8) {
       fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
         .then(response => response.json())
@@ -214,18 +187,13 @@ export default function EditarCliente() {
     try {
       const response = await fetch("/api/convenios");
       const data = await response.json();
-      
       if (response.ok) {
         setConvenios(data.data);
       } else {
-        console.error("Erro ao buscar convênios:", data.error);
       }
     } catch (error) {
-      console.error("Error ao buscar convênios:", error);
     }
   };
-
-  // Inicializar descontos quando convênios são carregados
   useEffect(() => {
     if (convenios.length > 0 && !cliente) {
       const initialDescontos: Record<string, number> = {};
@@ -235,7 +203,6 @@ export default function EditarCliente() {
       form.setValue("desconto", initialDescontos);
     }
   }, [convenios, form, cliente]);
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -244,11 +211,8 @@ export default function EditarCliente() {
         if (!clienteId) redirect("painel/clientes");
         const response = await fetch(`/api/clientes/${clienteId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setCliente(data);
-          
-          // Formatar a data de nascimento do formato ISO para DD/MM/AAAA
           let dataFormatada = "";
           if (data.dtnascimento) {
             try {
@@ -257,11 +221,8 @@ export default function EditarCliente() {
                 dataFormatada = format(dataISO, "dd/MM/yyyy");
               }
             } catch (error) {
-              console.error("Erro ao formatar data:", error);
             }
           }
-
-          // Mapear os campos corretamente baseado na estrutura do banco
           const formData = {
             nome: data.nome || "",
             email: data.email || "",
@@ -280,37 +241,26 @@ export default function EditarCliente() {
             convenios: [],
             desconto: {},
           };
-
-          // Log para debug dos dados recebidos
-          console.log('🔍 Dados recebidos da API:', data);
-          console.log('🔍 Dados mapeados para o formulário:', formData);
-
-          // Se há convênios, mapear corretamente
           if (data.convenios && Array.isArray(data.convenios)) {
             const conveniosIds = data.convenios.map((item: { convenioId: number }) => item.convenioId);
             const descontos = data.convenios.reduce((acc: Record<number, number>, item: { convenioId: number; desconto: number }) => {
               acc[item.convenioId] = item.desconto;
               return acc;
             }, {} as Record<number, number>);
-
             formData.convenios = conveniosIds;
             formData.desconto = descontos;
           }
-
           form.reset(formData);
         } else {
-          console.error("Erro ao carregar cliente:", data.error);
           toast.error("Erro ao carregar dados do cliente");
         }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   return (
     <div>
       <Breadcrumb
@@ -320,8 +270,7 @@ export default function EditarCliente() {
           { label: "Editar Cliente" }, // Último item sem link
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -330,7 +279,7 @@ export default function EditarCliente() {
       ) : (
         <div className="flex flex-col flex-1 h-full">
           {" "}
-          {/* overflow-hidden */}
+          {}
           <Form {...form}>
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
@@ -339,9 +288,6 @@ export default function EditarCliente() {
                   type="button" 
                   variant="outline" 
                   onClick={() => {
-                    console.log('🔍 Dados do formulário:', form.getValues());
-                    console.log('🔍 Cliente carregado:', cliente);
-                    console.log('🔍 Erros do formulário:', form.formState.errors);
                   }}
                 >
                   🐛 Debug
@@ -375,7 +321,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -400,7 +345,7 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 2: Data de nascimento + Sexo */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -424,7 +369,6 @@ export default function EditarCliente() {
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .slice(0, 10);
-
                             field.onChange(formatted);
                           }}
                           onBlur={() => {
@@ -435,9 +379,7 @@ export default function EditarCliente() {
                             );
                             const currentDate = new Date();
                             const minYear = 1920;
-
                             const year = parseInt(field.value.split("/")[2]);
-
                             if (
                               !isValid(parsedDate) ||
                               parsedDate > currentDate ||
@@ -485,7 +427,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="tipo"
@@ -524,7 +465,7 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 2: CPF, CEP, Logradouro, Número */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField
                   control={form.control}
@@ -543,10 +484,8 @@ export default function EditarCliente() {
                             if (
                               inputEvent.inputType === "deleteContentBackward"
                             ) {
-                              // Se o usuário estiver apagando, não aplica a formatação
                               field.onChange(rawValue);
                             } else {
-                              // Aplica a formatação normalmente
                               field.onChange(formatCPFInput(rawValue));
                             }
                           }}
@@ -561,7 +500,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="cep"
@@ -576,23 +514,17 @@ export default function EditarCliente() {
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/\D/g, "");
                             const inputEvent = e.nativeEvent as InputEvent;
-
                             if (
                               inputEvent.inputType === "deleteContentBackward"
                             ) {
-                              // Se o usuário estiver apagando, não aplica a formatação
                               field.onChange(rawValue);
                             } else {
-                              // Aplica a máscara ao digitar
                               const formattedValue = rawValue.replace(
                                 /^(\d{5})(\d)/,
                                 "$1-$2"
                               );
-
                               field.onChange(formattedValue);
                             }
-
-                            // Chama a função para buscar o endereço baseado no CEP digitado
                             handleCEPChangeHandler(e);
                           }}
                           className={`border ${
@@ -606,7 +538,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="logradouro"
@@ -624,7 +555,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="numero"
@@ -643,7 +573,7 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 3: Bairro, Cidade, UF */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
@@ -662,7 +592,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="cidade"
@@ -680,7 +609,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="uf"
@@ -743,7 +671,7 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 4: Telefone, Celular, Número do SUS */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -773,7 +701,6 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="telefone2"
@@ -823,7 +750,6 @@ export default function EditarCliente() {
                       os respectivos descontos.
                     </DialogDescription>
                   </DialogHeader>
-
                   <div className="max-h-[60vh] overflow-y-auto mt-4">
                     <Table>
                       <TableHeader>
@@ -846,7 +772,6 @@ export default function EditarCliente() {
                                   )
                                     ? field.value
                                     : [];
-
                                   return (
                                     <FormControl>
                                       <Checkbox
@@ -903,7 +828,6 @@ export default function EditarCliente() {
                                           field.onChange(value);
                                         }}
                                         onBlur={() => {
-                                          // Se o campo ficou vazio, usar o desconto padrão do convênio
                                           if (field.value === undefined || field.value === null || isNaN(field.value)) {
                                             field.onChange(item.desconto);
                                           }
@@ -927,7 +851,6 @@ export default function EditarCliente() {
                       </TableBody>
                     </Table>
                   </div>
-
                   <DialogFooter className="mt-6">
                     <Button
                       variant="ghost"
@@ -969,4 +892,4 @@ export default function EditarCliente() {
       )}
     </div>
   );
-}
+}

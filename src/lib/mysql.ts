@@ -1,23 +1,19 @@
 import mysql from 'mysql2/promise'
 import { dbSettings, cleanupIdleConnections } from './db-settings'
-
 const dbConfig = {
   host: process.env.DB_HOST || process.env.MYSQL_HOST || '127.0.0.1',
   user: process.env.DB_USER || process.env.MYSQL_USER || 'root',
   password: process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD || 'root',
   port: parseInt(process.env.DB_PORT || process.env.MYSQL_PORT || '3306'),
 }
-
 export const createConnection = async () => {
   return await mysql.createConnection({
     ...dbConfig,
     database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'prevsaude',
   })
 }
-
 export const createAccessConnection = createConnection
 export const createGestorConnection = createConnection
-
 export const pool = mysql.createPool({
   ...dbConfig,
   database: process.env.DB_NAME || process.env.MYSQL_DATABASE || 'prevsaude',
@@ -26,9 +22,7 @@ export const pool = mysql.createPool({
   waitForConnections: true,
   idleTimeout: 30000,
 })
-
 export const accessPool = pool
-
 setInterval(() => {
   cleanupIdleConnections(pool as unknown as { _freeConnections?: Array<{ release?: () => void }> });
 }, 30000);
@@ -43,7 +37,6 @@ export const testConnection = async () => {
     return false
   }
 }
-
 export const listTables = async () => {
   try {
     const [tables] = await pool.execute(
@@ -56,7 +49,6 @@ export const listTables = async () => {
     return []
   }
 }
-
 export const closePools = async () => {
   try {
     await pool.end()
@@ -70,14 +62,12 @@ export const executeWithRetry = async <T>(
   params: unknown[] = []
 ): Promise<T> => {
   let lastError: Error | undefined
-
   for (let attempt = 1; attempt <= dbSettings.retry.maxRetries; attempt++) {
     try {
       const [result] = await pool.execute(query, params)
       return result as T
     } catch (error) {
       lastError = error as Error
-
       if ((error as { code?: string }).code === 'ER_CON_COUNT_ERROR' || (error as { code?: string }).code === 'ECONNRESET') {
         if (attempt < dbSettings.retry.maxRetries) {
           await new Promise(resolve => setTimeout(resolve, dbSettings.retry.retryDelay))
@@ -88,11 +78,8 @@ export const executeWithRetry = async <T>(
       break
     }
   }
-
   if (lastError) {
     throw lastError
   }
-
   throw new Error('Erro desconhecido durante a execução da query')
-}
-
+}

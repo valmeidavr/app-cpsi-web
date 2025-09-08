@@ -1,7 +1,5 @@
 import { z } from "zod";
-
 const dataLimite = new Date("2000-01-01");
-
 const expedienteBaseSchema = z.object({
   dtinicio: z.string().refine((val) => new Date(val) >= dataLimite, {
     message: "A data de início não pode ser muito antiga",
@@ -17,7 +15,6 @@ const expedienteBaseSchema = z.object({
     .number()
     .int({ message: "alocacao_id deve ser um número inteiro" }),
 });
-
 export const createExpedienteSchema = expedienteBaseSchema.refine(
   (data) => new Date(data.dtfinal) >= new Date(data.dtinicio),
   {
@@ -25,5 +22,4 @@ export const createExpedienteSchema = expedienteBaseSchema.refine(
     path: ["dtfinal"],
   }
 );
-
-export const updateExpedienteSchema = expedienteBaseSchema.partial();
+export const updateExpedienteSchema = expedienteBaseSchema.partial();

@@ -2,7 +2,6 @@ import * as z from "zod";
 import { parse, isValid, format } from "date-fns";
 import { TipoCliente } from "@/app/types/Cliente";
 import { validarCPF } from "@/app/helpers/cpfValidator";
-
 export const createClienteSchema = z.object({
   nome: z
     .string()
@@ -12,7 +11,6 @@ export const createClienteSchema = z.object({
     .min(1, { message: "O campo é obrigatório" })
     .email({ message: "Email inválido" })
     .default(""),
-
   dtnascimento: z
     .string()
     .min(10, { message: "O campo é obrigatório" })
@@ -22,7 +20,6 @@ export const createClienteSchema = z.object({
         const currentDate = new Date();
         const minYear = 1920;
         const year = parseInt(value.split("/")[2]);
-
         return (
           isValid(parsedDate) && parsedDate <= currentDate && year >= minYear
         );
@@ -35,9 +32,7 @@ export const createClienteSchema = z.object({
       format(parse(val, "dd/MM/yyyy", new Date()), "yyyy-MM-dd")
     )
     .default(""),
-
   sexo: z.string().min(1, { message: "Sexo é obrigatório" }).default(""),
-
   cpf: z.string()
     .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
       message: "Formato de CPF inválido",
@@ -45,7 +40,6 @@ export const createClienteSchema = z.object({
     .refine((value) => validarCPF(value), {
       message: "CPF inválido - dígitos verificadores incorretos",
     }),
-
   cep: z.string().optional(),
   tipo: z.union([
     z.nativeEnum(TipoCliente),
@@ -59,7 +53,6 @@ export const createClienteSchema = z.object({
     required_error: "Tipo de cliente é obrigatório",
     invalid_type_error: "Tipo de cliente inválido",
   }).transform((val) => {
-    // Se for número, converter para string do enum
     if (typeof val === 'number') {
       const enumValues = Object.values(TipoCliente);
       return enumValues[val] || TipoCliente.SOCIO;
@@ -76,8 +69,6 @@ export const createClienteSchema = z.object({
   telefone1: z
     .string()
     .regex(/^\(?\d{2}\)?\s?9?\d{4}-\d{4}$/, { message: "Telefone inválido" }),
-
   telefone2: z.string().optional(),
 });
-
-export const updateClienteSchema = createClienteSchema.partial();
+export const updateClienteSchema = createClienteSchema.partial();

@@ -1,5 +1,4 @@
 import { TabelaFaturamento } from "./TabelaFaturamento";
-
 export type Convenio = {
   id: number;
   nome: string;
@@ -10,4 +9,4 @@ export type Convenio = {
   updatedAt: Date;
   deletedAt?: Date | null;
   tabelaFaturamento: TabelaFaturamento;
-};
+};

@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,13 +37,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
 }
-
-// Mapeia os ícones para serem usados dinamicamente
 const iconMap: { [key: string]: React.ElementType } = {
   DockIcon,
   BoxIcon,
@@ -67,7 +63,6 @@ const iconMap: { [key: string]: React.ElementType } = {
   Table,
   Calendar,
 };
-
 interface MenuItem {
   icon: React.ElementType;
   label: string;
@@ -80,15 +75,12 @@ interface MenuItem {
     requiredGroups?: string[]; // Adicione aqui também para os subitens
   }[];
 }
-
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { hasSystemAccess, userLevel } = useAuth();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-
   useEffect(() => {
-    // Carrega os itens do menu e converte os ícones para componentes React
     const parsedMenu = menuData.map((item) => ({
       ...item,
       icon: iconMap[item.icon], // Mapeia o ícone principal
@@ -99,22 +91,15 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           }))
         : [],
     }));
-
     setMenuItems(parsedMenu);
   }, []);
-
   const hasAccess = (requiredGroups?: string[]) => {
-    // Se não tem acesso ao sistema, não mostra nada
     if (!hasSystemAccess) {
       return false;
     }
-    
-    // Se não há grupos requeridos, permite acesso
     if (!requiredGroups || requiredGroups.length === 0) {
       return true;
     }
-    
-    // Verifica se o nível do usuário está nos grupos permitidos
     const hasPermission = requiredGroups.some((group) => {
       switch (group) {
         case 'ADMIN':
@@ -127,13 +112,10 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           return false;
       }
     });
-
     return hasPermission;
   };
-
   const renderMenuItem = (item: MenuItem, index: number) => {
     if (item.requiredGroups && !hasAccess(item.requiredGroups)) return null; // Esconde o item se houver requiredGroups e o usuário não tiver acesso.
-
     if (collapsed) {
       return (
         <Popover key={index}>
@@ -186,7 +168,6 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         </Popover>
       );
     }
-
     return (
       <div key={index} className="mb-2">
         <Button
@@ -238,7 +219,6 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       </div>
     );
   };
-
   return (
     <div
       className={cn(
@@ -277,4 +257,4 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       </ScrollArea>
     </div>
   );
-}
+}

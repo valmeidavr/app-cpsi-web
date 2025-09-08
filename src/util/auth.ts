@@ -4,12 +4,10 @@ export function isTokenExpired(token: string) {
   const clockTimestamp = Math.floor(Date.now() / 1000);
   return clockTimestamp > payload.exp;
 }
-
-  
 export function getPayload(token: string) {
   try {
     return JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8"));
   } catch (error) {
     return null; // Retorna null se houver erro
   }
-}
+}

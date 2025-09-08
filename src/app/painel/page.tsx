@@ -1,21 +1,15 @@
 "use client";
-
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
 export default function PainelHome() {
   const { session, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-
   useEffect(() => {
-    // Se não estiver autenticado e não estiver carregando, redirecionar para login
     if (!isLoading && !isAuthenticated) {
       router.push("/");
     }
   }, [isAuthenticated, isLoading, router]);
-
-  // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -26,12 +20,9 @@ export default function PainelHome() {
       </div>
     );
   }
-
-  // Se não estiver autenticado, não mostrar nada (será redirecionado)
   if (!isAuthenticated) {
     return null;
   }
-
   return (
     <div>
       <h3 className="text-2xl font-bold mb-4">
@@ -40,4 +31,4 @@ export default function PainelHome() {
       <p className="text-gray-600">Selecione uma opção no menu lateral para começar.</p>
     </div>
   );
-}
+}

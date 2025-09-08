@@ -1,15 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -30,13 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
-// Removido import http - usando fetch direto
 import { createProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
-//Types
 import { Especialidade } from "@/app/types/Especialidade";
-
 export default function NovoProcedimento() {
   const [loading, setLoading] = useState(false);
   const [especialidadeOptions, setEspecialidadeOptions] = useState<
@@ -53,7 +42,6 @@ export default function NovoProcedimento() {
       especialidade_id: 0,
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createProcedimentoSchema>) => {
     setLoading(true);
     try {
@@ -67,18 +55,14 @@ export default function NovoProcedimento() {
           especialidade_id: Number(values.especialidade_id),
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao salvar procedimento");
       }
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Procedimento salvo com sucesso!");
-
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao salvar procedimento";
@@ -87,28 +71,22 @@ export default function NovoProcedimento() {
       setLoading(false);
     }
   };
-
   const fetchEspecialidade = async () => {
     try {
       const response = await fetch("/api/especialidades");
-      
       if (!response.ok) {
         throw new Error("Erro ao carregar especialidades");
       }
-      
       const data = await response.json();
       setEspecialidadeOptions(data.data);
     } catch (error) {
-      console.error("Erro ao carregar especialidades:", error);
       toast.error("Erro ao carregar lista de especialidades");
     }
   };
-  // Mockup de opçoes de Tipo
   const tipoOptions = [
     { value: "SESSAO", label: "SESSÃO" },
     { value: "MENSAL", label: "MENSAL" },
   ];
-
   useEffect(() => {
     fetchEspecialidade();
   }, []);
@@ -122,7 +100,6 @@ export default function NovoProcedimento() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">Novo Procedimento</h1>
-
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
@@ -146,7 +123,6 @@ export default function NovoProcedimento() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="codigo"
@@ -167,7 +143,6 @@ export default function NovoProcedimento() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="tipo"
@@ -201,7 +176,6 @@ export default function NovoProcedimento() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
                                 name="especialidade_id"
@@ -238,7 +212,7 @@ export default function NovoProcedimento() {
               )}
             />
           </div>
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -258,4 +232,4 @@ export default function NovoProcedimento() {
       </Form>
     </div>
   );
-}
+}

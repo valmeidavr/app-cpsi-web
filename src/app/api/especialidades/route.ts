@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createEspecialidadeSchema, updateEspecialidadeSchema } from "./schema/formSchemaEspecialidade";
-
 export type CreateEspecialidadeDTO = z.infer<typeof createEspecialidadeSchema>;
 export type UpdateEspecialidadeDTO = z.infer<typeof updateEspecialidadeSchema>;
-
-// GET - Listar especialidades com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,13 +11,8 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
-
-    // Se for para retornar todas as especialidades (sem paginação)
     if (all === 'true' || limit === '1000') {
-      console.log('🔍 Debug - Buscando todas as especialidades ativas');
-      
       try {
-        // Primeiro, tentar buscar com filtro de status
         const [rows] = await accessPool.execute(
           'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
         );
@@ -31,7 +23,6 @@ export async function GET(request: NextRequest) {
           createdAt: Date;
           updatedAt: Date;
         }>).length);
-        
         if ((rows as Array<{
           id: number;
           nome: string;
@@ -61,9 +52,6 @@ export async function GET(request: NextRequest) {
             }
           });
         }
-        
-        // Se não encontrar especialidades ativas, buscar todas
-        console.log('🔍 Debug - Nenhuma especialidade ativa encontrada, buscando todas...');
         const [allRows] = await accessPool.execute(
           'SELECT * FROM especialidades ORDER BY nome ASC'
         );
@@ -74,7 +62,6 @@ export async function GET(request: NextRequest) {
           createdAt: Date;
           updatedAt: Date;
         }>).length);
-        
         return NextResponse.json({
           data: allRows,
           pagination: {
@@ -96,11 +83,7 @@ export async function GET(request: NextRequest) {
             totalPages: 1
           }
         });
-        
       } catch (queryError) {
-        console.error('🔍 Debug - Erro na query de especialidades:', queryError);
-        
-        // Tentar query mais simples como fallback
         try {
           const [simpleRows] = await accessPool.execute(
             'SELECT id, nome FROM especialidades ORDER BY nome ASC'
@@ -109,7 +92,6 @@ export async function GET(request: NextRequest) {
             id: number;
             nome: string;
           }>).length);
-          
           return NextResponse.json({
             data: simpleRows,
             pagination: {
@@ -126,27 +108,19 @@ export async function GET(request: NextRequest) {
             }
           });
         } catch (fallbackError) {
-          console.error('🔍 Debug - Erro no fallback:', fallbackError);
           throw queryError; // Re-throw o erro original
         }
       }
     }
-
-    // 1. Construir a cláusula WHERE dinamicamente
     let whereClause = ' WHERE status = "Ativo"';
     const queryParams: (string | number)[] = [];
-
     if (search) {
       whereClause += ' AND nome LIKE ?';
       queryParams.push(`%${search}%`);
     }
-
-    // 2. Query para contar o total de registros
     const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
     const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-
-    // 3. Query para buscar os dados com paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT * FROM especialidades${whereClause}
@@ -155,7 +129,6 @@ export async function GET(request: NextRequest) {
     `;
     const dataParams = [...queryParams, parseInt(limit), offset];
     const especialidadeRows = await executeWithRetry(accessPool, dataQuery, dataParams);
-
     return NextResponse.json({
       data: especialidadeRows,
       pagination: {
@@ -166,30 +139,23 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar especialidades:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar especialidade
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createEspecialidadeSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Inserir especialidade
     const [result] = await accessPool.execute(
       `INSERT INTO especialidades (
         nome, codigo, status
@@ -198,13 +164,11 @@ export async function POST(request: NextRequest) {
         payload.nome, payload.codigo, 'Ativo'
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar especialidade:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -217,33 +181,25 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// PUT - Atualizar especialidade
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da especialidade é obrigatório' },
         { status: 400 }
       );
     }
-
     const body = await request.json();
     const validatedData = updateEspecialidadeSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Atualizar especialidade
     await accessPool.execute(
       `UPDATE especialidades SET 
         nome = ?, codigo = ?
@@ -252,10 +208,8 @@ export async function PUT(request: NextRequest) {
         payload.nome, payload.codigo, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar especialidade:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -268,29 +222,22 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
-// DELETE - Deletar especialidade
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da especialidade é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
     await accessPool.execute(
       'UPDATE especialidades SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar especialidade:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

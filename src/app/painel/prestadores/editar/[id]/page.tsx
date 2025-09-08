@@ -1,11 +1,8 @@
 "use client";
-//react
-
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
-//Components
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
@@ -26,40 +23,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-//helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import {
   formatCPFInput,
   formatRGInput,
   formatTelefoneInput,
 } from "@/app/helpers/format";
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//API
 import { format, isValid, parse } from "date-fns";
 import { http } from "@/util/http";
 import { updatePrestadorSchema } from "@/app/api/prestadores/schema/formSchemaPretadores";
-//Types
 import { Prestador } from "@/app/types/Prestador";
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
   { value: "Feminino", label: "Feminino" },
   { value: "outro", label: "Outro" },
 ];
-
 export default function EditarPrestador() {
   const [loading, setLoading] = useState(false); // Para o botão de submit
   const [carregando, setCarregando] = useState(true); // Para o loader inicial da página
   const params = useParams();
   const prestadorId = Array.isArray(params.id) ? params.id[0] : params.id;
   const router = useRouter();
-
-  //Formatação dos Campos
   const form = useForm<z.infer<typeof updatePrestadorSchema>>({
     resolver: zodResolver(updatePrestadorSchema),
     mode: "onChange",
-    // Os valores default podem continuar vazios, eles serão preenchidos pelo reset
     defaultValues: {
       nome: "",
       dtnascimento: "",
@@ -77,8 +66,6 @@ export default function EditarPrestador() {
       complemento: "",
     },
   });
-
-  // 1. A LÓGICA DE PREENCHIMENTO FOI TOTALMENTE CENTRALIZADA AQUI
   useEffect(() => {
     async function fetchData() {
       try {
@@ -87,46 +74,29 @@ export default function EditarPrestador() {
           redirect("/painel/prestadores");
           return;
         }
-
         const response = await fetch(`/api/prestadores/${prestadorId}`);
         const data = await response.json();
-
         if (!response.ok) {
           throw new Error(data.error || "Erro ao carregar dados do prestador");
         }
-
-        // 2. PREPARE UM OBJETO COM TODOS OS DADOS JÁ FORMATADOS
         let formattedBirthDate = "";
-        
         if (data.dtnascimento) {
-          // Tentar diferentes formatos de data
           let birthDate = null;
-          
-          // Se for string no formato YYYY-MM-DD
           if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('-')) {
             birthDate = new Date(data.dtnascimento);
           }
-          // Se for string no formato DD/MM/YYYY
           else if (typeof data.dtnascimento === 'string' && data.dtnascimento.includes('/')) {
             birthDate = parse(data.dtnascimento, 'dd/MM/yyyy', new Date());
           }
-          // Se for Date object
           else if (data.dtnascimento instanceof Date) {
             birthDate = data.dtnascimento;
           }
-          
-          console.log('🔍 Debug - Data original:', data.dtnascimento);
-          console.log('🔍 Debug - Data parseada:', birthDate);
-          console.log('🔍 Debug - Data válida?', isValid(birthDate));
-          
           if (birthDate && isValid(birthDate)) {
             formattedBirthDate = format(birthDate, "dd/MM/yyyy");
           }
         }
-
         const formattedData = {
           ...data,
-          // 3. CORREÇÃO: Formatar a data corretamente do formato YYYY-MM-DD para DD/MM/YYYY
           dtnascimento: formattedBirthDate,
           cpf: formatCPFInput(data.cpf || ""),
           rg: formatRGInput(data.rg || ""),
@@ -134,12 +104,8 @@ export default function EditarPrestador() {
           telefone: formatTelefoneInput(data.telefone || ""),
           cep: data.cep ? data.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2") : "",
         };
-
-        console.log('🔍 Debug - Data formatada:', formattedData.dtnascimento);
-        // 3. CHAME O form.reset() UMA ÚNICA VEZ com os dados prontos
         form.reset(formattedData);
       } catch (error) {
-        console.error("Erro ao carregar prestador:", error);
         toast.error(error instanceof Error ? error.message : "Erro ao carregar prestador");
       } finally {
         setCarregando(false); // Desativa o loader da página
@@ -147,24 +113,19 @@ export default function EditarPrestador() {
     }
     fetchData();
   }, [prestadorId, form]); // A dependência no form.reset é importante
-
-  // A função de submit continua a mesma
   const onSubmit = async (values: z.infer<typeof updatePrestadorSchema>) => {
     setLoading(true);
     try {
       if (!prestadorId) throw new Error("ID do prestador não encontrado.");
-
       const response = await fetch(`/api/prestadores/${prestadorId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar prestador.");
       }
-
       toast.success("Prestador atualizado com sucesso!");
       router.push(`/painel/prestadores`);
     } catch (error) {
@@ -173,11 +134,9 @@ export default function EditarPrestador() {
       setLoading(false);
     }
   };
-
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawCEP = e.target.value;
     const onlyNumbers = rawCEP.replace(/\D/g, "");
-    
     if (onlyNumbers.length === 8) {
       fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
         .then(response => response.json())
@@ -203,7 +162,6 @@ export default function EditarPrestador() {
         });
     }
   };
-
   return (
     <div>
       <Breadcrumb
@@ -213,8 +171,7 @@ export default function EditarPrestador() {
           { label: "Editar Prestador" }, // Último item sem link
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -223,7 +180,7 @@ export default function EditarPrestador() {
       ) : (
         <div className="flex flex-col flex-1 h-full">
           {" "}
-          {/* overflow-hidden */}
+          {}
           <Form {...form}>
             <h1 className="text-2xl font-bold mb-4 mt-5">Editar Prestador</h1>
             <form
@@ -275,7 +232,6 @@ export default function EditarPrestador() {
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .replace(/(\d{2})(\d)/, "$1/$2")
                               .slice(0, 10); // Garante que não haja mais de 10 caracteres
-
                             field.onChange(formatted);
                           }}
                           onBlur={() => {
@@ -286,11 +242,9 @@ export default function EditarPrestador() {
                             );
                             const currentDate = new Date();
                             const minYear = 1920;
-
                             const year = parseInt(
                               field.value ? field.value.split("/")[2] : ""
                             );
-
                             if (
                               !isValid(parsedDate) ||
                               parsedDate > currentDate ||
@@ -339,7 +293,7 @@ export default function EditarPrestador() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 2: CPF, CEP, Logradouro, Número */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField
                   control={form.control}
@@ -354,7 +308,6 @@ export default function EditarPrestador() {
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/\D/g, "");
                             const inputEvent = e.nativeEvent as InputEvent;
-
                             if (
                               inputEvent.inputType === "deleteContentBackward"
                             ) {
@@ -391,10 +344,8 @@ export default function EditarPrestador() {
                             if (
                               inputEvent.inputType === "deleteContentBackward"
                             ) {
-                              // Se o usuário estiver apagando, não aplica a formatação
                               field.onChange(rawValue);
                             } else {
-                              // Aplica a formatação normalmente
                               field.onChange(formatCPFInput(rawValue));
                             }
                           }}
@@ -409,7 +360,6 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="cep"
@@ -423,22 +373,16 @@ export default function EditarPrestador() {
                             maxLength={9}
                             value={field.value || ""}
                             onChange={(e) => {
-                              // Quando o usuário digitar, remove caracteres não numéricos
                               const rawValue = e.target.value;
-
-                              // Se o valor tiver mais de 5 caracteres, aplica a máscara
                               if (rawValue.length <= 5) {
                                 field.onChange(rawValue); // Sem formatação ainda
                               } else {
-                                // Aplica a máscara 'XXXXX-XXX'
                                 const formattedValue = rawValue.replace(
                                   /^(\d{5})(\d{0,3})/,
                                   "$1-$2"
                                 );
                                 field.onChange(formattedValue);
                               }
-
-                              // Chama a função para buscar o endereço baseado no CEP digitado
                               handleCEPChangeHandler(e);
                             }}
                             className={`border ${
@@ -453,7 +397,6 @@ export default function EditarPrestador() {
                     );
                   }}
                 />
-
                 <FormField
                   control={form.control}
                   name="logradouro"
@@ -471,7 +414,6 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="numero"
@@ -490,7 +432,7 @@ export default function EditarPrestador() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 3: Bairro, Cidade, UF */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
@@ -509,7 +451,6 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="cidade"
@@ -527,7 +468,6 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="uf"
@@ -590,7 +530,7 @@ export default function EditarPrestador() {
                   )}
                 />
               </div>
-              {/* 🔹 Linha 4: Telefone, Celular, Número do SUS */}
+              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -649,7 +589,6 @@ export default function EditarPrestador() {
                   )}
                 />
               </div>
-
               <Button
                 type="submit"
                 disabled={loading}
@@ -673,4 +612,4 @@ export default function EditarPrestador() {
       )}
     </div>
   );
-}
+}

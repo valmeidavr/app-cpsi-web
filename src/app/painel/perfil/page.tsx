@@ -1,13 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-//Components (adicionando os novos)
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Eye, EyeOff, UserCircle2 } from "lucide-react";
 import {
@@ -29,17 +25,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-//API
-// Removidas as importações diretas que causavam erro com bcrypt
-
-//Helpers
 import { http } from "@/util/http";
 import { getCookie, setCookie } from "@/util/cookies";
 import { getPayload } from "@/util/auth";
 import { Usuario } from "@/app/types/Usuario";
 import { updateUsuarioSchema } from "@/app/api/usuarios/schema/formShemaUpdateUsuario";
-
 export default function UsuarioProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -50,7 +40,6 @@ export default function UsuarioProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [usuario, setUsuario] = useState<Partial<Usuario> | null>(null);
   const [carregando, setCarregando] = useState(true); // Inicia como true
-
   const form = useForm({
     resolver: zodResolver(updateUsuarioSchema),
     mode: "onChange",
@@ -61,7 +50,6 @@ export default function UsuarioProfilePage() {
       confirmedsenha: "",
     },
   });
-
   const fetchUsuario = async () => {
     setCarregando(true);
     try {
@@ -69,12 +57,10 @@ export default function UsuarioProfilePage() {
       if (token) {
         const payload = getPayload(token);
         const userId = payload?.usuario.id;
-
         if (userId) {
           const response = await fetch(`/api/usuarios/perfil?id=${userId}`);
           if (response.ok) {
             const usuarioDoBanco = await response.json();
-
             if (usuarioDoBanco) {
               setUsuario(usuarioDoBanco);
               form.reset({
@@ -84,9 +70,6 @@ export default function UsuarioProfilePage() {
                 confirmedsenha: "",
               });
             } else {
-              console.error(
-                "ERRO: 'usuarioDoBanco' está vazio ou indefinido após extração."
-              );
             }
           }
         }
@@ -97,15 +80,12 @@ export default function UsuarioProfilePage() {
       setCarregando(false);
     }
   };
-
   useEffect(() => {
     fetchUsuario();
   }, []);
-
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
   const toggleConfirmPasswordVisibility = () =>
     setShowConfirmPassword((prev) => !prev);
-
   const onSubmit = async (values: z.infer<typeof updateUsuarioSchema>) => {
     setLoading(true);
     if (emailError) {
@@ -122,7 +102,6 @@ export default function UsuarioProfilePage() {
           },
           body: JSON.stringify(values),
         });
-        
         if (response.ok) {
           toast.success("Perfil atualizado com sucesso!");
           router.refresh(); 
@@ -140,7 +119,6 @@ export default function UsuarioProfilePage() {
       setLoading(false);
     }
   };
-
   const checkEmail = async (email: string) => {
     if (!email || email === usuario?.email) {
       setEmailError(null);
@@ -160,7 +138,6 @@ export default function UsuarioProfilePage() {
       setIsCheckingEmail(false);
     }
   };
-
   const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const email = event.target.value;
     form.setValue("email", email, { shouldValidate: true });
@@ -168,7 +145,6 @@ export default function UsuarioProfilePage() {
     const newTimeoutId = setTimeout(() => checkEmail(email), 500);
     setTimeoutId(newTimeoutId);
   };
-
   if (carregando) {
     return (
       <div className="container mx-auto p-4 flex justify-center items-center h-screen">
@@ -176,7 +152,6 @@ export default function UsuarioProfilePage() {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto p-4 md:p-6 lg:p-8">
       <Breadcrumb
@@ -185,22 +160,20 @@ export default function UsuarioProfilePage() {
           { label: "Perfil do Usuário" },
         ]}
       />
-
-      {/* Cabeçalho da Página */}
+      {}
       <div className="my-8">
         <h1 className="text-3xl font-bold tracking-tight">Meu Perfil</h1>
         <p className="text-muted-foreground mt-1">
           Gerencie suas informações pessoais e de segurança.
         </p>
       </div>
-
       <Form {...form}>
         <form
           id="profile-form"
           onSubmit={form.handleSubmit(onSubmit)}
           className="space-y-8"
         >
-          {/* Card de Informações Pessoais */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle>Informações Pessoais</CardTitle>
@@ -260,8 +233,7 @@ export default function UsuarioProfilePage() {
               />
             </CardContent>
           </Card>
-
-          {/* Card de Segurança */}
+          {}
           <Card>
             <CardHeader>
               <CardTitle>Segurança</CardTitle>
@@ -338,8 +310,7 @@ export default function UsuarioProfilePage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Botão de Ação */}
+          {}
           <div className="flex justify-end">
             <Button type="submit" disabled={loading} size="lg">
               {loading ? (
@@ -357,4 +328,4 @@ export default function UsuarioProfilePage() {
       </Form>
     </div>
   );
-}
+}

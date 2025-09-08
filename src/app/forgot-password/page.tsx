@@ -11,7 +11,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Mail, ArrowRight, ArrowLeft } from "lucide-react";
-
 export default function ForgotPassword() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
@@ -57,4 +56,4 @@ export default function ForgotPassword() {
       </Card>
     </main>
   );
-}
+}

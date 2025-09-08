@@ -1,5 +1,4 @@
 'use client'
-
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useParams, useRouter } from 'next/navigation'
@@ -14,8 +13,6 @@ import Breadcrumb from '@/components/ui/Breadcrumb'
 import { Save, Loader2, Eye, EyeOff } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-
-// Schema de validação
 const updateUsuarioSchema = z.object({
   nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('Email inválido'),
@@ -37,12 +34,10 @@ const updateUsuarioSchema = z.object({
   message: 'As senhas não coincidem',
   path: ['confirmedsenha']
 })
-
 interface Grupo {
   id: number
   nome: string
 }
-
 export default function EditarUsuario() {
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(true)
@@ -54,7 +49,6 @@ export default function EditarUsuario() {
   const params = useParams()
   const router = useRouter()
   const userId = Array.isArray(params.id) ? params.id[0] : params.id
-
   const form = useForm({
     resolver: zodResolver(updateUsuarioSchema),
     defaultValues: {
@@ -65,20 +59,15 @@ export default function EditarUsuario() {
       grupos: []
     }
   })
-
   useEffect(() => {
     async function fetchData() {
       if (!userId) {
         router.push('/painel/usuarios')
         return
       }
-
       try {
         setFetching(true)
-        
-        // Carregar dados do usuário
         const response = await fetch(`/api/usuarios/editar/${userId}`)
-        
         if (response.ok) {
           const data = await response.json()
           setUsuario(data)
@@ -93,26 +82,20 @@ export default function EditarUsuario() {
           toast.error('Usuário não encontrado')
           router.push('/painel/usuarios')
         }
-
-        // Carregar grupos disponíveis
         const gruposResponse = await fetch('/api/usuarios/sistemas')
         if (gruposResponse.ok) {
           const gruposData = await gruposResponse.json()
           setGrupos(gruposData)
         }
-
-        // Carregar grupos do usuário
         const userGruposResponse = await fetch('/api/usuarios/sistemas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId })
         })
-        
         if (userGruposResponse.ok) {
           const userGruposData = await userGruposResponse.json()
           form.setValue('grupos', userGruposData.userGroups || [])
         }
-        
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
         toast.error('Erro ao carregar dados')
@@ -122,10 +105,8 @@ export default function EditarUsuario() {
         setLoadingGrupos(false)
       }
     }
-
     fetchData()
   }, [userId, form, router])
-
   const onSubmit = async (values: z.infer<typeof updateUsuarioSchema>) => {
     setLoading(true)
     try {
@@ -136,7 +117,6 @@ export default function EditarUsuario() {
         },
         body: JSON.stringify(values),
       })
-
       if (response.ok) {
         toast.success('Usuário atualizado com sucesso!')
         router.push('/painel/usuarios?type=success&message=Usuário atualizado com sucesso!')
@@ -151,7 +131,6 @@ export default function EditarUsuario() {
       setLoading(false)
     }
   }
-
   if (fetching) {
     return (
       <div className="container mx-auto p-6">
@@ -162,7 +141,6 @@ export default function EditarUsuario() {
       </div>
     )
   }
-
   return (
     <div className="container mx-auto p-6">
       <Breadcrumb
@@ -172,7 +150,6 @@ export default function EditarUsuario() {
           { label: "Editar Usuário" },
         ]}
       />
-
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Editar Usuário</CardTitle>
@@ -183,7 +160,7 @@ export default function EditarUsuario() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* Nome */}
+              {}
               <FormField
                 control={form.control}
                 name="nome"
@@ -200,8 +177,7 @@ export default function EditarUsuario() {
                   </FormItem>
                 )}
               />
-
-              {/* Email */}
+              {}
               <FormField
                 control={form.control}
                 name="email"
@@ -219,8 +195,7 @@ export default function EditarUsuario() {
                   </FormItem>
                 )}
               />
-
-              {/* Senha */}
+              {}
               <FormField
                 control={form.control}
                 name="senha"
@@ -253,8 +228,7 @@ export default function EditarUsuario() {
                   </FormItem>
                 )}
               />
-
-              {/* Confirmar Senha */}
+              {}
               <FormField
                 control={form.control}
                 name="confirmedsenha"
@@ -287,8 +261,7 @@ export default function EditarUsuario() {
                   </FormItem>
                 )}
               />
-
-              {/* Seleção de Grupos */}
+              {}
               <FormField
                 control={form.control}
                 name="grupos"
@@ -326,8 +299,7 @@ export default function EditarUsuario() {
                   </FormItem>
                 )}
               />
-
-              {/* Botões */}
+              {}
               <div className="flex gap-4 pt-4">
                 <Button
                   type="button"
@@ -357,4 +329,4 @@ export default function EditarUsuario() {
       </Card>
     </div>
   )
-}
+}

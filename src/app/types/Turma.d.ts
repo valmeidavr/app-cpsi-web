@@ -1,6 +1,5 @@
 import { Prestador } from "./Prestador";
 import { Procedimento } from "./Procedimento";
-
 export type Turma = {
   id: number;
   nome: string;

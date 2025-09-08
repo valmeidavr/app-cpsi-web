@@ -1,14 +1,8 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -22,10 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//Helpers
 import { useRouter, useSearchParams } from "next/navigation";
-
 import {
   Select,
   SelectContent,
@@ -34,7 +25,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createPlanosSchema } from "@/app/api/plano_contas/schema/formSchemaPlanos";
-
 export default function NovoPlano() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -42,7 +32,6 @@ export default function NovoPlano() {
     { value: "ENTRADA", label: "ENTRADA" },
     { value: "SAIDA", label: "SAIDA" },
   ];
-
   const form = useForm({
     resolver: zodResolver(createPlanosSchema),
     defaultValues: {
@@ -52,7 +41,6 @@ export default function NovoPlano() {
       descricao: "",
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createPlanosSchema>) => {
     setLoading(true);
     try {
@@ -63,19 +51,14 @@ export default function NovoPlano() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao salvar plano!");
       }
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Plano salvo com sucesso!");
-
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Erro ao salvar plano!";
@@ -84,7 +67,6 @@ export default function NovoPlano() {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -98,8 +80,7 @@ export default function NovoPlano() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {" "}
-          {/* Campos do fomulário*/}
-
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
             <FormField
                 control={form.control}
@@ -142,7 +123,6 @@ export default function NovoPlano() {
                 )}
             />
           </div>
-
             <FormField
               control={form.control}
               name="tipo"
@@ -176,7 +156,6 @@ export default function NovoPlano() {
                 </FormItem>
               )}
             />
-        
             <FormField
               control={form.control}
               name="descricao"
@@ -198,8 +177,7 @@ export default function NovoPlano() {
                 </FormItem>
               )}
             />
-          
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -219,4 +197,4 @@ export default function NovoPlano() {
       </Form>
     </div>
   );
-}
+}

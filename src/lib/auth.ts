@@ -1,7 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { authenticateUser } from './auth-mysql'
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -14,13 +13,10 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.login || !credentials?.password) {
           return null
         }
-
         const authResult = await authenticateUser(credentials.login, credentials.password)
-
         if (!authResult.success || !authResult.user) {
           return null
         }
-
         return {
           id: authResult.user.login,
           name: authResult.user.nome,

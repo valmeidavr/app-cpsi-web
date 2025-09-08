@@ -1,15 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -23,21 +17,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { updateEspecialidadeSchema } from "@/app/api/especialidades/schema/formSchemaEspecialidade";
-
-//Helpers
 import { redirect, useParams } from "next/navigation";
 import { Especialidade } from "@/app/types/Especialidade";
-
 export default function EditarEspecialidade() {
   const [loading, setLoading] = useState(false);
   const [especialidade, setEspecialidade] = useState<Especialidade>();
   const [carregando, setCarregando] = useState(false);
   const params = useParams();
   const especialidadeId = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const form = useForm({
     resolver: zodResolver(updateEspecialidadeSchema),
     mode: "onChange",
@@ -46,9 +34,7 @@ export default function EditarEspecialidade() {
       codigo: "",
     },
   });
-
   const router = useRouter();
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -56,7 +42,6 @@ export default function EditarEspecialidade() {
         if (!especialidadeId) redirect("/painel/especialidades");
         const response = await fetch(`/api/especialidades/${especialidadeId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setEspecialidade(data);
           form.reset({
@@ -64,25 +49,21 @@ export default function EditarEspecialidade() {
             codigo: data.codigo,
           });
         } else {
-          console.error("Erro ao carregar especialidade:", data.error);
           toast.error("Erro ao carregar dados da especialidade");
         }
       } catch (error) {
-        console.error("Erro ao carregar especialidade:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (
     values: z.infer<typeof updateEspecialidadeSchema>
   ) => {
     setLoading(true);
     try {
       if (!especialidadeId) redirect("/painel/especialidades");
-
       const response = await fetch(`/api/especialidades/${especialidadeId}`, {
         method: 'PUT',
         headers: {
@@ -90,17 +71,13 @@ export default function EditarEspecialidade() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar especialidade.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Especialidade atualizada com sucesso!");
-
       router.push(`/painel/especialidades?${queryParams.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar especialidade");
@@ -108,7 +85,6 @@ export default function EditarEspecialidade() {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -118,8 +94,7 @@ export default function EditarEspecialidade() {
           { label: "Editar Especialidade" },
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -129,7 +104,7 @@ export default function EditarEspecialidade() {
         <Form {...form}>
           <h1 className="text-2xl font-bold mb-6 mt-5">Editar Especialidade</h1>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campos de Nome e Código */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <FormField
                 control={form.control}
@@ -151,7 +126,6 @@ export default function EditarEspecialidade() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="codigo"
@@ -173,8 +147,7 @@ export default function EditarEspecialidade() {
                 )}
               />
             </div>
-
-            {/* Botão de Envio */}
+            {}
             <Button
               type="submit"
               disabled={loading}
@@ -195,4 +168,4 @@ export default function EditarEspecialidade() {
       )}
     </div>
   );
-}
+}

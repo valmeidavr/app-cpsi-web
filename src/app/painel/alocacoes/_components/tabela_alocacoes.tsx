@@ -1,5 +1,4 @@
 "use client";
-
 import { updateAlocacaoSchema } from "@/app/api/alocacoes/shema/formSchemaAlocacao";
 import { Alocacao } from "@/app/types/Alocacao";
 import { Especialidade } from "@/app/types/Especialidade";
@@ -49,7 +48,6 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
-
 interface TabelaAlocacoesProps {
   alocacoes: Alocacao[];
   CarregandoDadosAlocacao: boolean;
@@ -58,7 +56,6 @@ interface TabelaAlocacoesProps {
   prestador: Prestador | null;
   unidade: Unidade | null;
 }
-
 const TabelaAlocacoes = ({
   alocacoes,
   CarregandoDadosAlocacao,
@@ -71,10 +68,8 @@ const TabelaAlocacoes = ({
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState<boolean>(false);
   const [alocacaoSelecionada, setAlocacaoSelecionada] =
     useState<Alocacao | null>(null);
-
   const [loading, setloading] = useState<boolean>(false);
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
-
   const form = useForm({
     resolver:
       zodResolver<z.infer<typeof updateAlocacaoSchema>>(updateAlocacaoSchema),
@@ -85,68 +80,26 @@ const TabelaAlocacoes = ({
       especialidade_id: undefined,
     },
   });
-
   const excluirAlocacao = async (alocacao_id: number) => {
     try {
-      console.log('Iniciando exclusão da alocação:', alocacao_id);
       setloading(true);
-      
       const response = await fetch(`/api/alocacoes/${alocacao_id}`, {
         method: 'DELETE'
       });
-
-      console.log('Resposta da API:', response.status, response.statusText);
-
       if (response.ok) {
         toast.success("Alocação excluída com sucesso");
         setIsDeleteModalOpen(false);
-        console.log('Chamando fetchAlocacoes para atualizar a lista');
         await fetchAlocacoes();
       } else {
         const errorData = await response.json();
-        console.error('Erro da API:', errorData);
         toast.error(errorData.error || "Não foi possível excluir a alocação");
       }
     } catch (error) {
-      console.error("Erro ao excluir alocação:", error);
       toast.error("Erro ao excluir a alocação. Tente novamente.");
     } finally {
       setloading(false);
     }
   };
-
-  // const handleOpenUpdateModal = async (alocacaoParaAtualizar: Alocacao) => {
-  //   try {
-  //     setAlocacaoSelecionada(alocacaoParaAtualizar);
-  //     const data = await getAlocacaoById(alocacaoParaAtualizar.id.toString());
-
-  //     console.log("Dados recebidos da API:", data);
-  //     form.reset({
-  //       prestadoresId: data.prestadoresId,
-  //       unidadesId: data.unidadesId,
-  //       especialidadesId: data.especialidadesId,
-  //     });
-  //     setIsUpdateModalOpen(true);
-  //   } catch (error) {
-  //     toast.error("Falha ao carregar os dados da alocação para edição.");
-  //     console.error(error);
-  //   }
-  // };
-
-  // const onSubmit = async (values: z.infer<typeof updateAlocacaoSchema>) => {
-  //   try {
-  //     setCarregandoDadosAlocacao(true);
-  //     if (!alocacaoSelecionada) return;
-  //     await updateAlocacao(alocacaoSelecionada.id.toString(), values);
-  //     await fetchAlocacoes();
-  //     toast.success("Alocação criada com sucesso!");
-  //   } catch (error) {
-  //     toast.error("Não foi possivel criar a Alocação!");
-  //   } finally {
-  //     setCarregandoDadosAlocacao(false);
-  //   }
-  // };
-
   const fetchEspecialidades = async () => {
     try {
       const response = await fetch("/api/especialidades");
@@ -160,7 +113,6 @@ const TabelaAlocacoes = ({
       toast.error("Erro ao carregar dados das Especialidades");
     }
   };
-
   useEffect(() => {
     fetchEspecialidades();
   }, []);
@@ -192,7 +144,6 @@ const TabelaAlocacoes = ({
                   <TableCell>{row.especialidade?.nome || row.especialidade_nome || 'Não definido'}</TableCell>
                   <TableCell>{row.unidade?.nome || row.unidade_nome || 'Não definido'}</TableCell>
                   <TableCell>{row.prestador?.nome || row.prestador_nome || 'Não definido'}</TableCell>
-
                   <TableCell className="flex justify-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -202,14 +153,7 @@ const TabelaAlocacoes = ({
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="p-2">
-                        {/* <DropdownMenuItem
-                          className="flex items-center gap-2 cursor-pointer"
-                          onSelect={() => handleOpenUpdateModal(row)}
-                        >
-                          <Pencil className="w-4 h-4" />
-                          <span>Editar</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator /> */}
+                        {}
                         <DropdownMenuItem
                           className="flex items-center gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 cursor-pointer"
                           onSelect={() => {
@@ -239,7 +183,6 @@ const TabelaAlocacoes = ({
           </TableBody>
         )}
       </Table>
-
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -280,62 +223,8 @@ const TabelaAlocacoes = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-{/* 
-      <Dialog open={isUpdateModalOpen} onOpenChange={setIsUpdateModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Atualizar Alocação</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-              <FormField
-                control={form.control}
-                name="especialidadesId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Especialidade *</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(Number(value))}
-                      value={field.value ? String(field.value) : ""}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma especialidade" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {especialidades.map((item) => (
-                          <SelectItem key={item.id} value={String(item.id)}>
-                            {item.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setIsUpdateModalOpen(false)}
-                  disabled={loading}
-                >
-                  Cancelar
-                </Button>
-                <Button variant="default" type="submit" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Salvar Alterações
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog> */}
+{}
     </>
   );
 };
-
-export default TabelaAlocacoes;
+export default TabelaAlocacoes;

@@ -51,4 +51,4 @@ export type Prestador = {
     createdAt: Date;
     updatedAt: Date;
   }>;
-};
+};

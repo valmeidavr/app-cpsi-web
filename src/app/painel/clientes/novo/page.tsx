@@ -1,16 +1,12 @@
 "use client";
-//React
 import type React from "react";
 import { parse, isValid } from "date-fns";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
-//Components
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Save, Loader2, Link, MenuIcon, Plus } from "lucide-react";
 import {
@@ -30,11 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-
-//API
 import { http } from "@/util/http";
-
-//helpers
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
@@ -61,40 +53,33 @@ import { RadioGroupItem } from "@radix-ui/react-radio-group";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TipoCliente } from "@/app/types/Cliente";
-
-// Mockup de opções de sexo
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
   { value: "Feminino", label: "Feminino" },
   { value: "outro", label: "Outro" },
 ];
-
 export default function CustomerRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const [isCheckingEmail, setIsCheckingEmail] = useState<boolean>(false);
   const [emailError, setEmailError] = useState<string | null>("");
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
-
   const [isCheckingCpf, setIsCheckingCpf] = useState<boolean>(false);
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
   const [loadingInativar, setLoadingInativar] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
-
   useEffect(() => {
     const fetchConvenios = async () => {
       try {
         const { data } = await http.get("/api/convenios");
         setConvenios(data.data);
       } catch (error) {
-        console.error("Error ao buscar convênios:", error);
       }
     };
     fetchConvenios();
   }, []);
-
   const form = useForm<z.infer<typeof createClienteSchema>>({
     resolver: zodResolver(createClienteSchema),
     mode: "onChange",
@@ -115,8 +100,6 @@ export default function CustomerRegistrationForm() {
       desconto: {},
     },
   });
-
-  // Inicializar descontos quando convênios são carregados
   useEffect(() => {
     if (convenios.length > 0) {
       const initialDescontos: Record<string, number> = {};
@@ -126,7 +109,6 @@ export default function CustomerRegistrationForm() {
       form.setValue("desconto", initialDescontos);
     }
   }, [convenios, form]);
-
   const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
     if (emailError || cpfError) {
@@ -135,15 +117,11 @@ export default function CustomerRegistrationForm() {
       return;
     }
     try {
-      // Garantir que todos os convênios selecionados tenham desconto definido
       const descontosPreenchidos: Record<string, number> = {};
-
-      // Para cada convênio selecionado, garantir que tenha um desconto válido
       values.convenios.forEach((convenioId) => {
         const convenio = convenios.find(c => c.id === convenioId);
         if (convenio) {
           const descontoAtual = values.desconto[convenioId];
-          // Se não há desconto definido ou é inválido, usar o desconto padrão do convênio
           if (
             descontoAtual === undefined ||
             descontoAtual === null ||
@@ -155,42 +133,33 @@ export default function CustomerRegistrationForm() {
           }
         }
       });
-
       const payload = {
         ...values,
         desconto: descontosPreenchidos,
       };
-
       await http.post("/api/clientes", payload);
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente salvo com sucesso!");
-
       router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erro ao salvar cliente";
-
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
   const checkEmail = async (email: string) => {
     if (!email) {
       setEmailError(null);
       return;
     }
-
     setIsCheckingEmail(true);
     try {
       const response = await fetch(`/api/clientes/findByEmail/${encodeURIComponent(email)}`);
       const data = await response.json();
-      
       if (response.ok) {
         if (data) {
           setEmailError("Este email já está em uso.");
@@ -198,27 +167,22 @@ export default function CustomerRegistrationForm() {
           setEmailError(null);
         }
       } else {
-        console.error("Erro ao verificar email:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao verificar email:", error);
       setEmailError("Erro ao verificar email.");
     } finally {
       setIsCheckingEmail(false);
     }
   };
-
   const checkCpf = async (cpf: string) => {
     if (!cpf) {
       setCpfError(null);
       return;
     }
-
     setIsCheckingCpf(true);
     try {
       const response = await fetch(`/api/clientes/findByCpf/${encodeURIComponent(cpf)}`);
       const data = await response.json();
-      
       if (response.ok) {
         if (data.data) {
           setCpfError("Este cpf já está em uso.");
@@ -226,34 +190,27 @@ export default function CustomerRegistrationForm() {
           setCpfError(null);
         }
       } else {
-        console.error("Erro ao verificar CPF:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao verificar cpf:", error);
       setCpfError("Erro ao verificar cpf.");
     } finally {
       setIsCheckingCpf(false);
     }
   };
-
   const handlecpfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const cpf = event.target.value;
     form.setValue("cpf", cpf, { shouldValidate: true });
-
     if (timeoutCpfId) clearTimeout(timeoutCpfId);
     const newTimeoutCpfId = setTimeout(() => checkCpf(cpf), 500);
     setTimeoutCpfId(newTimeoutCpfId);
   };
-
   const handleEmailChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const email = event.target.value;
     form.setValue("email", email, { shouldValidate: true });
-
     if (timeoutId) clearTimeout(timeoutId);
     const newTimeoutId = setTimeout(() => checkEmail(email), 500);
     setTimeoutId(newTimeoutId);
   };
-
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, {
       setValue: (field: string, value: string) => form.setValue(field as keyof z.infer<typeof createClienteSchema>, value),
@@ -261,7 +218,6 @@ export default function CustomerRegistrationForm() {
       clearErrors: (field: string) => form.clearErrors(field as keyof z.infer<typeof createClienteSchema>)
     });
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -301,7 +257,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="email"
@@ -334,7 +289,7 @@ export default function CustomerRegistrationForm() {
               )}
             />
           </div>
-          {/* 🔹 Linha 2: Data de nascimento + Sexo */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -349,19 +304,16 @@ export default function CustomerRegistrationForm() {
                       value={field.value || ""}
                       onChange={(e) => {
                         let value = e.target.value.replace(/\D/g, "");
-
                         if (value.length > 2) {
                           value = value.replace(/^(\d{2})/, "$1/");
                         }
                         if (value.length > 5) {
                           value = value.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
                         }
-
                         field.onChange(value);
                       }}
                       onBlur={() => {
                         if (!field.value) return;
-
                         const parsedDate = parse(
                           field.value,
                           "dd/MM/yyyy",
@@ -370,7 +322,6 @@ export default function CustomerRegistrationForm() {
                         const currentDate = new Date();
                         const minYear = 1920;
                         const year = parseInt(field.value.split("/")[2]);
-
                         if (
                           !isValid(parsedDate) ||
                           parsedDate > currentDate ||
@@ -423,7 +374,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="tipo"
@@ -451,7 +401,6 @@ export default function CustomerRegistrationForm() {
                       <SelectItem value="0" disabled>
                         Selecione
                       </SelectItem>
-
                       {Object.values(TipoCliente).map((item) => {
                         return (
                           <SelectItem key={item} value={String(item)}>
@@ -468,7 +417,7 @@ export default function CustomerRegistrationForm() {
               )}
             />
           </div>
-          {/* 🔹 Linha 2: CPF, CEP, Logradouro, Número */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <FormField
               control={form.control}
@@ -485,9 +434,7 @@ export default function CustomerRegistrationForm() {
                         handlecpfChange(e);
                         const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent; // Força o tipo correto
-
                         if (inputEvent.inputType === "deleteContentBackward") {
-                          // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
                           field.onChange(formatCPFInput(rawValue)); // Aplica a máscara
@@ -510,7 +457,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="cep"
@@ -525,17 +471,13 @@ export default function CustomerRegistrationForm() {
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent;
-
                         if (inputEvent.inputType === "deleteContentBackward") {
-                          // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
                           field.onChange(
                             rawValue.replace(/^(\d{5})(\d)/, "$1-$2")
                           ); // Aplica a máscara ao digitar
                         }
-
-                        // Chama a função handleCEPChangeHandler após atualizar o valor
                         handleCEPChangeHandler(e);
                       }}
                       className={`border ${
@@ -549,7 +491,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="logradouro"
@@ -563,7 +504,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="numero"
@@ -578,7 +518,7 @@ export default function CustomerRegistrationForm() {
               )}
             />
           </div>
-          {/* 🔹 Linha 3: Bairro, Cidade, UF */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
@@ -593,7 +533,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="cidade"
@@ -607,7 +546,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="uf"
@@ -670,7 +608,7 @@ export default function CustomerRegistrationForm() {
               )}
             />
           </div>
-          {/* 🔹 Linha 4: Telefone, Celular, Número do SUS */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -700,7 +638,6 @@ export default function CustomerRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="telefone2"
@@ -750,7 +687,6 @@ export default function CustomerRegistrationForm() {
                   respectivos descontos.
                 </DialogDescription>
               </DialogHeader>
-
               <div className="max-h-[60vh] overflow-y-auto mt-4">
                 <Table>
                   <TableHeader>
@@ -771,7 +707,6 @@ export default function CustomerRegistrationForm() {
                               const currentValue = Array.isArray(field.value)
                                 ? field.value
                                 : [];
-
                               return (
                                 <FormControl>
                                   <Checkbox
@@ -828,7 +763,6 @@ export default function CustomerRegistrationForm() {
                                       field.onChange(value);
                                     }}
                                     onBlur={() => {
-                                      // Se o campo ficou vazio, usar o desconto padrão do convênio
                                       if (field.value === undefined || field.value === null || isNaN(field.value)) {
                                         field.onChange(item.desconto);
                                       }
@@ -850,7 +784,6 @@ export default function CustomerRegistrationForm() {
                   </TableBody>
                 </Table>
               </div>
-
               <DialogFooter className="mt-6">
                 <Button
                   variant="ghost"
@@ -890,4 +823,4 @@ export default function CustomerRegistrationForm() {
       </Form>
     </div>
   );
-}
+}

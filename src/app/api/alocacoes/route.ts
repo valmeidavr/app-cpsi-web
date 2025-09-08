@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAlocacaoSchema, updateAlocacaoSchema } from "./shema/formSchemaAlocacao";
-
 export type CreateAlocacaoDTO = z.infer<typeof createAlocacaoSchema>;
 export type UpdateAlocacaoDTO = z.infer<typeof updateAlocacaoSchema>;
-
-// GET - Listar alocações com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -16,7 +13,6 @@ export async function GET(request: NextRequest) {
     const prestadorId = searchParams.get('prestadorId');
     const especialidadeId = searchParams.get('especialidade_id');
     const unidadeId = searchParams.get('unidadeId');
-
     let query = `
       SELECT 
         a.*,
@@ -35,37 +31,25 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
-
     if (search) {
       query += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     if (prestadorId) {
       query += ' AND a.prestador_id = ?';
       params.push(prestadorId);
     }
-
     if (especialidadeId) {
       query += ' AND a.especialidade_id = ?';
       params.push(especialidadeId);
     }
-
     if (unidadeId) {
       query += ' AND a.unidade_id = ?';
       params.push(unidadeId);
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY e.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
-    // Parâmetros de paginação inseridos diretamente na query;
-
-    console.log("🔍 Query de alocações:", query);
-    console.log("🔍 Parâmetros:", params);
-    
     const alocacaoRows = await executeWithRetry(accessPool, query, params);
-    
     console.log("✅ Alocações encontradas:", (alocacaoRows as Array<{
       id: number;
       unidade_id: number;
@@ -79,8 +63,6 @@ export async function GET(request: NextRequest) {
       createdAt: Date;
       updatedAt: Date;
     }>)?.length || 0);
-
-    // Buscar total de registros para paginação
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM alocacoes a
@@ -90,16 +72,12 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const countParams: string[] = [];
-
     if (search) {
       countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-
-    // Transformar os dados para incluir objetos aninhados e campos diretos
     const alocacoesFormatadas = (alocacaoRows as Array<{
       id: number;
       unidade_id: number;
@@ -119,11 +97,9 @@ export async function GET(request: NextRequest) {
       prestador_id: row.prestador_id,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
-      // Campos diretos para compatibilidade
       unidade_nome: row.unidade_nome,
       especialidade_nome: row.especialidade_nome,
       prestador_nome: row.prestador_nome,
-      // Objetos aninhados
       unidade: {
         id: row.unidade_id,
         nome: row.unidade_nome
@@ -139,7 +115,6 @@ export async function GET(request: NextRequest) {
         celular: row.prestador_celular
       }
     }));
-
     return NextResponse.json({
       data: alocacoesFormatadas,
       pagination: {
@@ -150,30 +125,23 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar alocações:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar alocação
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createAlocacaoSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Inserir alocação
     const result = await executeWithRetry(accessPool,
       `INSERT INTO alocacoes (
         unidade_id, especialidade_id, prestador_id
@@ -182,13 +150,11 @@ export async function POST(request: NextRequest) {
         payload.unidade_id, payload.especialidade_id, payload.prestador_id
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar alocação:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },

@@ -1,6 +1,5 @@
 import { Cliente } from "./Cliente";
 import { Convenio } from "./Convenios";
-
 export default interface ConveniosCliente {
   clientes: Cliente[];
   cliente_id: number;
@@ -13,4 +12,4 @@ export default interface ConveniosCliente {
   regras: string;
   tabela_faturamento_id: number;
   updatedAt: Date;
-}
+}

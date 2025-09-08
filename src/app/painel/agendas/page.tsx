@@ -1,11 +1,7 @@
 "use client";
-
-//React
 import { useEffect } from "react";
 import { FormProvider, useForm } from "react-hook-form";
-
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import {
   FormControl,
   FormField,
@@ -13,8 +9,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-
-//Types
 import { Agenda } from "@/app/types/Agenda";
 import {
   Select,
@@ -29,7 +23,6 @@ import { Calendar } from "@/components/ui/calendar";
 import TabelaAgenda from "./_components/tabelaAgenda";
 import { Loader2 } from "lucide-react";
 import { useAgenda } from "./AgendaContext";
-
 export default function Agendas() {
   const {
     prestador,
@@ -49,13 +42,11 @@ export default function Agendas() {
     currentMonth,
     setCurrentMonth,
   } = useAgenda();
-
     useEffect(() => {
     if (unidade && prestador && especialidade) {
       carregarAgendamentosGeral();
     }
   }, [unidade, prestador, especialidade, carregarAgendamentosGeral]);
-
   const form = useForm({
     resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
@@ -65,68 +56,55 @@ export default function Agendas() {
       especialidade_id: 0,
     },
   });
-
   const handleDateClick = (date: Date | undefined) => {
     if (date) {
       setDate(date);
-      // Atualizar o mês do calendário para o mês da data selecionada
       setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
     }
   };
-
   const normalizarData = (d: Date) => {
     const dataNormalizada = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     return dataNormalizada;
   };
-
   const agendamentosPorDia = new Map<string, Agenda[]>();
-
   agendamentosGeral.forEach((agenda) => {
     const data = normalizarData(new Date(agenda.dtagenda));
     const chave = data.getTime().toString(); 
-
     if (!agendamentosPorDia.has(chave)) {
       agendamentosPorDia.set(chave, []);
     }
-
     agendamentosPorDia.get(chave)!.push(agenda);
   });
-
   const diasVerde: Date[] = [];
   const diasVermelho: Date[] = [];
-
   agendamentosPorDia.forEach((agendas, chave) => {
     const data = new Date(Number(chave));
     const temLivre = agendas.some((a) => a.situacao === "LIVRE");
     const todosOcupados = agendas.every((a) => a.situacao !== "LIVRE");
-
     if (temLivre) {
       diasVerde.push(data);
     } else if (todosOcupados && agendas.length > 0) {
       diasVermelho.push(data);
     }
   });
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
       <div className="max-w-12xl mx-auto">
-        {/* Header */}
+        {}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Agenda de Consultas</h1>
           <p className="text-gray-600">Gerencie agendamentos e visualize disponibilidade</p>
         </div>
-
         <FormProvider {...form}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Painel Esquerdo - Filtros e Calendário */}
+            {}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-6">Configurações</h2>
-                
                 <div className="space-y-6">
-                  {/* Filtros */}
+                  {}
                   <div className="space-y-4">
-                    {/* Filtros */}
+                    {}
                     <FormField
                       control={form.control}
                       name="unidade_id"
@@ -168,7 +146,6 @@ export default function Agendas() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="especialidade_id"
@@ -212,7 +189,6 @@ export default function Agendas() {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="prestador_id"
@@ -257,11 +233,9 @@ export default function Agendas() {
                       )}
                     />
                   </div>
-
-                  {/* Calendário */}
+                  {}
                   <div className="pt-4 border-t border-gray-200">
                     <h3 className="text-sm font-medium text-gray-700 mb-4">Calendário</h3>
-                    
                     {carregandoDadosAgenda ? (
                       <div className="flex justify-center items-center h-32 bg-gray-50 rounded-lg">
                         <div className="flex items-center space-x-3">
@@ -341,8 +315,7 @@ export default function Agendas() {
                 </div>
               </div>
             </div>
-
-            {/* Painel Direito - Tabela de Agendamentos */}
+            {}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-6">
                 <TabelaAgenda />
@@ -353,4 +326,4 @@ export default function Agendas() {
       </div>
     </div>
   );
-}
+}

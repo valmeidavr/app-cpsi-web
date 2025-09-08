@@ -1,4 +1,3 @@
-// AlunoDetalhesModal.tsx
 
 import {
   Dialog,
@@ -14,8 +13,6 @@ import { Separator } from "@/components/ui/separator"; // Importe o separador
 import { Aluno } from "@/app/types/Aluno";
 import { formatDate } from "date-fns";
 import { formatarTelefone } from "@/util/clearData";
-
-// Importe os ícones que vamos usar
 import {
   User,
   Mail,
@@ -24,14 +21,11 @@ import {
   CalendarCheck2,
   BadgeCheck,
 } from "lucide-react";
-
 interface Props {
   aluno: Aluno | null;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-// Componente para um campo de detalhe com ícone
 const DetalheItem = ({
   icon,
   label,
@@ -49,7 +43,6 @@ const DetalheItem = ({
     <p className="text-sm text-foreground">{value}</p>
   </div>
 );
-
 export default function AlunoDetalhesModal({
   aluno,
   isOpen,
@@ -58,7 +51,6 @@ export default function AlunoDetalhesModal({
   if (!aluno) {
     return null;
   }
-
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
@@ -71,12 +63,10 @@ export default function AlunoDetalhesModal({
             Informações detalhadas do aluno selecionado.
           </DialogDescription>
         </DialogHeader>
-
         <Separator />
-
-        {/* Layout principal em grid com 2 colunas para telas médias e acima */}
+        {}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5 py-2">
-          {/* Usamos o col-span-2 para o nome ocupar a largura total */}
+          {}
           <div className="md:col-span-2">
             <DetalheItem
               icon={<User className="h-4 w-4" />}
@@ -84,13 +74,11 @@ export default function AlunoDetalhesModal({
               value={aluno.cliente.nome}
             />
           </div>
-
           <DetalheItem
             icon={<Mail className="h-4 w-4" />}
             label="Email"
             value={aluno.cliente.email || "Não informado"}
           />
-
           <DetalheItem
             icon={<Phone className="h-4 w-4" />}
             label="Celular"
@@ -100,7 +88,6 @@ export default function AlunoDetalhesModal({
                 : "Não informado"
             }
           />
-
           <DetalheItem
             icon={<CakeSlice className="h-4 w-4" />}
             label="Nascimento"
@@ -110,7 +97,6 @@ export default function AlunoDetalhesModal({
                 : "Não informado"
             }
           />
-
           <DetalheItem
             icon={<CalendarCheck2 className="h-4 w-4" />}
             label="Data de Inscrição"
@@ -120,16 +106,13 @@ export default function AlunoDetalhesModal({
                 : "Não informado"
             }
           />
-
           <DetalheItem
             icon={<BadgeCheck className="h-4 w-4" />}
             label="Status"
             value={aluno.cliente.status!}
           />
         </div>
-
         <Separator />
-
         <DialogFooter className="mt-2">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fechar
@@ -138,4 +121,4 @@ export default function AlunoDetalhesModal({
       </DialogContent>
     </Dialog>
   );
-}
+}

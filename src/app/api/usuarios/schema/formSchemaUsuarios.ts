@@ -1,5 +1,4 @@
 import * as z from "zod";
-
 export const createUsuarioSchema = z
   .object({
     nome: z
@@ -8,7 +7,6 @@ export const createUsuarioSchema = z
       .regex(/^[a-zA-ZÀ-ÿ\s]+$/, {
         message: "O nome não pode conter números ou símbolos",
       }),
-
     email: z
       .string()
       .min(1, { message: "O campo é obrigatório" })
@@ -21,4 +19,4 @@ export const createUsuarioSchema = z
   .refine((data) => data.senha === data.confirmedsenha, {
     message: "As senhas não coincidem",
     path: ["confirmedsenha"],
-  });
+  });

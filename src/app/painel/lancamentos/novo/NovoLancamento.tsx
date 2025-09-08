@@ -1,16 +1,10 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Calendar } from "lucide-react";
 import {
@@ -31,17 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-
-//helpers
 import { http } from "@/util/http";
-//Types
 import { PlanoConta } from "@/app/types/PlanoConta";
 import { Usuario } from "@/app/types/Usuario";
 import { Caixa } from "@/app/types/Caixa";
-
 export default function NovoLancamento() {
   const [loading, setLoading] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
@@ -56,16 +44,13 @@ export default function NovoLancamento() {
       ? searchParams.get("tipo")?.toUpperCase()
       : undefined
   ) as keyof typeof TEXTO_POR_TIPO | undefined;
-
   const TEXTO_POR_TIPO = {
     ENTRADA: "Lançar Entrada",
     SAIDA: "Lançar Saída",
     ESTORNO: "Lançar Estorno",
     TRANSFERENCIA: "Lançar Transferência",
   } as const;
-
   const toggleText = tipo ? TEXTO_POR_TIPO[tipo] : "";
-
   const form = useForm({
     resolver: zodResolver(createLancamentoSchema),
     mode: "onChange",
@@ -73,21 +58,19 @@ export default function NovoLancamento() {
       valor: 0,
       descricao: "",
       data_lancamento: "",
-      tipo: tipo,
-      cliente_id: undefined,
+      cliente_id: null,
       plano_conta_id: 0,
       caixa_id: 0,
       lancamento_original_id: null,
       id_transferencia: null,
       motivo_estorno: null,
       motivo_transferencia: null,
-      forma_pagamento: undefined,
-      status_pagamento: undefined,
+      forma_pagamento: "",
+      status_pagamento: "",
       agenda_id: null,
-      usuario_id: undefined,
+      usuario_id: null,
     },
   });
-
   const fetchCaixas = async () => {
     try {
       const { data } = await http.get("/api/caixa");
@@ -108,7 +91,6 @@ export default function NovoLancamento() {
       setUsuarios(response.data.data);
     } catch (error) { }
   };
-
   useEffect(() => {
     fetchCaixas();
     fetchPlanoContas();
@@ -125,7 +107,6 @@ export default function NovoLancamento() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -202,7 +183,6 @@ export default function NovoLancamento() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="status_pagamento"
@@ -234,39 +214,6 @@ export default function NovoLancamento() {
               )}
             />
           </div>
-
-          <FormField
-            control={form.control}
-            name="tipo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tipo *</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value || ""}
-                >
-                  <FormControl
-                    className={
-                      form.formState.errors.tipo
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="ENTRADA">ENTRADA</SelectItem>
-                    <SelectItem value="SAIDA">SAÍDA</SelectItem>
-                    <SelectItem value="TRANSFERENCIA">TRANSFERÊNCIA</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage className="text-red-500 text-sm mt-1" />
-              </FormItem>
-            )}
-          />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -402,7 +349,6 @@ export default function NovoLancamento() {
               )}
             />
           </div>
-
           <FormField
             control={form.control}
             name="descricao"
@@ -423,7 +369,6 @@ export default function NovoLancamento() {
               </FormItem>
             )}
           />
-
           <Button
             type="submit"
             disabled={loading}
@@ -445,4 +390,4 @@ export default function NovoLancamento() {
       </Form>
     </div>
   );
-}
+}

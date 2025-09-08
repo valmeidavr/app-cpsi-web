@@ -3,26 +3,18 @@ import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createAgendaSchema, updateAgendaSchema } from "./schema/formSchemaAgendas";
 import { getCurrentUTCISO } from "@/app/helpers/dateUtils";
-
 export type CreateAgendaDTO = z.infer<typeof createAgendaSchema>;
 export type UpdateAgendaDTO = z.infer<typeof updateAgendaSchema>;
-
-// GET - Listar agendas com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
-    
-    // Aceitar ambos os formatos de parâmetros para compatibilidade
     const unidadeId = searchParams.get('unidadeId') || searchParams.get('unidade_id');
     const prestadorId = searchParams.get('prestadorId') || searchParams.get('prestador_id');
     const especialidadeId = searchParams.get('especialidadeId') || searchParams.get('especialidade_id');
     const date = searchParams.get('date');
-
-    // Debug logs removidos para evitar spam
-
     let query = `
       SELECT 
         a.*,
@@ -45,42 +37,29 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
-
     if (search) {
       query += ' AND (a.situacao LIKE ? OR c.nome LIKE ? OR pr.nome LIKE ?)';
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     if (unidadeId) {
       query += ' AND a.unidade_id = ?';
       params.push(parseInt(unidadeId));
     }
-
     if (prestadorId) {
       query += ' AND a.prestador_id = ?';
       params.push(parseInt(prestadorId));
     }
-
     if (especialidadeId) {
       query += ' AND a.especialidade_id = ?';
       params.push(parseInt(especialidadeId));
     }
-
     if (date) {
       query += ' AND DATE(a.dtagenda) = ?';
       params.push(date);
     }
-
-    // Debug logs removidos para evitar spam
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY c.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
-    // Parâmetros de paginação inseridos diretamente na query;
-
     const agendaRows = await executeWithRetry(accessPool, query, params);
-
-    // Buscar total de registros para paginação
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM agendas a
@@ -91,36 +70,28 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
-
     if (search) {
       countQuery += ' AND (a.situacao LIKE ? OR c.nome LIKE ? OR pr.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
     if (unidadeId) {
       countQuery += ' AND a.unidade_id = ?';
       countParams.push(parseInt(unidadeId));
     }
-
     if (prestadorId) {
       countQuery += ' AND a.prestador_id = ?';
       countParams.push(parseInt(prestadorId));
     }
-
     if (especialidadeId) {
       countQuery += ' AND a.especialidade_id = ?';
       countParams.push(parseInt(especialidadeId));
     }
-
     if (date) {
       countQuery += ' AND DATE(a.dtagenda) = ?';
       countParams.push(date);
     }
-
-    // Debug: log da query de contagem
     const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-    
     return NextResponse.json({
       data: agendaRows,
       pagination: {
@@ -131,30 +102,23 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar agendas:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar agenda
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createAgendaSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Inserir agenda
     const result = await executeWithRetry(accessPool,
       `INSERT INTO agendas (
         dtagenda, situacao, cliente_id, convenio_id, procedimento_id,
@@ -166,12 +130,8 @@ export async function POST(request: NextRequest) {
         payload.unidade_id, payload.especialidade_id, payload.tipo, payload.tipo_cliente
       ]
     );
-
     const agendaId = (result as { insertId: number }).insertId;
-
-    // Criar automaticamente um lançamento de caixa para o agendamento
     try {
-      // Buscar informações do cliente para a descrição
       let clienteNome = 'Cliente não informado';
       if (payload.cliente_id) {
         const [clienteRows] = await accessPool.execute(
@@ -182,8 +142,6 @@ export async function POST(request: NextRequest) {
           clienteNome = (clienteRows as Array<{ nome: string }>)[0].nome;
         }
       }
-
-      // Buscar informações do procedimento para a descrição
       let procedimentoNome = 'Procedimento não informado';
       if (payload.procedimento_id) {
         const [procedimentoRows] = await accessPool.execute(
@@ -194,28 +152,20 @@ export async function POST(request: NextRequest) {
           procedimentoNome = (procedimentoRows as Array<{ nome: string }>)[0].nome;
         }
       }
-
-      // Buscar o primeiro caixa ativo disponível
       const [caixaRows] = await accessPool.execute(
         'SELECT id FROM caixas WHERE status = "Ativo" LIMIT 1'
       );
-      
       let caixaId = 1; // Caixa padrão se não houver nenhum
       if ((caixaRows as Array<{ id: number }>).length > 0) {
         caixaId = (caixaRows as Array<{ id: number }>)[0].id;
       }
-
-      // Buscar o primeiro plano de conta ativo disponível
       const [planoContaRows] = await accessPool.execute(
         'SELECT id FROM plano_contas WHERE status = "Ativo" LIMIT 1'
       );
-      
       let planoContaId = 1; // Plano de conta padrão se não houver nenhum
       if ((planoContaRows as Array<{ id: number }>).length > 0) {
         planoContaId = (planoContaRows as Array<{ id: number }>)[0].id;
       }
-
-      // Buscar o primeiro usuário ativo disponível (usuário da sessão)
       let usuarioId = 'admin'; // Usuário padrão se não houver nenhum
       try {
         const [usuarioRows] = await accessPool.execute(
@@ -225,13 +175,9 @@ export async function POST(request: NextRequest) {
           usuarioId = (usuarioRows as Array<{ login: string }>)[0].login;
         }
       } catch {
-        // Usando usuário padrão
       }
-
-      // Criar o lançamento
       const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
       const dataAtual = getCurrentUTCISO();
-
       await executeWithRetry(accessPool,
         `INSERT INTO lancamentos (
           valor, descricao, data_lancamento, tipo, forma_pagamento,
@@ -253,20 +199,13 @@ export async function POST(request: NextRequest) {
           'Ativo'
         ]
       );
-
-      // Lançamento criado automaticamente
     } catch (lancamentoError) {
-      console.error('⚠️ Erro ao criar lançamento automático:', lancamentoError);
-      // Não falhar a criação da agenda por causa do lançamento
-      // O agendamento foi criado com sucesso
     }
-
     return NextResponse.json({ 
       success: true, 
       id: agendaId 
     });
   } catch (error) {
-    console.error('Erro ao criar agenda:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -279,33 +218,25 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
-// PUT - Atualizar agenda
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da agenda é obrigatório' },
         { status: 400 }
       );
     }
-
     const body = await request.json();
     const validatedData = updateAgendaSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Atualizar agenda
     await executeWithRetry(accessPool,
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?,
@@ -318,10 +249,8 @@ export async function PUT(request: NextRequest) {
         payload.unidade_id, payload.especialidade_id, payload.tipo, payload.tipo_cliente, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar agenda:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -334,29 +263,22 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-
-// DELETE - Deletar agenda
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da agenda é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como cancelado
     await executeWithRetry(accessPool,
       'UPDATE agendas SET situacao = "Cancelado" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar agenda:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

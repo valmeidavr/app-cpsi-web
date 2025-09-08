@@ -1,24 +1,16 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
-
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
     const pathname = req.nextUrl.pathname
-    
-    // Debug: log do token
     console.log('Middleware - Token:', token)
     console.log('Middleware - Pathname:', pathname)
-    
-    // Se não tem acesso ao sistema, redirecionar para página de acesso negado
     if (token && !token.hasSystemAccess) {
       console.log('Middleware - Usuário sem acesso ao sistema, redirecionando...')
       return NextResponse.redirect(new URL('/acesso-negado', req.url))
     }
-    
-    // Verificar permissões específicas para rotas do painel
     if (pathname.startsWith('/painel/') && token?.role) {
-      // Mapeamento de rotas e permissões necessárias
       const routePermissions = {
         '/painel/usuarios': ['Administrador'],
         '/painel/convenios': ['Administrador', 'Gestor'],
@@ -37,16 +29,12 @@ export default withAuth(
         '/painel/tabela_faturamentos': ['Administrador', 'Gestor'],
         '/painel/valores_procedimentos': ['Administrador', 'Gestor'],
       }
-      
-      // Verificar se a rota atual requer permissões específicas
       const currentRoute = Object.keys(routePermissions).find(route => 
         pathname.startsWith(route)
       )
-      
       if (currentRoute) {
         const requiredRoles = routePermissions[currentRoute as keyof typeof routePermissions]
         const hasPermission = requiredRoles.includes(token.role)
-        
         if (!hasPermission) {
           console.log(`Middleware - Usuário sem permissão para ${pathname}. Nível: ${token.role}, Requerido: ${requiredRoles}`)
           return NextResponse.redirect(new URL('/acesso-negado', req.url))
@@ -58,16 +46,14 @@ export default withAuth(
     callbacks: {
       authorized: ({ token }) => {
         console.log('Middleware - Verificando autorização:', !!token, token?.hasSystemAccess)
-        // Verificar se está autenticado E tem acesso ao sistema
         return !!token && !!token.hasSystemAccess
       },
     },
   }
 )
-
 export const config = {
   matcher: [
     '/painel/:path*',
     '/api/protected/:path*',
   ],
-}
+}

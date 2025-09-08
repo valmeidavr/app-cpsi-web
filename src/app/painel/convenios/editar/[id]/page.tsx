@@ -1,15 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -23,11 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
-
-//Helpers
 import { redirect, useParams } from "next/navigation";
 import {
   Select,
@@ -37,7 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
-
 export default function EditarConvenio() {
   const [loading, setLoading] = useState(false);
   const [convenio, setConvenio] = useState(null);
@@ -47,7 +36,6 @@ export default function EditarConvenio() {
   const [tabelaFaturamentos, setTabelaFaturamento] = useState<
     TabelaFaturamento[]
   >([]);
-
   const form = useForm({
     resolver: zodResolver(createConvenioSchema),
     mode: "onChange",
@@ -58,24 +46,18 @@ export default function EditarConvenio() {
       tabela_faturamento_id: 0,
     },
   });
-
   const router = useRouter();
-
   const fetchTabelaFaturamento = async () => {
     try {
       const response = await fetch("/api/tabela_faturamentos");
       const data = await response.json();
-      
       if (response.ok) {
         setTabelaFaturamento(data.data);
       } else {
-        console.error("Erro ao buscar tabelas de faturamento:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar tabelas de faturamento:", error);
     }
   };
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -84,7 +66,6 @@ export default function EditarConvenio() {
         await fetchTabelaFaturamento();
         const response = await fetch(`/api/convenios/${convenioId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setConvenio(data);
           form.reset({
@@ -94,23 +75,19 @@ export default function EditarConvenio() {
             tabela_faturamento_id: data.tabela_faturamento_id,
           });
         } else {
-          console.error("Erro ao carregar convenio:", data.error);
           toast.error("Erro ao carregar dados do convênio");
         }
       } catch (error) {
-        console.error("Erro ao carregar convenio:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
       if (!convenioId) redirect("/painel/convenios");
-
       const response = await fetch(`/api/convenios/${convenioId}`, {
         method: 'PUT',
         headers: {
@@ -123,17 +100,13 @@ export default function EditarConvenio() {
           tabela_faturamento_id: values.tabela_faturamento_id
         }),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar convênio.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Convênio atualizado com sucesso!");
-
       router.push(`/painel/convenios?${queryParams.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar convênio");
@@ -141,7 +114,6 @@ export default function EditarConvenio() {
       setLoading(false);
     }
   };
-
   const regrasOption = [
     { value: "CONVENIO", label: "CONVÊNIO" },
     { value: "AAPVR", label: "AAPVR" },
@@ -156,8 +128,7 @@ export default function EditarConvenio() {
           { label: "Editar Convênio" },
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -166,9 +137,8 @@ export default function EditarConvenio() {
       ) : (
         <Form {...form}>
           <h1 className="text-2xl font-bold mb-6 mt-5">Editar Convênio</h1>
-
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campos de Nome e Código */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <FormField
                 control={form.control}
@@ -212,7 +182,6 @@ export default function EditarConvenio() {
                         if (isNaN(value)) value = 0;
                         if (value > 100) value = 100;
                         if (value < 0) value = 0;
-                      
                         field.onChange(value);
                       }}
                       className={`border ${
@@ -298,8 +267,7 @@ export default function EditarConvenio() {
                 )}
               />
             </div>
-
-            {/* Botão de Envio */}
+            {}
             <Button
               type="submit"
               disabled={loading}
@@ -320,4 +288,4 @@ export default function EditarConvenio() {
       )}
     </div>
   );
-}
+}

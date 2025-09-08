@@ -1,15 +1,10 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import { FormProvider, useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-//Zod
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-//Components
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
@@ -41,18 +36,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-//API
 import { http } from "@/util/http";
-
-//Helpers
-// Removido import http - usando fetch direto
 import { formatDate } from "date-fns";
-
-//Types
 import { Turma } from "@/app/types/Turma";
 import AdicionarAlunosModal from "./_components/AdicionarAlunosModalComponent";
-
-
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -66,7 +53,6 @@ export default function Turmas() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [turmaSelecionadaId, setTurmaSelecionadaId] = useState<number>(0);
-
   const abrirAdicionarAlunosModal = (turmaId: number, open: boolean) => {
     setTurmaSelecionadaId(turmaId);
     setIsModalOpen(open);
@@ -79,24 +65,19 @@ export default function Turmas() {
         limit: '5',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/turmas?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setTurmas(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalTurmas(data.pagination.total);
       } else {
-        console.error("Erro ao buscar turmas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar turmas:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const form = useForm({
     resolver: zodResolver(z.object({ dataFim: z.string().optional() })),
     mode: "onChange",
@@ -104,7 +85,6 @@ export default function Turmas() {
       dataFim: "",
     },
   });
-
   const HandlefinalizarTurma = async (values: { dataFim?: string }) => {
     if (!turmaSelecionado || !values.dataFim) return;
     setLoadingInativar(true);
@@ -114,18 +94,15 @@ export default function Turmas() {
       toast.error("Turma finalizada com sucesso!");
       setIsDialogOpen(false);
     } catch (error) {
-      console.error("Erro ao alterar status do turma:", error);
     } finally {
       setLoadingInativar(false);
     }
   };
-
   useEffect(() => {
     carregarTurmas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -134,12 +111,10 @@ export default function Turmas() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarTurmas();
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -149,8 +124,7 @@ export default function Turmas() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Turmas</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Turma */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -165,8 +139,7 @@ export default function Turmas() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Turma */}
+        {}
         <Button asChild>
           <Link href="/painel/turmas/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -174,8 +147,7 @@ export default function Turmas() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -183,7 +155,7 @@ export default function Turmas() {
         </div>
       ) : (
         <>
-          {/* Tabela de Turmas */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -243,8 +215,7 @@ export default function Turmas() {
                   </TableCell>
                                       <TableCell>{turma.limite_vagas}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
-
+                    {}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -317,23 +288,21 @@ export default function Turmas() {
                         </Tooltip.Root>
                       </Tooltip.Provider>
                     )}
-                    {/* ✅ Botão Ativar/Inativar com Tooltip */}
+                    {}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-
-          {/* Totalizador de Turmas */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalTurmas)} de{" "}
               {totalTurmas} turmas
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -374,8 +343,7 @@ export default function Turmas() {
           </div>
         </>
       )}
-
-      {/* ✅ Diálogo de Confirmação */}
+      {}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <FormProvider {...form}>
           <DialogContent>
@@ -425,7 +393,6 @@ export default function Turmas() {
           </DialogContent>
         </FormProvider>
       </Dialog>
-
       <AdicionarAlunosModal
         isOpen={isModalOpen}
         onOpenChange={setIsModalOpen}
@@ -433,4 +400,4 @@ export default function Turmas() {
       />
     </div>
   );
-}
+}

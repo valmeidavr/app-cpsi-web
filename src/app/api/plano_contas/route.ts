@@ -2,45 +2,31 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createPlanosSchema, updatePlanosSchema } from "./schema/formSchemaPlanos";
-
 export type CreatePlanoContaDTO = z.infer<typeof createPlanosSchema>;
 export type UpdatePlanoContaDTO = z.infer<typeof updatePlanosSchema>;
-
-// GET - Listar plano de contas com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
-
     let query = 'SELECT * FROM plano_contas ';
     const params: (string | number)[] = [];
-
     if (search) {
       query += ' AND (nome LIKE ? OR categoria LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
     query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
-    // Parâmetros de paginação inseridos diretamente na query;
-
     const [planoRows] = await accessPool.execute(query, params);
-
-    // Buscar total de registros para paginação
     let countQuery = 'SELECT COUNT(*) as total FROM plano_contas ';
     const countParams: (string)[] = [];
-
     if (search) {
       countQuery += ' AND (nome LIKE ? OR categoria LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
-
     const [countRows] = await accessPool.execute(countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
-
     return NextResponse.json({
       data: planoRows,
       pagination: {
@@ -51,30 +37,23 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar plano de contas:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar plano de conta
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = createPlanosSchema.safeParse(body);
-
     if (!validatedData.success) {
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
     const { ...payload } = validatedData.data;
-
-    // Inserir plano de conta
     const [result] = await accessPool.execute(
       `INSERT INTO plano_contas (
         nome, tipo, categoria, descricao
@@ -83,13 +62,11 @@ export async function POST(request: NextRequest) {
         payload.nome, payload.tipo, payload.categoria, payload.descricao
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar plano de conta:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },

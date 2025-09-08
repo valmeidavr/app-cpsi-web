@@ -1,10 +1,8 @@
 "use client";
-//react
 import { useEffect, useState } from "react";
 import { redirect, useParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-//Components
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
@@ -25,17 +23,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-//API
 import { createTurmaSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
-
-//Types
 import { Turma } from "@/app/types/Turma";
 import { Prestador } from "@/app/types/Prestador";
 import { Procedimento } from "@/app/types/Procedimento";
-
 export default function EditarTurma() {
   const [turma, setTurma] = useState<Turma | null>(null);
   const [loading, setLoading] = useState(false);
@@ -46,8 +39,6 @@ export default function EditarTurma() {
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
   const router = useRouter();
-
-  //Definindo valores default com os dado do turma
   const form = useForm<z.infer<typeof createTurmaSchema>>({
     resolver: zodResolver(createTurmaSchema),
     mode: "onChange",
@@ -61,13 +52,10 @@ export default function EditarTurma() {
       procedimento_id: 0,
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
- 
     try {
       if (!turmaId) throw new Error("ID da turma não encontrado.");
-
       const response = await fetch(`/api/turmas/${turmaId}`, {
         method: 'PUT',
         headers: {
@@ -83,17 +71,13 @@ export default function EditarTurma() {
         procedimento_id: values.procedimento_id
         }),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar turma.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Turma atualizada com sucesso!");
-
       router.push(`/painel/turmas?${queryParams.toString()}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar turma");
@@ -101,37 +85,30 @@ export default function EditarTurma() {
       setLoading(false);
     }
   };
-
   const fetchPrestadores = async () => {
     try {
       const response = await fetch("/api/prestadores");
       const data = await response.json();
-      
       if (response.ok) {
         setPrestadores(data.data);
       } else {
-        console.error("Erro ao carregar prestadores:", data.error);
       }
     } catch (error) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
-
   const fetchProcedimentos = async () => {
     try {
       const response = await fetch("/api/procedimentos");
       const data = await response.json();
-      
       if (response.ok) {
         setProcedimentos(data.data);
       } else {
-        console.error("Erro ao carregar procedimentos:", data.error);
       }
     } catch (error) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }
   };
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -139,10 +116,8 @@ export default function EditarTurma() {
         if (!turmaId) redirect("/painel/turmas");
         await fetchPrestadores();
         await fetchProcedimentos();
-        
         const response = await fetch(`/api/turmas/${turmaId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setTurma(data);
           form.reset({
@@ -155,18 +130,15 @@ export default function EditarTurma() {
         procedimento_id: data.procedimento_id,
           });
         } else {
-          console.error("Erro ao carregar turma:", data.error);
           toast.error("Erro ao carregar dados da turma");
         }
       } catch (error) {
-        console.error("Erro ao carregar turma:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -176,7 +148,7 @@ export default function EditarTurma() {
           { label: "Editar Turma" },
         ]}
       />
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -212,7 +184,6 @@ export default function EditarTurma() {
                   </FormItem>
                 )}
               />
-        
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
@@ -261,7 +232,6 @@ export default function EditarTurma() {
                   </FormItem>
                 )}
               />
-
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <FormField
@@ -301,7 +271,6 @@ export default function EditarTurma() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                                   name="procedimento_id"
@@ -381,4 +350,4 @@ export default function EditarTurma() {
       )}
     </div>
   );
-}
+}

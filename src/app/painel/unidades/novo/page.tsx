@@ -1,15 +1,11 @@
 'use client';
-//React
 import type React from 'react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useRouter } from 'next/navigation';
-
-//Zod
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-//Components
 import Breadcrumb from '@/components/ui/Breadcrumb';
 import { Save, Loader2 } from 'lucide-react';
 import {
@@ -22,19 +18,13 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-
-//API
 import { http } from '@/util/http';
-
-//helpers
 import { handleCEPChange } from '@/app/helpers/handleCEP';
 import { formatTelefoneInput } from '@/app/helpers/format';
 import { createUnidadeSchema } from '@/app/api/unidades/schema/formSchemaUnidade';
-
 export default function UnitRegistrationForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-
   const form = useForm<z.infer<typeof createUnidadeSchema>>({
     resolver: zodResolver(createUnidadeSchema),
     mode: 'onChange',
@@ -52,29 +42,23 @@ export default function UnitRegistrationForm() {
       email: '',
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createUnidadeSchema>) => {
     setLoading(true);
     try {
       await http.post('/api/unidades', values);
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set('type', 'success');
       queryParams.set('message', 'Unidade salva com sucesso!');
-
       router.push(`/painel/unidades?${queryParams.toString()}`);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Erro ao salvar unidade';
-
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleCEPChange(e, {
       setValue: (field: string, value: string) =>
@@ -91,7 +75,6 @@ export default function UnitRegistrationForm() {
         form.clearErrors(field as keyof z.infer<typeof createUnidadeSchema>),
     });
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -155,7 +138,6 @@ export default function UnitRegistrationForm() {
               )}
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <FormField
               control={form.control}
@@ -171,17 +153,13 @@ export default function UnitRegistrationForm() {
                       onChange={(e) => {
                         const rawValue = e.target.value.replace(/\D/g, ''); // Remove não numéricos
                         const inputEvent = e.nativeEvent as InputEvent;
-
                         if (inputEvent.inputType === 'deleteContentBackward') {
-                          // Permite apagar sem reformatar
                           field.onChange(rawValue);
                         } else {
                           field.onChange(
                             rawValue.replace(/^(\d{5})(\d)/, '$1-$2')
                           ); // Aplica a máscara ao digitar
                         }
-
-                        // Chama a função handleCEPChangeHandler após atualizar o valor
                         handleCEPChangeHandler(e);
                       }}
                       className={`border ${
@@ -195,7 +173,6 @@ export default function UnitRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="logradouro"
@@ -209,7 +186,6 @@ export default function UnitRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="numero"
@@ -238,7 +214,6 @@ export default function UnitRegistrationForm() {
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
             <FormField
               control={form.control}
               name="cidade"
@@ -252,7 +227,6 @@ export default function UnitRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="uf"
@@ -296,7 +270,6 @@ export default function UnitRegistrationForm() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="telefone2"
@@ -348,7 +321,6 @@ export default function UnitRegistrationForm() {
               )}
             />
           </div>
-
           <Button
             type="submit"
             disabled={loading}
@@ -370,4 +342,4 @@ export default function UnitRegistrationForm() {
       </Form>
     </div>
   );
-}
+}
