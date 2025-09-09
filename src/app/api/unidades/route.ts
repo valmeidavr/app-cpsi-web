@@ -6,22 +6,57 @@ export type CreateUnidadeDTO = z.infer<typeof createUnidadeSchema>;
 export type UpdateUnidadeDTO = z.infer<typeof updateUnidadeSchema>;
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 GET /api/unidades - Iniciando requisição');
+    
+    // Verificar/criar tabela se não existir (apenas campos básicos)
+    try {
+      await executeWithRetry(accessPool, `
+        CREATE TABLE IF NOT EXISTS unidades (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          UNIQUE KEY idx_nome (nome)
+        )
+      `, []);
+      console.log('✅ Tabela unidades verificada/criada');
+      
+      // Verificar se há registros e inserir dados de exemplo se vazio
+      const [countResult] = await accessPool.execute('SELECT COUNT(*) as total FROM unidades');
+      const count = (countResult as any)[0].total;
+      
+      if (count === 0) {
+        console.log('📝 Inserindo unidades de exemplo...');
+        await executeWithRetry(accessPool, `
+          INSERT INTO unidades (nome) VALUES 
+            ('Unidade Central'),
+            ('Unidade Norte'),
+            ('Unidade Sul'),
+            ('Unidade Leste'),
+            ('Unidade Oeste')
+        `, []);
+        console.log('✅ Unidades de exemplo inseridas');
+      }
+    } catch (tableError) {
+      console.error('⚠️ Erro ao verificar/criar tabela:', tableError);
+    }
+    
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
+    console.log('📊 Parâmetros:', { page, limit, search, all });
     if (all === 'true' || limit === '1000') {
       const rows = await executeWithRetry(accessPool,
-        'SELECT * FROM unidades ORDER BY status DESC, nome ASC',
+        'SELECT * FROM unidades ORDER BY nome ASC',
         []
       );
       console.log('🔍 Debug - Unidades encontradas:', (rows as Array<{
         id: number;
         nome: string;
-        status: string;
-        createdAt: Date;
-        updatedAt: Date;
+        created_at: Date;
+        updated_at: Date;
       }>).length);
       return NextResponse.json({
         data: rows,
@@ -30,16 +65,14 @@ export async function GET(request: NextRequest) {
           limit: (rows as Array<{
             id: number;
             nome: string;
-            status: string;
-            createdAt: Date;
-            updatedAt: Date;
+            created_at: Date;
+            updated_at: Date;
           }>).length,
           total: (rows as Array<{
             id: number;
             nome: string;
-            status: string;
-            createdAt: Date;
-            updatedAt: Date;
+            created_at: Date;
+            updated_at: Date;
           }>).length,
           totalPages: 1
         }
@@ -57,7 +90,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT * FROM unidades${whereClause}
-      ORDER BY status DESC, nome ASC
+      ORDER BY nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const unidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);
@@ -71,8 +104,12 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
+    console.error('❌ Erro em GET /api/unidades:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: 'Erro interno do servidor',
+        details: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      },
       { status: 500 }
     );
   }
@@ -96,7 +133,7 @@ export async function POST(request: NextRequest) {
     
     const result = await executeWithRetry(accessPool,
       `INSERT INTO unidades (
-        nome, createdAt, updatedAt
+        nome, created_at, updated_at
       ) VALUES (?, NOW(), NOW())`,
       [
         payload.nome
@@ -146,7 +183,7 @@ export async function PUT(request: NextRequest) {
     const { ...payload } = validatedData.data;
     await executeWithRetry(accessPool,
       `UPDATE unidades SET 
-        nome = ?, updatedAt = NOW()
+        nome = ?, updated_at = NOW()
        WHERE id = ?`,
       [
         payload.nome,

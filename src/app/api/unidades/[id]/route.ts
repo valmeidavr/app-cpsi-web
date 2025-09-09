@@ -14,8 +14,8 @@ export async function GET(
       id: number;
       nome: string;
       status: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>).length === 0) {
       return NextResponse.json(
         { error: 'Unidade não encontrada' },
@@ -26,8 +26,8 @@ export async function GET(
       id: number;
       nome: string;
       status: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>)[0];
     return NextResponse.json(unidade);
   } catch (error) {
@@ -57,4 +57,6 @@ export async function PUT(
       { status: 500 }
     );
   }
-} 
+}
+
+ 

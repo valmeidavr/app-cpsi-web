@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
+import { Loader2, Search, Edit, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -221,18 +221,12 @@ export default function Unidades() {
               {unidades.map((unidade) => (
                 <TableRow
                   key={unidade.id}
-                  className={cn(
-                    "odd:bg-gray-100 even:bg-white",
-                    (unidade as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
-                  )}
+                  className="odd:bg-gray-100 even:bg-white"
                 >
                   <TableCell>{unidade.id}</TableCell>
                   <TableCell>
                     <Badge 
-                      className={cn(
-                        "text-[13px]",
-                        (unidade as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
-                      )} 
+                      className="text-[13px]"
                       variant="outline"
                     >
                       {unidade.nome}
