@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
 import { http } from "@/util/http";
-import { handleCEPChange } from "@/app/helpers/handleCEP";
+import { handleCEPChange, formatCEP } from "@/app/helpers/handleCEP";
 import { isValid, parse } from "date-fns";
 import {
   formatCPFInput,
@@ -65,32 +65,9 @@ export default function NovoPrestador() {
     },
   });
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawCEP = e.target.value;
-    const onlyNumbers = rawCEP.replace(/\D/g, "");
-    if (onlyNumbers.length === 8) {
-      fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
-        .then(response => response.json())
-        .then(data => {
-          if (!data.erro) {
-            form.setValue("logradouro", data.logradouro || "");
-            form.setValue("bairro", data.bairro || "");
-            form.setValue("cidade", data.localidade || "");
-            form.setValue("uf", data.uf || "");
-            form.clearErrors("cep");
-          } else {
-            form.setError("cep", {
-              type: "manual",
-              message: "CEP não encontrado",
-            });
-          }
-        })
-        .catch(() => {
-          form.setError("cep", {
-            type: "manual",
-            message: "Erro ao buscar CEP. Tente novamente.",
-          });
-        });
-    }
+    const formattedCEP = formatCEP(e.target.value);
+    form.setValue("cep", formattedCEP);
+    handleCEPChange(e, form);
   };
   const checkCpf = async (cpf: string) => {
     if (!cpf) {
@@ -454,6 +431,23 @@ export default function NovoPrestador() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="complemento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Complemento</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="Apto, sala, etc."
+                    />
+                  </FormControl>
                   <FormMessage className="text-red-500 mt-1 font-light" />
                 </FormItem>
               )}

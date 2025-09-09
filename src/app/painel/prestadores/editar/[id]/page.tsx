@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { handleCEPChange } from "@/app/helpers/handleCEP";
+import { handleCEPChange, formatCEP } from "@/app/helpers/handleCEP";
 import {
   formatCPFInput,
   formatRGInput,
@@ -135,32 +135,9 @@ export default function EditarPrestador() {
     }
   };
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const rawCEP = e.target.value;
-    const onlyNumbers = rawCEP.replace(/\D/g, "");
-    if (onlyNumbers.length === 8) {
-      fetch(`https://viacep.com.br/ws/${onlyNumbers}/json/`)
-        .then(response => response.json())
-        .then(data => {
-          if (!data.erro) {
-            form.setValue("logradouro", data.logradouro || "");
-            form.setValue("bairro", data.bairro || "");
-            form.setValue("cidade", data.localidade || "");
-            form.setValue("uf", data.uf || "");
-            form.clearErrors("cep");
-          } else {
-            form.setError("cep", {
-              type: "manual",
-              message: "CEP não encontrado",
-            });
-          }
-        })
-        .catch(() => {
-          form.setError("cep", {
-            type: "manual",
-            message: "Erro ao buscar CEP. Tente novamente.",
-          });
-        });
-    }
+    const formattedCEP = formatCEP(e.target.value);
+    form.setValue("cep", formattedCEP);
+    handleCEPChange(e, form);
   };
   return (
     <div>
@@ -198,12 +175,11 @@ export default function EditarPrestador() {
                         <Input
                           {...field}
                           value={field.value || ""}
-                          className={`border ${
+                          className={
                             form.formState.errors.nome
                               ? "border-red-500"
                               : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                          onChange={field.onChange}
+                          }
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
@@ -212,53 +188,66 @@ export default function EditarPrestador() {
                 />
                 <FormField
                   control={form.control}
-                  name="dtnascimento"
+                  name="rg"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Nascimento *</FormLabel>
+                      <FormLabel>RG *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="DD/MM/AAAA"
-                          maxLength={10}
+                          maxLength={12}
                           value={field.value || ""}
-                          className={`border ${
-                            form.formState.errors.dtnascimento
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
                           onChange={(e) => {
-                            const inputDate = e.target.value.replace(/\D/g, ""); // Remove todos os caracteres não numéricos
-                            const formatted = inputDate
-                              .replace(/(\d{2})(\d)/, "$1/$2")
-                              .replace(/(\d{2})(\d)/, "$1/$2")
-                              .slice(0, 10); // Garante que não haja mais de 10 caracteres
-                            field.onChange(formatted);
-                          }}
-                          onBlur={() => {
-                            const parsedDate = parse(
-                              field.value as string,
-                              "dd/MM/yyyy",
-                              new Date()
-                            );
-                            const currentDate = new Date();
-                            const minYear = 1920;
-                            const year = parseInt(
-                              field.value ? field.value.split("/")[2] : ""
-                            );
-                            if (
-                              !isValid(parsedDate) ||
-                              parsedDate > currentDate ||
-                              year < minYear
-                            ) {
-                              field.onChange("");
+                            const rawValue = e.target.value.replace(/\D/g, "");
+                            const inputEvent = e.nativeEvent as InputEvent;
+                            if (inputEvent.inputType === "deleteContentBackward") {
+                              field.onChange(rawValue);
+                            } else {
+                              field.onChange(formatRGInput(rawValue));
                             }
                           }}
+                          className={
+                            form.formState.errors.rg
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="cpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF *</FormLabel>
+                      <FormControl>
+                        <Input
+                          maxLength={14}
+                          value={field.value || ""}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/\D/g, "");
+                            const inputEvent = e.nativeEvent as InputEvent;
+                            if (inputEvent.inputType === "deleteContentBackward") {
+                              field.onChange(rawValue);
+                            } else {
+                              field.onChange(formatCPFInput(rawValue));
+                            }
+                          }}
+                          className={
+                            form.formState.errors.cpf
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="sexo"
@@ -292,32 +281,47 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
-              </div>
-              {}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField
                   control={form.control}
-                  name="rg"
+                  name="dtnascimento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>RG *</FormLabel>
+                      <FormLabel>Data de Nascimento *</FormLabel>
                       <FormControl>
                         <Input
-                          maxLength={12}
+                          placeholder="DD/MM/AAAA"
+                          maxLength={10}
                           value={field.value || ""}
                           onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\D/g, "");
-                            const inputEvent = e.nativeEvent as InputEvent;
+                            let value = e.target.value.replace(/\D/g, "");
+                            if (value.length > 2) {
+                              value = value.replace(/^(\d{2})/, "$1/");
+                            }
+                            if (value.length > 5) {
+                              value = value.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
+                            }
+                            field.onChange(value);
+                          }}
+                          onBlur={() => {
+                            if (!field.value) return;
+                            const parsedDate = parse(
+                              field.value,
+                              "dd/MM/yyyy",
+                              new Date()
+                            );
+                            const currentDate = new Date();
+                            const minYear = 1920;
+                            const year = parseInt(field.value.split("/")[2]);
                             if (
-                              inputEvent.inputType === "deleteContentBackward"
+                              !isValid(parsedDate) ||
+                              parsedDate > currentDate ||
+                              year < minYear
                             ) {
-                              field.onChange(rawValue);
-                            } else {
-                              field.onChange(formatRGInput(rawValue));
+                              field.onChange("");
                             }
                           }}
                           className={
-                            form.formState.errors.rg
+                            form.formState.errors.dtnascimento
                               ? "border-red-500"
                               : "border-gray-300"
                           }
@@ -327,75 +331,30 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <FormField
                   control={form.control}
-                  name="cpf"
+                  name="cep"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF *</FormLabel>
+                      <FormLabel>CEP</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Somente Números"
-                          maxLength={14}
+                          placeholder="00000-000"
+                          maxLength={9}
                           value={field.value || ""}
-                          onChange={(e) => {
-                            const rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                            const inputEvent = e.nativeEvent as InputEvent;
-                            if (
-                              inputEvent.inputType === "deleteContentBackward"
-                            ) {
-                              field.onChange(rawValue);
-                            } else {
-                              field.onChange(formatCPFInput(rawValue));
-                            }
-                          }}
-                          className={`border ${
-                            form.formState.errors.cpf
+                          onChange={handleCEPChangeHandler}
+                          className={
+                            form.formState.errors.cep
                               ? "border-red-500"
                               : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
+                          }
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
                     </FormItem>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="cep"
-                  render={({ field }) => {
-                    return (
-                      <FormItem>
-                        <FormLabel>CEP</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="00000-000"
-                            maxLength={9}
-                            value={field.value || ""}
-                            onChange={(e) => {
-                              const rawValue = e.target.value;
-                              if (rawValue.length <= 5) {
-                                field.onChange(rawValue); // Sem formatação ainda
-                              } else {
-                                const formattedValue = rawValue.replace(
-                                  /^(\d{5})(\d{0,3})/,
-                                  "$1-$2"
-                                );
-                                field.onChange(formattedValue);
-                              }
-                              handleCEPChangeHandler(e);
-                            }}
-                            className={`border ${
-                              form.formState.errors.cep
-                                ? "border-red-500"
-                                : "border-gray-300"
-                            } focus:ring-2 focus:ring-primary`}
-                          />
-                        </FormControl>
-                        <FormMessage className="text-red-500 mt-1 font-light" />
-                      </FormItem>
-                    );
-                  }}
                 />
                 <FormField
                   control={form.control}
@@ -423,17 +382,13 @@ export default function EditarPrestador() {
                       <FormControl>
                         <Input
                           {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
                     </FormItem>
                   )}
                 />
-              </div>
-              {}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
                   name="bairro"
@@ -443,14 +398,15 @@ export default function EditarPrestador() {
                       <FormControl>
                         <Input
                           {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <FormField
                   control={form.control}
                   name="cidade"
@@ -460,8 +416,7 @@ export default function EditarPrestador() {
                       <FormControl>
                         <Input
                           {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
@@ -529,18 +484,33 @@ export default function EditarPrestador() {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="complemento"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Complemento</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          placeholder="Apto, sala, etc."
+                        />
+                      </FormControl>
+                      <FormMessage className="text-red-500 mt-1 font-light" />
+                    </FormItem>
+                  )}
+                />
               </div>
-              {}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="celular"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Celular*</FormLabel>
+                      <FormLabel>Celular *</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Celular"
                           maxLength={15}
                           value={field.value || ""}
                           onChange={(e) => {
@@ -549,11 +519,11 @@ export default function EditarPrestador() {
                             );
                             field.onChange(formattedPhone);
                           }}
-                          className={`border ${
+                          className={
                             form.formState.errors.celular
                               ? "border-red-500"
                               : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
+                          }
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />
@@ -568,7 +538,6 @@ export default function EditarPrestador() {
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="Telefone"
                           maxLength={15}
                           value={field.value || ""}
                           onChange={(e) => {
@@ -577,11 +546,11 @@ export default function EditarPrestador() {
                             );
                             field.onChange(formattedPhone);
                           }}
-                          className={`border ${
+                          className={
                             form.formState.errors.telefone
                               ? "border-red-500"
                               : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
+                          }
                         />
                       </FormControl>
                       <FormMessage className="text-red-500 mt-1 font-light" />

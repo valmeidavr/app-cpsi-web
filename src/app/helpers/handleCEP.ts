@@ -1,8 +1,9 @@
-const formatCEP = (value: string) => {
-  return value
-    .replace(/\D/g, "") // Remove tudo que não for número
-    .replace(/^(\d{5})(\d{1,3})?$/, "$1-$2") // Insere a máscara corretamente
-    .slice(0, 9); // Limita a 9 caracteres (00000-000)
+export const formatCEP = (value: string) => {
+  const numbers = value.replace(/\D/g, ""); // Remove tudo que não for número
+  if (numbers.length <= 5) {
+    return numbers;
+  }
+  return numbers.replace(/^(\d{5})(\d{1,3})$/, "$1-$2").slice(0, 9); // Insere a máscara corretamente
 };
 export const handleCEPChange = async (
   e: React.ChangeEvent<HTMLInputElement>,

@@ -241,31 +241,32 @@ export default function Prestadores() {
                     {prestador.status}
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Link
-                            href={`/painel/prestadores/editar/${prestador.id}`}
-                          >
-                            <Button 
-                              size="icon" 
-                              variant="outline"
-                              className={prestador.status === "Inativo" ? "opacity-60" : ""}
+                    {prestador.status === "Ativo" && (
+                      <Tooltip.Provider>
+                        <Tooltip.Root>
+                          <Tooltip.Trigger asChild>
+                            <Link
+                              href={`/painel/prestadores/editar/${prestador.id}`}
                             >
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                          </Link>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Editar Prestador
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
+                              <Button 
+                                size="icon" 
+                                variant="outline"
+                              >
+                                <Edit className="h-5 w-5" />
+                              </Button>
+                            </Link>
+                          </Tooltip.Trigger>
+                          <Tooltip.Portal>
+                            <Tooltip.Content
+                              side="top"
+                              className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                            >
+                              Editar Prestador
+                            </Tooltip.Content>
+                          </Tooltip.Portal>
+                        </Tooltip.Root>
+                      </Tooltip.Provider>
+                    )}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
