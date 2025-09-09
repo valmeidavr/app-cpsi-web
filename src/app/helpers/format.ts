@@ -16,6 +16,34 @@ export const formatValor = (valor: number | string) => {
     currency: "BRL",
   });
 };
+
+export const formatValorInput = (value: string) => {
+  // Remove tudo que não for número
+  let cleanValue = value.replace(/\D/g, "");
+  
+  // Se estiver vazio, retorna vazio
+  if (cleanValue === "") return "";
+  
+  // Converte para número (em centavos) e depois para real
+  const valueInCents = parseInt(cleanValue, 10);
+  const valueInReais = valueInCents / 100;
+  
+  // Formata como moeda brasileira
+  return valueInReais.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+};
+
+export const parseValorInput = (maskedValue: string): number => {
+  // Remove R$, pontos e substitui vírgula por ponto
+  const cleanValue = maskedValue
+    .replace(/[R$\s]/g, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
+  
+  return parseFloat(cleanValue) || 0;
+};
 export const formatTelefoneInput = (value: string) => {
   return value
     .replace(/\D/g, "") // Remove tudo que não for número

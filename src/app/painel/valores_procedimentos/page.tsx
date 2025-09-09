@@ -18,6 +18,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "date-fns";
+import { formatValor, formatValorInput, parseValorInput } from "@/app/helpers/format";
 import {
   Form,
   FormControl,
@@ -75,6 +76,8 @@ export default function ValorProcedimentos() {
   const [convenios, setConvenios] = useState<{ id: number; nome: string }[]>([]);
   const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string } | null>(null);
   const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("SOCIO");
+  const [valorFormatado, setValorFormatado] = useState("R$ 0,00");
+  const [valorEditFormatado, setValorEditFormatado] = useState("R$ 0,00");
   useEffect(() => {
     if (tabelaSelecionado && convenioSelecionado) {
       carregarValorProcedimentos();
@@ -159,6 +162,7 @@ export default function ValorProcedimentos() {
       setCarregando(true);
       try {
         if (!valorProcedimentoSelecionado) return;
+        setValorEditFormatado(formatValor(+valorProcedimentoSelecionado.valor));
         formUpdate.reset({
           convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
           tipo: valorProcedimentoSelecionado.tipo,
@@ -496,11 +500,12 @@ export default function ValorProcedimentos() {
                   <FormControl>
                     <Input
                       type="text"
-                      value={field.value || ""}
+                      value={valorFormatado}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        value = "R$" + (Number(value) / 100).toFixed(2) + "";
-                        field.onChange(value.replace(".", ","));
+                        const formatted = formatValorInput(e.target.value);
+                        setValorFormatado(formatted);
+                        const numericValue = parseValorInput(formatted);
+                        field.onChange(numericValue);
                       }}
                       placeholder="R$ 0,00"
                       className={
@@ -854,12 +859,12 @@ export default function ValorProcedimentos() {
                       <FormControl>
                         <Input
                           type="text"
-                          value={field.value || ""}
+                          value={valorEditFormatado}
                           onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, "");
-                            value =
-                              "R$" + (Number(value) / 100).toFixed(2) + "";
-                            field.onChange(value.replace(".", ","));
+                            const formatted = formatValorInput(e.target.value);
+                            setValorEditFormatado(formatted);
+                            const numericValue = parseValorInput(formatted);
+                            field.onChange(numericValue);
                           }}
                           placeholder="R$ 0,00"
                           className={

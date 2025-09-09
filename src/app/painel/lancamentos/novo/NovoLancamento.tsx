@@ -28,6 +28,7 @@ import {
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
 import { http } from "@/util/http";
 import { PlanoConta } from "@/app/types/PlanoConta";
+import { formatValorInput, parseValorInput } from "@/app/helpers/format";
 import { Usuario } from "@/app/types/Usuario";
 import { Caixa } from "@/app/types/Caixa";
 export default function NovoLancamento() {
@@ -35,6 +36,7 @@ export default function NovoLancamento() {
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [valorFormatado, setValorFormatado] = useState("R$ 0,00");
   const router = useRouter();
   const searchParams = useSearchParams();
   const tipo = (
@@ -132,11 +134,12 @@ export default function NovoLancamento() {
                   <FormControl>
                     <Input
                       type="text"
-                      value={field.value || ""}
+                      value={valorFormatado}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        value = "R$" + (Number(value) / 100).toFixed(2) + "";
-                        field.onChange(value.replace(".", ","));
+                        const formatted = formatValorInput(e.target.value);
+                        setValorFormatado(formatted);
+                        const numericValue = parseValorInput(formatted);
+                        field.onChange(numericValue);
                       }}
                       placeholder="R$ 0,00"
                       className={

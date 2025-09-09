@@ -444,7 +444,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
     await executeWithRetry(accessPool,
-      'UPDATE expedientes SET status = "Inativo" WHERE id = ?',
+      'DELETE FROM expedientes WHERE id = ?',
       [id]
     );
     return NextResponse.json({ success: true });

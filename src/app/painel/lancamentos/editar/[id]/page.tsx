@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createLancamentoSchema } from "@/app/api/lancamentos/schema/formSchemeLancamentos";
-import { formatValor } from "@/app/helpers/format";
+import { formatValor, formatValorInput, parseValorInput } from "@/app/helpers/format";
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
@@ -42,6 +42,7 @@ export default function EditarLancamento() {
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [valorFormatado, setValorFormatado] = useState("R$ 0,00");
   const router = useRouter();
   const params = useParams();
   const lancamentoId = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -119,6 +120,7 @@ export default function EditarLancamento() {
         const data = await response.json();
         if (response.ok) {
           setLancamento(data);
+          setValorFormatado(formatValor(data.valor));
           form.reset({
             valor: data.valor,
             descricao: data.descricao,
@@ -202,11 +204,12 @@ export default function EditarLancamento() {
                     <FormControl>
                       <Input
                         type="text"
-                        value={field.value || ""}
+                        value={valorFormatado}
                         onChange={(e) => {
-                          let value = e.target.value.replace(/\D/g, "");
-                          value = "R$" + (Number(value) / 100).toFixed(2) + "";
-                          field.onChange(value.replace(".", ","));
+                          const formatted = formatValorInput(e.target.value);
+                          setValorFormatado(formatted);
+                          const numericValue = parseValorInput(formatted);
+                          field.onChange(numericValue);
                         }}
                         placeholder="R$ 0,00"
                         className={

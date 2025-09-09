@@ -27,11 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Caixa } from "@/app/types/Caixa";
+import { formatValorInput, parseValorInput, formatValor } from "@/app/helpers/format";
 export default function EditarCaixa() {
   const [loading, setLoading] = useState(false);
   const [caixa, setCaixa] = useState<Caixa | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [caixaOptions, setCaixaOptions] = useState<Caixa[]>([]);
+  const [saldoFormatado, setSaldoFormatado] = useState("R$ 0,00");
   const params = useParams();
   const caixaId = Array.isArray(params.id) ? params.id[0] : params.id;
   const form = useForm({
@@ -65,6 +67,7 @@ export default function EditarCaixa() {
         const data = await response.json();
         if (response.ok) {
           setCaixa(data);
+          setSaldoFormatado(formatValor(data.saldo));
           form.reset({
             nome: data.nome,
             saldo: data.saldo,
@@ -160,7 +163,14 @@ export default function EditarCaixa() {
                     <FormLabel>Saldo *</FormLabel>
                     <FormControl>
                       <Input
-                        {...field}
+                        value={saldoFormatado}
+                        onChange={(e) => {
+                          const formatted = formatValorInput(e.target.value);
+                          setSaldoFormatado(formatted);
+                          const numericValue = parseValorInput(formatted);
+                          field.onChange(numericValue);
+                        }}
+                        placeholder="R$ 0,00"
                         className={`border ${
                           form.formState.errors.saldo
                             ? "border-red-500"

@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Caixa } from "@/app/types/Caixa";
+import { formatValor } from "@/app/helpers/format";
 export default function Caixas() {
   const [caixa, setCaixa] = useState<Caixa[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -133,7 +134,7 @@ export default function Caixas() {
                         (caixas as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
                       )}
                     >
-                      {caixas.saldo}
+                      {formatValor(caixas.saldo)}
                     </Badge>
                   </TableCell>
                   <TableCell>

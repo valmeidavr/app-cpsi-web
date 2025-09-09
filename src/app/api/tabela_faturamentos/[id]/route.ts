@@ -70,7 +70,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await accessPool.execute(
-      'UPDATE tabela_faturamentos SET status = "Inativo" WHERE id = ?',
+      'DELETE FROM tabela_faturamentos WHERE id = ?',
       [id]
     );
     return NextResponse.json({ success: true });

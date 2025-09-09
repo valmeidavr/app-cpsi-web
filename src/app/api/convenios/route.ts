@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`, `%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     
     console.log('🔍 [CONVENIOS API] Query principal:', query);
     console.log('📊 [CONVENIOS API] Parâmetros da query:', params);

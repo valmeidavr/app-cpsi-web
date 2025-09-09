@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "date-fns";
+import { formatValor } from "@/app/helpers/format";
 import {
   Form,
   FormControl,
@@ -398,7 +399,7 @@ export default function Lancamentos() {
                             lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
                           )}
                         >
-                          R${lancamento.valor}
+                          {formatValor(lancamento.valor)}
                         </Badge>
                       )}
                     </TableCell>
@@ -410,7 +411,7 @@ export default function Lancamentos() {
                             lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
                           )}
                         >
-                          R${lancamento.valor}
+                          {formatValor(lancamento.valor)}
                         </Badge>
                       )}
                     </TableCell>

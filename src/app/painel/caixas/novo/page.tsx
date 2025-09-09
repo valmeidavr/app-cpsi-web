@@ -25,8 +25,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { createCaixaSchema } from "@/app/api/caixa/schema/formSchemaCaixa";
+import { formatValorInput, parseValorInput } from "@/app/helpers/format";
 export default function NovoCaixa() {
   const [loading, setLoading] = useState(false);
+  const [saldoFormatado, setSaldoFormatado] = useState("R$ 0,00");
   const router = useRouter();
   const tipoOptions = [
     { value: "CAIXA", label: "CAIXA" },
@@ -109,7 +111,14 @@ export default function NovoCaixa() {
                   <FormLabel>Saldo *</FormLabel>
                   <FormControl>
                     <Input
-                      {...field}
+                      value={saldoFormatado}
+                      onChange={(e) => {
+                        const formatted = formatValorInput(e.target.value);
+                        setSaldoFormatado(formatted);
+                        const numericValue = parseValorInput(formatted);
+                        field.onChange(numericValue);
+                      }}
+                      placeholder="R$ 0,00"
                       className={`border ${
                         form.formState.errors.saldo
                           ? "border-red-500"

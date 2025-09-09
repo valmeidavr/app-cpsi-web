@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     const caixaRows = await executeWithRetry(accessPool, query, params);
     let countQuery = 'SELECT COUNT(*) as total FROM caixas WHERE 1=1';
     const countParams: (string)[] = [];
