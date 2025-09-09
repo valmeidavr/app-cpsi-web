@@ -46,12 +46,24 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
-    console.log('📊 Parâmetros:', { page, limit, search, all });
+    const comExpediente = searchParams.get('com_expediente') || '';
+    console.log('📊 Parâmetros:', { page, limit, search, all, comExpediente });
     if (all === 'true' || limit === '1000') {
-      const rows = await executeWithRetry(accessPool,
-        'SELECT * FROM unidades ORDER BY nome ASC',
-        []
-      );
+      let query = 'SELECT * FROM unidades';
+      let queryParams: any[] = [];
+      
+      if (comExpediente === 'true') {
+        query = `
+          SELECT DISTINCT u.* FROM unidades u
+          INNER JOIN alocacoes a ON u.id = a.unidade_id
+          INNER JOIN expedientes e ON a.id = e.alocacao_id
+          ORDER BY u.nome ASC
+        `;
+      } else {
+        query += ' ORDER BY nome ASC';
+      }
+      
+      const rows = await executeWithRetry(accessPool, query, queryParams);
       console.log('🔍 Debug - Unidades encontradas:', (rows as Array<{
         id: number;
         nome: string;
@@ -78,19 +90,29 @@ export async function GET(request: NextRequest) {
         }
       });
     }
-    let whereClause = '';
+    let baseQuery = 'unidades u';
+    let selectQuery = 'u.*';
+    let joinClause = '';
+    let whereClause = ' WHERE 1=1';
     const queryParams: (string | number)[] = [];
+    
+    if (comExpediente === 'true') {
+      baseQuery = 'unidades u INNER JOIN alocacoes a ON u.id = a.unidade_id INNER JOIN expedientes e ON a.id = e.alocacao_id';
+      selectQuery = 'DISTINCT u.*';
+    }
+    
     if (search) {
-      whereClause = ' WHERE nome LIKE ?';
+      whereClause += ' AND u.nome LIKE ?';
       queryParams.push(`%${search}%`);
     }
-    const countQuery = `SELECT COUNT(*) as total FROM unidades${whereClause}`;
+    
+    const countQuery = `SELECT COUNT(${comExpediente === 'true' ? 'DISTINCT u.id' : '*'}) as total FROM ${baseQuery}${whereClause}`;
     const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
-      SELECT * FROM unidades${whereClause}
-      ORDER BY nome ASC
+      SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
+      ORDER BY u.nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const unidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);

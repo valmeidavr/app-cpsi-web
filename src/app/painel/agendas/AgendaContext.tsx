@@ -41,6 +41,8 @@ interface AgendaContextType {
   especialidades: Especialidade[];
   currentMonth: Date;
   setCurrentMonth: (date: Date) => void;
+  onUnidadeChange: (unidade: Unidade | null) => void;
+  onEspecialidadeChange: (especialidade: Especialidade | null) => void;
 }
 const AgendaContext = createContext<AgendaContextType | undefined>(undefined);
 export const useAgenda = () => {
@@ -133,11 +135,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const carregarDados = async () => {
       try {
-        await Promise.all([
-          fetchEspecialidades(),
-          fetchPrestadores(),
-          fetchUnidades(),
-        ]);
+        await fetchUnidades();
         const params = new URLSearchParams(window.location.search);
         const message = params.get("message");
         const type = params.get("type");
@@ -153,9 +151,16 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     };
     carregarDados();
   }, []);
-  const fetchPrestadores = async () => {
+  const fetchPrestadores = async (unidadeId?: number, especialidadeId?: number) => {
     try {
-      const response = await fetch("/api/prestadores?all=true");
+      let url = "/api/prestadores?com_expediente=true&all=true";
+      if (unidadeId) {
+        url += `&unidade_id=${unidadeId}`;
+      }
+      if (especialidadeId) {
+        url += `&especialidade_id=${especialidadeId}`;
+      }
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setPrestadores(data.data || []);
@@ -165,7 +170,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const fetchUnidades = async () => {
     try {
-      const response = await fetch("/api/unidades?limit=1000");
+      const response = await fetch("/api/unidades?com_expediente=true&limit=1000");
       if (response.ok) {
         const data = await response.json();
         setUnidades(data.data || []);
@@ -173,36 +178,44 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (_error) {
     }
   };
-  const fetchEspecialidades = async () => {
+  const fetchEspecialidades = async (unidadeId?: number) => {
     try {
-      const response = await fetch("/api/especialidades?limit=1000");
-      if (response.ok) {
-        const data = await response.json();
-        setEspecialidades(data.data || []);
-        return;
+      let url = "/api/especialidades?com_expediente=true&limit=1000";
+      if (unidadeId) {
+        url += `&unidade_id=${unidadeId}`;
       }
-    } catch {
-    }
-    try {
-      const response = await fetch("/api/alocacoes?limit=1000");
-      if (response.ok) {
-        const data = await response.json();
-        const especialidadesArray = data.data?.map((alocacao: { especialidade: Especialidade }) => alocacao.especialidade) || [];
-        const especialidadesUnicas = especialidadesArray.filter((esp: Especialidade, index: number, arr: Especialidade[]) => 
-          arr.findIndex(e => e.id === esp.id) === index
-        );
-        setEspecialidades(especialidadesUnicas);
-        return;
-      }
-    } catch {
-    }
-    try {
-      const response = await fetch("/api/especialidades?limit=1000");
+      const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setEspecialidades(data.data || []);
       }
     } catch (_error) {
+    }
+  };
+
+  const onUnidadeChange = async (novaUnidade: Unidade | null) => {
+    setUnidade(novaUnidade);
+    // Limpar seleções dependentes
+    setEspecialidade(null);
+    setPrestador(null);
+    setEspecialidades([]);
+    setPrestadores([]);
+    
+    // Carregar especialidades da nova unidade
+    if (novaUnidade) {
+      await fetchEspecialidades(novaUnidade.id);
+    }
+  };
+
+  const onEspecialidadeChange = async (novaEspecialidade: Especialidade | null) => {
+    setEspecialidade(novaEspecialidade);
+    // Limpar seleção dependente
+    setPrestador(null);
+    setPrestadores([]);
+    
+    // Carregar prestadores da unidade e especialidade selecionadas
+    if (unidade && novaEspecialidade) {
+      await fetchPrestadores(unidade.id, novaEspecialidade.id);
     }
   };
   return (
@@ -229,6 +242,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         especialidades,
         currentMonth,
         setCurrentMonth,
+        onUnidadeChange,
+        onEspecialidadeChange,
       }}
     >
       {children}

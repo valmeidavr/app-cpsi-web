@@ -41,6 +41,8 @@ export default function Agendas() {
     unidades,
     currentMonth,
     setCurrentMonth,
+    onUnidadeChange,
+    onEspecialidadeChange,
   } = useAgenda();
     useEffect(() => {
     if (unidade && prestador && especialidade) {
@@ -114,10 +116,8 @@ export default function Agendas() {
                           <Select
                             onValueChange={(value) => {
                               field.onChange(value);
-                              setUnidade(
-                                unidades.find((unidade) => unidade.id == +value) ??
-                                  null
-                              );
+                              const selectedUnidade = unidades.find((unidade) => unidade.id == +value) ?? null;
+                              onUnidadeChange(selectedUnidade);
                             }}
                             value={String(field.value)}
                           >
@@ -156,11 +156,10 @@ export default function Agendas() {
                             disabled={!unidade}
                             onValueChange={(value) => {
                               field.onChange(Number(value));
-                              setEspecialidade(
-                                especialidades.find(
-                                  (especialidade) => especialidade.id == +value
-                                ) ?? null
-                              );
+                              const selectedEspecialidade = especialidades.find(
+                                (especialidade) => especialidade.id == +value
+                              ) ?? null;
+                              onEspecialidadeChange(selectedEspecialidade);
                             }}
                             value={String(field.value)}
                           >

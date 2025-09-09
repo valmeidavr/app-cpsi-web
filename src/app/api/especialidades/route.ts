@@ -11,11 +11,43 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
+    const comExpediente = searchParams.get('com_expediente') || '';
+    const unidadeId = searchParams.get('unidade_id') || '';
     if (all === 'true' || limit === '1000') {
       try {
-        const [rows] = await accessPool.execute(
-          'SELECT * FROM especialidades ORDER BY status DESC, nome ASC'
-        );
+        let query = 'SELECT * FROM especialidades ORDER BY status DESC, nome ASC';
+        
+        if (comExpediente === 'true') {
+          let whereClause = '';
+          let queryParams: any[] = [];
+          
+          if (unidadeId) {
+            whereClause = ' AND a.unidade_id = ?';
+            queryParams.push(parseInt(unidadeId));
+          }
+          
+          query = `
+            SELECT DISTINCT e.* FROM especialidades e
+            INNER JOIN alocacoes a ON e.id = a.especialidade_id
+            INNER JOIN expedientes exp ON a.id = exp.alocacao_id
+            WHERE 1=1 ${whereClause}
+            ORDER BY e.status DESC, e.nome ASC
+          `;
+          
+          const [rows] = await accessPool.execute(query, queryParams);
+          console.log('🔍 Debug - Especialidades filtradas encontradas:', (rows as Array<any>).length);
+          return NextResponse.json({
+            data: rows,
+            pagination: {
+              page: 1,
+              limit: (rows as Array<any>).length,
+              total: (rows as Array<any>).length,
+              totalPages: 1
+            }
+          });
+        }
+        
+        const [rows] = await accessPool.execute(query);
         console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as Array<{
           id: number;
           nome: string;
@@ -112,19 +144,33 @@ export async function GET(request: NextRequest) {
         }
       }
     }
-    let whereClause = '';
+    let baseQuery = 'especialidades e';
+    let selectQuery = 'e.*';
+    let whereClause = ' WHERE 1=1';
     const queryParams: (string | number)[] = [];
+    
+    if (comExpediente === 'true') {
+      baseQuery = 'especialidades e INNER JOIN alocacoes a ON e.id = a.especialidade_id INNER JOIN expedientes exp ON a.id = exp.alocacao_id';
+      selectQuery = 'DISTINCT e.*';
+    }
+    
+    if (unidadeId) {
+      whereClause += ' AND a.unidade_id = ?';
+      queryParams.push(parseInt(unidadeId));
+    }
+    
     if (search) {
-      whereClause = ' WHERE nome LIKE ?';
+      whereClause += ' AND e.nome LIKE ?';
       queryParams.push(`%${search}%`);
     }
-    const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
+    
+    const countQuery = `SELECT COUNT(${comExpediente === 'true' ? 'DISTINCT e.id' : '*'}) as total FROM ${baseQuery}${whereClause}`;
     const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
-      SELECT * FROM especialidades${whereClause}
-      ORDER BY status DESC, nome ASC
+      SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
+      ORDER BY e.status DESC, e.nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const especialidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);

@@ -175,7 +175,10 @@ export async function POST(request: NextRequest) {
     const datasValidas: Date[] = [];
     const dataAtual = new Date(dataInicial);
     while (dataAtual <= dataFinal) {
-      datasValidas.push(new Date(dataAtual));
+      // Só adiciona se o dia da semana corresponder ao selecionado
+      if (dataAtual.getDay() === semanaIndex) {
+        datasValidas.push(new Date(dataAtual));
+      }
       dataAtual.setDate(dataAtual.getDate() + 1);
     }
     if (datasValidas.length === 0) {
@@ -273,6 +276,14 @@ export async function PUT(request: NextRequest) {
     }
     const { ...payload } = validatedData.data;
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    
+    // Primeiro, remove agendamentos LIVRES existentes deste expediente
+    await executeWithRetry(accessPool,
+      `DELETE FROM agendas WHERE expediente_id = ? AND situacao = 'LIVRE'`,
+      [id]
+    );
+    
+    // Atualiza o expediente
     await executeWithRetry(accessPool,
       `UPDATE expedientes SET 
         dtinicio = ?, dtfinal = ?, hinicio = ?, hfinal = ?,
@@ -283,7 +294,132 @@ export async function PUT(request: NextRequest) {
         payload.intervalo, payload.semana, payload.alocacao_id, now, id
       ]
     );
-    return NextResponse.json({ success: true });
+
+    // Busca dados da alocação para recriar os agendamentos
+    const alocacaoRows = await executeWithRetry(accessPool,
+      `SELECT 
+        a.unidade_id,
+        a.especialidade_id,
+        a.prestador_id
+       FROM alocacoes a 
+       WHERE a.id = ?`,
+      [payload.alocacao_id]
+    );
+
+    if (!alocacaoRows || (alocacaoRows as Array<{
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+    }>).length === 0) {
+      throw new Error(`Alocação com ID ${payload.alocacao_id} não encontrada`);
+    }
+
+    const alocacao = (alocacaoRows as Array<{
+      unidade_id: number;
+      especialidade_id: number;
+      prestador_id: number;
+    }>)[0];
+
+    // Recria agendamentos com a nova configuração
+    const diasDaSemana: Record<string, number> = {
+      "Domingo": 0,
+      "Segunda": 1,
+      "Terça": 2,
+      "Quarta": 3,
+      "Quinta": 4,
+      "Sexta": 5,
+      "Sábado": 6
+    };
+
+    if (!payload.semana || !(payload.semana in diasDaSemana)) {
+      throw new Error(`Dia da semana inválido: ${payload.semana}`);
+    }
+
+    const semanaIndex = diasDaSemana[payload.semana];
+    const dataInicial = new Date(payload.dtinicio);
+    const dataFinal = new Date(payload.dtfinal);
+
+    if (isNaN(dataInicial.getTime()) || isNaN(dataFinal.getTime())) {
+      return NextResponse.json(
+        { error: "Datas inválidas fornecidas" },
+        { status: 400 }
+      );
+    }
+
+    const datasValidas: Date[] = [];
+    const dataAtual = new Date(dataInicial);
+    while (dataAtual <= dataFinal) {
+      // Só adiciona se o dia da semana corresponder ao selecionado
+      if (dataAtual.getDay() === semanaIndex) {
+        datasValidas.push(new Date(dataAtual));
+      }
+      dataAtual.setDate(dataAtual.getDate() + 1);
+    }
+
+    if (datasValidas.length > 0) {
+      const agendasToCreate: Array<{
+        dtagenda: Date;
+        situacao: string;
+        expediente_id: number;
+        prestador_id: number;
+        unidade_id: number;
+        especialidade_id: number;
+        tipo: string;
+      }> = [];
+
+      const intervaloMin = parseInt(payload.intervalo, 10);
+      for (const data of datasValidas) {
+        const [hStart, mStart] = payload.hinicio.split(':').map(Number);
+        const [hEnd, mEnd] = payload.hfinal.split(':').map(Number);
+        let startMinutes = hStart * 60 + mStart;
+        const endMinutes = hEnd * 60 + mEnd;
+
+        while (startMinutes + intervaloMin <= endMinutes) {
+          const hora = Math.floor(startMinutes / 60);
+          const minuto = startMinutes % 60;
+          const agendaDate = new Date(data);
+          agendaDate.setHours(hora, minuto, 0, 0);
+
+          agendasToCreate.push({
+            dtagenda: agendaDate,
+            situacao: "LIVRE",
+            expediente_id: parseInt(id),
+            prestador_id: alocacao.prestador_id,
+            unidade_id: alocacao.unidade_id,
+            especialidade_id: alocacao.especialidade_id,
+            tipo: "PROCEDIMENTO"
+          });
+          startMinutes += intervaloMin;
+        }
+      }
+
+      if (agendasToCreate.length > 0) {
+        const values = agendasToCreate.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+        const params = agendasToCreate.flatMap(agenda => [
+          agenda.dtagenda,
+          agenda.situacao,
+          agenda.expediente_id,
+          agenda.prestador_id,
+          agenda.unidade_id,
+          agenda.especialidade_id,
+          agenda.tipo
+        ]);
+
+        await executeWithRetry(accessPool,
+          `INSERT INTO agendas (
+            dtagenda, situacao, expediente_id, prestador_id, 
+            unidade_id, especialidade_id, tipo
+          ) VALUES ${values}`,
+          params
+        );
+      }
+    }
+
+    return NextResponse.json({ 
+      success: true, 
+      agendamentosCriados: datasValidas.length,
+      message: 'Expediente atualizado e agendamentos recriados com sucesso'
+    });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
