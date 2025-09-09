@@ -17,8 +17,8 @@ export async function GET(
       tipo: string;
       especialidade_id: number;
       status: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>).length === 0) {
       return NextResponse.json(
         { error: 'Procedimento não encontrado' },
@@ -32,8 +32,8 @@ export async function GET(
       tipo: string;
       especialidade_id: number;
       status: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>)[0];
     return NextResponse.json(procedimento);
   } catch (error) {

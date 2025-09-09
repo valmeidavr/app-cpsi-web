@@ -68,6 +68,8 @@ export default function EditarProcedimento() {
         const response = await fetch(`/api/procedimentos/${procedimentoId}`);
         const data = await response.json();
         if (response.ok) {
+          console.log("Dados recebidos da API:", data);
+          console.log("Tipo do procedimento:", data.tipo);
           setProcedimento(data);
           form.reset({
             nome: data.nome,
@@ -75,6 +77,9 @@ export default function EditarProcedimento() {
             tipo: data.tipo,
             especialidade_id: data.especialidade_id || 0,
           });
+          // Garantir que o campo tipo seja definido corretamente
+          form.setValue("tipo", data.tipo);
+          console.log("Valor do form após setValue:", form.getValues("tipo"));
         } else {
           toast.error("Erro ao carregar dados do procedimento");
         }
@@ -85,6 +90,14 @@ export default function EditarProcedimento() {
     }
     fetchData();
   }, []);
+
+  // UseEffect separado para sincronizar o campo tipo
+  useEffect(() => {
+    if (procedimento?.tipo) {
+      console.log("Sincronizando tipo:", procedimento.tipo);
+      form.setValue("tipo", procedimento.tipo);
+    }
+  }, [procedimento?.tipo, form]);
   const onSubmit = async (values: z.infer<typeof updateProcedimentoSchema>) => {
     setLoading(true);
     try {
@@ -187,7 +200,8 @@ export default function EditarProcedimento() {
                     <FormLabel>Tipo *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || ""}
+                      value={field.value || procedimento?.tipo || ""}
+                      key={`select-tipo-${procedimento?.id || "new"}`}
                     >
                       <FormControl
                         className={
