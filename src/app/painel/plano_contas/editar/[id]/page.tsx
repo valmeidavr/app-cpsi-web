@@ -31,6 +31,7 @@ export default function EditarPlanoConta() {
     mode: "onChange",
     defaultValues: {
       nome: "",
+      tipo: "",
       categoria: "",
       descricao: "",
     },
@@ -47,6 +48,7 @@ export default function EditarPlanoConta() {
           setPlanoConta(data);
           form.reset({
             nome: data.nome,
+            tipo: data.tipo,
             categoria: data.categoria,
             descricao: data.descricao,
           });

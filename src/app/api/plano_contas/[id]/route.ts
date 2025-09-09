@@ -45,9 +45,9 @@ export async function PUT(
     const { ...payload } = validatedData.data;
     await accessPool.execute(
       `UPDATE plano_contas SET 
-        nome = ?, categoria = ?, descricao = ?
+        nome = ?, tipo = ?, categoria = ?, descricao = ?
        WHERE id = ?`,
-      [payload.nome, payload.categoria, payload.descricao, id]
+      [payload.nome, payload.tipo, payload.categoria, payload.descricao, id]
     );
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -70,7 +70,7 @@ export async function DELETE(
   try {
     const { id } = await params;
     await accessPool.execute(
-      'UPDATE plano_contas SET status = "Inativo" WHERE id = ?',
+      'DELETE FROM plano_contas WHERE id = ?',
       [id]
     );
     return NextResponse.json({ success: true });

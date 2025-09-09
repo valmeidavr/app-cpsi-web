@@ -1,5 +1,5 @@
 @echo off
-echo 🚀 Iniciando banco de dados MySQL para o projeto CPSI...
+echo 🚀 Iniciando banco de dados MySQL para o projeto prevSaúde...
 echo.
 
 REM Verificar se o Docker está instalado

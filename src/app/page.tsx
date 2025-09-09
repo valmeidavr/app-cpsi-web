@@ -51,7 +51,7 @@ export default function Home() {
           <div className="flex justify-center mb-4">
             <Image src="/logotipo.svg" alt="GRUPO AAP-VR" width={200} height={100} className="rounded-md" />
           </div>
-          <CardTitle className="text-2xl font-bold">Bem-vindo ao Sistema CPSI</CardTitle>
+          <CardTitle className="text-2xl font-bold">Bem-vindo ao Sistema prevSaúde</CardTitle>
           <CardDescription>Entre com suas credenciais para acessar sua conta</CardDescription>
         </CardHeader>
         <form onSubmit={onSubmit}>

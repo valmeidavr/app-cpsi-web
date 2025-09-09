@@ -133,7 +133,7 @@ async function getNovosClientes(startDate: string | null, endDate: string | null
   try {
     let query = `
       SELECT 
-        DATE(c.createdAt) as data,
+        DATE(c.created_at) as data,
         COUNT(*) as total
       FROM clientes c
       WHERE c.status = 'Ativo'
@@ -141,14 +141,14 @@ async function getNovosClientes(startDate: string | null, endDate: string | null
     
     const params: string[] = [];
     if (startDate && endDate) {
-      query += ' AND DATE(c.createdAt) BETWEEN ? AND ?';
+      query += ' AND DATE(c.created_at) BETWEEN ? AND ?';
       params.push(startDate, endDate);
     } else {
       // Últimos 30 dias por padrão
-      query += ' AND DATE(c.createdAt) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
+      query += ' AND DATE(c.created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)';
     }
     
-    query += ' GROUP BY DATE(c.createdAt) ORDER BY data DESC LIMIT 30';
+    query += ' GROUP BY DATE(c.created_at) ORDER BY data DESC LIMIT 30';
     
     const rows = await executeWithRetry(accessPool, query, params);
     
@@ -217,7 +217,7 @@ async function getResumo(startDate: string | null, endDate: string | null) {
     const clientesQuery = `
       SELECT COUNT(*) as total
       FROM clientes c
-      WHERE c.status = 'Ativo' ${dateCondition.replace('data_campo', 'c.createdAt')}
+      WHERE c.status = 'Ativo' ${dateCondition.replace('data_campo', 'c.created_at')}
     `;
     const clientesRows = await executeWithRetry(accessPool, clientesQuery, params);
     const novosClientes = (clientesRows as Array<{ total: number }>)[0]?.total || 0;

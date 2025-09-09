@@ -44,7 +44,7 @@ export default function UsuariosPage() {
       setLoading(true)
       const searchParams = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       })
       const response = await fetch(`/api/usuarios?${searchParams.toString()}`)

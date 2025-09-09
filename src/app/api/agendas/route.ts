@@ -110,15 +110,22 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   try {
+    console.log("📥 [AGENDA POST] Iniciando criação de agenda");
     const body = await request.json();
+    console.log("📝 [AGENDA POST] Body recebido:", JSON.stringify(body, null, 2));
+    
     const validatedData = createAgendaSchema.safeParse(body);
     if (!validatedData.success) {
+      console.error("❌ [AGENDA POST] Validação falhou:", validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    
     const { ...payload } = validatedData.data;
+    console.log("✅ [AGENDA POST] Dados validados:", JSON.stringify(payload, null, 2));
+    console.log("💾 [AGENDA POST] Executando INSERT na tabela agendas");
     const result = await executeWithRetry(accessPool,
       `INSERT INTO agendas (
         dtagenda, situacao, cliente_id, convenio_id, procedimento_id,
@@ -130,6 +137,7 @@ export async function POST(request: NextRequest) {
         payload.unidade_id, payload.especialidade_id, payload.tipo, payload.tipo_cliente
       ]
     );
+    console.log("✅ [AGENDA POST] INSERT executado com sucesso, ID:", (result as { insertId: number }).insertId);
     const agendaId = (result as { insertId: number }).insertId;
     try {
       let clienteNome = 'Cliente não informado';
@@ -201,11 +209,15 @@ export async function POST(request: NextRequest) {
       );
     } catch (lancamentoError) {
     }
+    console.log("✅ [AGENDA POST] Agenda criada com sucesso, ID:", agendaId);
     return NextResponse.json({ 
       success: true, 
       id: agendaId 
     });
   } catch (error) {
+    console.error("❌ [AGENDA POST] Erro detalhado:", error);
+    console.error("❌ [AGENDA POST] Stack trace:", error instanceof Error ? error.stack : 'Sem stack trace');
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -213,7 +225,13 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: error instanceof Error ? error.message : 'Erro interno do servidor',
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : 'Erro desconhecido',
+          stack: error instanceof Error ? error.stack : null
+        } : undefined
+      },
       { status: 500 }
     );
   }

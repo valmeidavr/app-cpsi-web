@@ -43,7 +43,7 @@ export default function Especialidades() {
     try {
       const params = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       });
       const response = await fetch(`/api/especialidades?${params}`);

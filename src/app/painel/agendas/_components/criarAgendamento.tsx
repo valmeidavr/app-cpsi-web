@@ -351,43 +351,7 @@ const CriarAgendamento = ({
         <Form {...form}>
           <div className="flex flex-col">
             <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="tipo_cliente"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Tipo Cliente *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setTipoClienteSelecionada(value as TipoClienteValorProcedimento);
-                          setProcedimentoSelecionado(null);
-                          form.setValue("procedimento_id", 0);
-                          if (convenioSelecionado) {
-                            fetchProcedimentos(value as TipoClienteValorProcedimento, convenioSelecionado.id);
-                          }
-                        }}
-                        value={field.value || tipoClienteSelecionado || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="SOCIO">SOCIO</SelectItem>
-                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
-                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
-                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage>
-                        {form.formState.errors.tipo_cliente?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
+              <div className="grid grid-cols-1 gap-6">
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -432,25 +396,41 @@ const CriarAgendamento = ({
                                     value={`${item.id}-${item.nome}`}
                                     key={`cliente-${item.id}-${item.nome}`}
                                     onSelect={() => {
+                                      // Limpar seleções dependentes
                                       setClienteSelecionado(null);
                                       setConvenioSelecionada(undefined);
                                       setTipoClienteSelecionada(null);
                                       setProcedimentoSelecionado(null);
                                       setConvenios([]);
                                       setProcedimentos([]);
+                                      
+                                      // Definir valores no form
                                       form.setValue("cliente_id", +item.id);
                                       form.setValue("convenio_id", 0);
                                       form.setValue("procedimento_id", 0);
-                                      form.setValue("tipo_cliente", item.tipoCliente || undefined);
+                                      
+                                      // Capturar tipo do cliente automaticamente
+                                      const tipoClienteCapturado = item.tipoCliente as TipoClienteValorProcedimento;
+                                      form.setValue("tipo_cliente", tipoClienteCapturado);
+                                      
+                                      // Atualizar states
                                       setClienteSelecionado(item);
-                                      setTipoClienteSelecionada((item.tipoCliente as unknown as TipoClienteValorProcedimento) || null);
+                                      setTipoClienteSelecionada(tipoClienteCapturado);
+                                      
+                                      // Carregar convênios para este cliente
                                       fetchConvenios(+item.id);
+                                      
                                       setOpenSelectClientes(false);
                                       setSearchCliente("");
                                     }}
                                   >
                                     <div className="flex flex-col">
-                                      <span className="font-medium">{item.nome}</span>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium">{item.nome}</span>
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                          {item.tipoCliente}
+                                        </span>
+                                      </div>
                                       {item.cpf && <span className="text-sm text-gray-500">CPF: {item.cpf}</span>}
                                       {item.email && <span className="text-sm text-gray-500">Email: {item.email}</span>}
                                     </div>

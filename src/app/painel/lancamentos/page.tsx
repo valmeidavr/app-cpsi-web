@@ -77,7 +77,7 @@ export default function Lancamentos() {
     try {
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
-      params.append('limit', '5');
+      params.append('limit', '10');
       params.append('search', termoBusca);
       if (filters?.caixa_id && filters.caixa_id != 0) {
         params.append('caixa_id', filters.caixa_id.toString());

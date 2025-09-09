@@ -2,17 +2,17 @@
   "restricoes": [
     {
       "path": "/painel",
-      "sistema": "CPSI",
+      "sistema": "prevSaúde",
       "gruposPermitidos": ["ADMIN", "GESTOR"]
     },
     {
       "path": "/painel/usuarios",
-      "sistema": "CPSI",
+      "sistema": "prevSaúde",
       "gruposPermitidos": ["ADMIN"]
     },
     {
       "path": "/painel/procedimentos",
-      "sistema": "CPSI",
+      "sistema": "prevSaúde",
       "gruposPermitidos": ["ADMIN", "GESTOR", "OPERADOR"]
     }
   ]

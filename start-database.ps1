@@ -1,5 +1,5 @@
 # Script PowerShell para iniciar o banco de dados MySQL
-Write-Host "🚀 Iniciando banco de dados MySQL para o projeto CPSI..." -ForegroundColor Green
+Write-Host "🚀 Iniciando banco de dados MySQL para o projeto prevSaúde..." -ForegroundColor Green
 Write-Host ""
 
 # Verificar se o Docker está instalado

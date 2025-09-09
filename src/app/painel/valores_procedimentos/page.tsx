@@ -101,7 +101,7 @@ export default function ValorProcedimentos() {
       }
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
-      params.append('limit', '5');
+      params.append('limit', '10');
       params.append('search', termoBusca);
       params.append('tabela_faturamento_id', tabelaSelecionado.id.toString());
       if (procedimentoSelecionado) {

@@ -10,7 +10,7 @@ export async function GET() {
     }
     const userId = session.user.id;
     const [sistemasRows] = await accessPool.execute(
-      'SELECT id, nome FROM sistemas WHERE nome = "sistemaCPSI"'
+      'SELECT id, nome FROM sistemas WHERE nome = "prevSaúde"'
     );
     const [acessoRows] = await accessPool.execute(
       `SELECT us.sistemas_id, us.nivel, s.nome as sistema_nome 

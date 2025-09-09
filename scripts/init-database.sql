@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS usuario_grupo (
 
 -- Inserir dados iniciais
 INSERT IGNORE INTO sistemas (nome, descricao) VALUES 
-('CPSI', 'Sistema de Gestão da AAPVR'),
+('prevSaúde', 'Sistema de Gestão da AAPVR'),
 ('ADMIN', 'Sistema Administrativo');
 
 INSERT IGNORE INTO grupos (nome, descricao) VALUES 
@@ -73,11 +73,11 @@ INSERT IGNORE INTO grupos (nome, descricao) VALUES
 INSERT IGNORE INTO usuarios (login, nome, email, senha, status) VALUES 
 ('admin', 'Administrador', 'admin@aapvr.org.br', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Ativo');
 
--- Associar usuário admin ao sistema CPSI
+-- Associar usuário admin ao sistema prevSaúde
 INSERT IGNORE INTO usuario_sistema (usuario_id, sistema_id) 
 SELECT u.id, s.id 
 FROM usuarios u, sistemas s 
-WHERE u.login = 'admin' AND s.nome = 'CPSI';
+WHERE u.login = 'admin' AND s.nome = 'prevSaúde';
 
 -- Associar usuário admin ao grupo ADMIN
 INSERT IGNORE INTO usuario_grupo (usuario_id, grupo_id) 

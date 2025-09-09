@@ -31,7 +31,7 @@ export default function AcessoNegado() {
                   <li>• Você não está logado no sistema</li>
                   <li>• Sua conta não tem permissão para esta área</li>
                   <li>• Sua sessão expirou</li>
-                  <li>• Você não tem acesso ao sistema CPSI</li>
+                  <li>• Você não tem acesso ao sistema prevSaúde</li>
                 </ul>
               </div>
             </div>

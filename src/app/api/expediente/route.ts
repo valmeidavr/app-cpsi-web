@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
         e.intervalo,
         e.semana,
         e.alocacao_id,
-        e.createdAt,
-        e.updatedAt,
+        e.created_at,
+        e.updated_at,
         a.unidade_id,
         a.especialidade_id,
         a.prestador_id,
@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
       intervalo: number;
       semana: string;
       alocacao_id: number;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>)?.length || 0);
     console.log("🔍 Primeiro expediente:", (expedienteRows as Array<{
       id: number;
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
       intervalo: number;
       semana: string;
       alocacao_id: number;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>)?.[0]);
     let countQuery = `
       SELECT COUNT(*) as total 
@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     const expedienteResult = await executeWithRetry(accessPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
-        semana, alocacao_id, createdAt, updatedAt
+        semana, alocacao_id, created_at, updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
@@ -287,7 +287,7 @@ export async function PUT(request: NextRequest) {
     await executeWithRetry(accessPool,
       `UPDATE expedientes SET 
         dtinicio = ?, dtfinal = ?, hinicio = ?, hfinal = ?,
-        intervalo = ?, semana = ?, alocacao_id = ?, updatedAt = ?
+        intervalo = ?, semana = ?, alocacao_id = ?, updated_at = ?
        WHERE id = ?`,
       [
         payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,

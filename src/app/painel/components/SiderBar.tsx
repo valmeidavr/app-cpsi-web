@@ -236,7 +236,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
               height={40}
               className="mr-5"
             />
-            <span className="text-ml font-bold">AAP-VR / CPSI</span>
+            <span className="text-ml font-bold">AAP-VR / prevSaúde</span>
           </Link>
         ) : (
           <div className=" h-8" /> // Placeholder para manter o espaçamento

@@ -7,7 +7,7 @@ export async function GET(
   try {
     const { id } = await params;
     const rows = await executeWithRetry(accessPool,
-      'SELECT id, dtagenda, situacao, cliente_id, convenio_id, procedimento_id, expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente, createdAt, updatedAt FROM agendas WHERE id = ?',
+      'SELECT id, dtagenda, situacao, cliente_id, convenio_id, procedimento_id, expediente_id, prestador_id, unidade_id, especialidade_id, tipo, tipo_cliente, created_at, updated_at FROM agendas WHERE id = ?',
       [id]
     );
     if ((rows as Array<{
@@ -23,8 +23,8 @@ export async function GET(
       especialidade_id: number;
       tipo: string;
       tipo_cliente: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>).length === 0) {
       return NextResponse.json(
         { error: 'Agenda não encontrada' },
@@ -44,8 +44,8 @@ export async function GET(
       especialidade_id: number;
       tipo: string;
       tipo_cliente: string;
-      createdAt: Date;
-      updatedAt: Date;
+      created_at: Date;
+      updated_at: Date;
     }>)[0];
     return NextResponse.json(agenda);
   } catch (error) {
