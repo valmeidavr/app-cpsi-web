@@ -49,6 +49,7 @@ export default function AlocacaoPage() {
           fetchEspecialidades(),
           fetchPrestadores(),
           fetchUnidades(),
+          fetchAlocacoes(),
         ]);
       } catch (error) {
       } finally {
@@ -72,7 +73,6 @@ export default function AlocacaoPage() {
   const fetchAlocacoes = async () => {
     try {
       setCarregandoDadosAlocacao(true);
-      if (!prestador || !unidade) return;
       const params = new URLSearchParams();
       if (prestador) params.append('prestadorId', prestador.id.toString());
       if (especialidade) params.append('especialidade_id', especialidade.id.toString());

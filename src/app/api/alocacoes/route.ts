@@ -71,10 +71,22 @@ export async function GET(request: NextRequest) {
       LEFT JOIN prestadores p ON a.prestador_id = p.id
       WHERE (p.status IS NULL OR p.status = 'Ativo')
     `;
-    const countParams: string[] = [];
+    const countParams: (string | number)[] = [];
     if (search) {
       countQuery += ' AND (e.nome LIKE ? OR u.nome LIKE ? OR p.nome LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    if (prestadorId) {
+      countQuery += ' AND a.prestador_id = ?';
+      countParams.push(prestadorId);
+    }
+    if (especialidadeId) {
+      countQuery += ' AND a.especialidade_id = ?';
+      countParams.push(especialidadeId);
+    }
+    if (unidadeId) {
+      countQuery += ' AND a.unidade_id = ?';
+      countParams.push(unidadeId);
     }
     const countRows = await executeWithRetry(accessPool, countQuery, countParams);
     const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
