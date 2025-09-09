@@ -77,34 +77,58 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = createAlunoTurmaSchema.safeParse(body);
+    console.log('📥 POST alunos_turmas - dados recebidos:', body);
+    
+    // Converter strings para números se necessário
+    const processedBody = {
+      ...body,
+      cliente_id: typeof body.cliente_id === 'string' ? parseInt(body.cliente_id) : body.cliente_id,
+      turma_id: typeof body.turma_id === 'string' ? parseInt(body.turma_id) : body.turma_id
+    };
+    
+    console.log('🔄 POST alunos_turmas - dados processados:', processedBody);
+    
+    const validatedData = createAlunoTurmaSchema.safeParse(processedBody);
+    
     if (!validatedData.success) {
+      console.error('❌ Validação falhou:', validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+
+    console.log('✅ Dados validados:', validatedData.data);
+
     const [result] = await accessPool.execute(
       `INSERT INTO alunos_turmas (
-        cliente_id, turma_id, data_inscricao, status
-      ) VALUES (?, ?, ?, ?)`,
+        cliente_id, turma_id, data_inscricao
+      ) VALUES (?, ?, ?)`,
       [
-        validatedData.data.cliente_id, validatedData.data.turma_id, validatedData.data.data_inscricao || new Date().toISOString(), 'Ativo'
+        validatedData.data.cliente_id, 
+        validatedData.data.turma_id, 
+        validatedData.data.data_inscricao || new Date().toISOString().split('T')[0]
       ]
     );
+
+    console.log('✅ Aluno inserido com sucesso:', (result as { insertId: number }).insertId);
+
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
+    console.error('❌ Erro no POST alunos_turmas:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

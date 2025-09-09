@@ -134,6 +134,105 @@ export default function GerenciarAcessoPage() {
         setAccessConfig(newConfig)
       }
     } catch (error) {
+      console.error('Erro ao carregar acesso do usuário:', error)
+      toast.error('Erro ao carregar acesso do usuário')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleAccessChange = (sistemaId: number, hasAccess: boolean) => {
+    setAccessConfig(prev => ({
+      ...prev,
+      [sistemaId]: {
+        ...prev[sistemaId],
+        hasAccess
+      }
+    }))
+  }
+
+  const handleLevelChange = (sistemaId: number, nivel: string) => {
+    setAccessConfig(prev => ({
+      ...prev,
+      [sistemaId]: {
+        ...prev[sistemaId],
+        nivel
+      }
+    }))
+  }
+
+  const handleSave = async () => {
+    if (!selectedUser) return
+    
+    setSaving(true)
+    try {
+      const accessData = Object.entries(accessConfig)
+        .filter(([_, config]) => config.hasAccess)
+        .map(([sistemaId, config]) => ({
+          sistemaId: Number(sistemaId),
+          nivel: config.nivel
+        }))
+
+      const response = await fetch('/api/usuarios/sistemas', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: selectedUser,
+          access: accessData
+        })
+      })
+
+      if (response.ok) {
+        toast.success('Acesso atualizado com sucesso!')
+      } else {
+        throw new Error('Erro ao salvar acesso')
+      }
+    } catch (error) {
+      console.error('Erro ao salvar acesso:', error)
+      toast.error('Erro ao salvar acesso')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <Breadcrumb
+        items={[
+          { label: "Painel", href: "/painel" },
+          { label: "Usuários", href: "/painel/usuarios" },
+          { label: "Gerenciar Acesso" },
+        ]}
+      />
+      
+      <h1 className="text-2xl font-bold mb-4 mt-5">Gerenciar Acesso de Usuários</h1>
+      
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Buscar Usuário</CardTitle>
+            <CardDescription>
+              Digite o nome ou email do usuário para configurar seus acessos
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Digite o nome ou email do usuário..."
+                    value={searchValue}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <Button
+                    className="ml-2"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(`/api/usuarios?search=${encodeURIComponent(searchValue)}&limit=1000`);
                         const data = await response.json();
                         toast.success('Teste de busca executado. Veja o console.');
                       } catch (error) {

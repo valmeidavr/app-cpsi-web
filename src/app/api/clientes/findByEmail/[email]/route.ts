@@ -7,15 +7,21 @@ export async function GET(
   try {
     const { email } = await params;
     const emailDecoded = decodeURIComponent(email);
+    console.log('🔍 [EMAIL API] Verificando email:', emailDecoded);
+    
     const [rows] = await accessPool.execute(
       'SELECT id FROM clientes WHERE email = ? AND status = "Ativo"',
       [emailDecoded]
     );
+    
     const exists = (rows as Array<{ id: number }>).length > 0;
-    return NextResponse.json(exists);
+    console.log('📊 [EMAIL API] Email já existe:', exists);
+    
+    return NextResponse.json({ exists });
   } catch (error) {
+    console.error('❌ [EMAIL API] Erro ao verificar email:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

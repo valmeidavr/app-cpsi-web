@@ -107,22 +107,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log("📥 [EXPEDIENTE API] Dados recebidos:", body);
     const validatedData = createExpedienteSchema.safeParse(body);
     if (!validatedData.success) {
+      console.error("❌ [EXPEDIENTE API] Validação falhou:", validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    console.log("✅ [EXPEDIENTE API] Dados validados com sucesso");
     const { ...payload } = validatedData.data;
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     const expedienteResult = await executeWithRetry(accessPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
-        semana, alocacao_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        semana, alocacao_id, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
-        payload.intervalo, payload.semana, payload.alocacao_id
+        payload.intervalo, payload.semana, payload.alocacao_id, now, now
       ]
     );
     const expedienteId = (expedienteResult as { insertId: number }).insertId;
@@ -268,14 +272,15 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
     await executeWithRetry(accessPool,
       `UPDATE expedientes SET 
         dtinicio = ?, dtfinal = ?, hinicio = ?, hfinal = ?,
-        intervalo = ?, semana = ?, alocacao_id = ?
+        intervalo = ?, semana = ?, alocacao_id = ?, updatedAt = ?
        WHERE id = ?`,
       [
         payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
-        payload.intervalo, payload.semana, payload.alocacao_id, id
+        payload.intervalo, payload.semana, payload.alocacao_id, now, id
       ]
     );
     return NextResponse.json({ success: true });

@@ -1,15 +1,20 @@
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
+
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
     const pathname = req.nextUrl.pathname
-    console.log('Middleware - Token:', token)
-    console.log('Middleware - Pathname:', pathname)
-    if (token && !token.hasSystemAccess) {
-      console.log('Middleware - Usuário sem acesso ao sistema, redirecionando...')
+    
+    console.log('🔒 Middleware:', { pathname, hasToken: !!token, hasAccess: token?.hasSystemAccess })
+    
+    // Verificar se tem acesso ao sistema
+    if (!token?.hasSystemAccess) {
+      console.log('❌ Sem acesso ao sistema, redirecionando para /acesso-negado')
       return NextResponse.redirect(new URL('/acesso-negado', req.url))
     }
+    
+    // Verificar permissões específicas de rotas
     if (pathname.startsWith('/painel/') && token?.role) {
       const routePermissions = {
         '/painel/usuarios': ['Administrador'],
@@ -36,21 +41,23 @@ export default withAuth(
         const requiredRoles = routePermissions[currentRoute as keyof typeof routePermissions]
         const hasPermission = requiredRoles.includes(token.role)
         if (!hasPermission) {
-          console.log(`Middleware - Usuário sem permissão para ${pathname}. Nível: ${token.role}, Requerido: ${requiredRoles}`)
           return NextResponse.redirect(new URL('/acesso-negado', req.url))
         }
       }
     }
+    
+    return NextResponse.next()
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
-        console.log('Middleware - Verificando autorização:', !!token, token?.hasSystemAccess)
-        return !!token && !!token.hasSystemAccess
-      },
-    },
+      authorized: ({ token, req }) => {
+        console.log('🛂 Authorized callback:', { hasToken: !!token, url: req.url })
+        return !!token
+      }
+    }
   }
 )
+
 export const config = {
   matcher: [
     '/painel/:path*',

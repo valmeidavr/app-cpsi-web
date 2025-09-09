@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(timeout 300s npm install --save-dev autoprefixer)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(yarn --version)",
+      "Bash(yarn install)",
+      "Bash(yarn install:*)",
+      "Bash(yarn add:*)",
+      "Bash(npx:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 10s npm run dev:*)",
+      "Bash(openssl rand:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

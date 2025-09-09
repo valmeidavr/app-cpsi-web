@@ -20,7 +20,8 @@ export const formatTelefoneInput = (value: string) => {
   return value
     .replace(/\D/g, "") // Remove tudo que não for número
     .replace(/^(\d{2})(\d)/, "($1) $2") // Adiciona parênteses no DDD
-    .replace(/(\d{4,5})(\d{4})$/, "$1-$2") // Adiciona o traço
+    .replace(/(\d{4})(\d{4})$/, "$1-$2") // Para 8 dígitos
+    .replace(/(\d{5})(\d{4})$/, "$1-$2") // Para 9 dígitos
     .slice(0, 15); // Limita o tamanho máximo
 };
 export const formatCPFInput = (value: string) => {

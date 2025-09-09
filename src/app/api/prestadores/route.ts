@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
-    const [result] = await accessPool.execute(
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO prestadores (
         nome, rg, cpf, sexo, dtnascimento, cep, logradouro, numero, 
         bairro, cidade, uf, telefone, celular, complemento, status
@@ -120,7 +120,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
-    await accessPool.execute(
+    await executeWithRetry(accessPool,
       `UPDATE prestadores SET 
         nome = ?, rg = ?, cpf = ?, sexo = ?, dtnascimento = ?, cep = ?,
         logradouro = ?, numero = ?, bairro = ?, cidade = ?, uf = ?,
@@ -166,7 +166,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
     const { status } = validatedData.data;
-    await accessPool.execute(
+    await executeWithRetry(accessPool,
       'UPDATE prestadores SET status = ? WHERE id = ?',
       [status, id]
     );

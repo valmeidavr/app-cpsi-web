@@ -47,6 +47,21 @@ export default function UsuariosPage() {
         search: termoBusca,
       })
       const response = await fetch(`/api/usuarios?${searchParams.toString()}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setUsuarios(data.data || [])
+        setTotalPaginas(data.pagination?.totalPages || 1)
+        setTotalUsuarios(data.pagination?.total || 0)
+      } else {
+        throw new Error('Erro ao carregar usuários')
+      }
+    } catch (error) {
+      console.error('Erro ao buscar usuários:', error)
+      toast.error('Erro ao carregar usuários')
+    } finally {
+      setLoading(false)
+    }
   };
   useEffect(() => {
     fetchUsers();

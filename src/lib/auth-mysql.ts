@@ -37,17 +37,13 @@ export async function authenticateUser(login: string, password: string): Promise
     }
     const user = users[0]
     console.log('✅ Usuário encontrado:', user.login)
-    console.log('🔑 Hash do banco:', user.senha)
     let isPasswordValid = false
     try {
       let hashToCompare = user.senha
       if (hashToCompare.startsWith('$2y$')) {
         hashToCompare = hashToCompare.replace('$2y$', '$2a$')
-        console.log('🔄 Hash convertido:', hashToCompare)
       }
-      console.log('🔐 Verificando senha...')
       isPasswordValid = await bcrypt.compare(password, hashToCompare)
-      console.log('✅ Resultado da verificação:', isPasswordValid)
     } catch (error) {
       console.error('❌ Erro ao verificar senha:', error)
       return {

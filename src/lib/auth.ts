@@ -30,28 +30,52 @@ export const authOptions: NextAuthOptions = {
     })
   ],
   session: {
-    strategy: 'jwt'
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
+    updateAge: 24 * 60 * 60, // 24 horas (mais estável)
+  },
+  jwt: {
+    maxAge: 30 * 24 * 60 * 60, // 30 dias
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
+    async jwt({ token, user, trigger }) {
+      console.log('🔑 JWT Callback:', { trigger, userId: user?.id, hasUser: !!user, hasToken: !!token.sub })
+      
+      // Na primeira vez (signIn), salvar dados do usuário
+      if (user && trigger === 'signIn') {
+        console.log('👤 Usuário logado (primeira vez):', user.name)
         token.role = user.role
         token.hasSystemAccess = user.hasSystemAccess
+        token.sub = user.id
+        token.name = user.name
+        token.email = user.email
       }
+      
+      // Manter dados existentes se token já tem informações
+      if (!user && token.sub && !token.role) {
+        console.log('⚠️  Token sem dados de usuário, pode ser problema de sessão')
+      }
+      
       return token
     },
     async session({ session, token }) {
-      if (token) {
+      console.log('🎫 Session Callback:', { hasToken: !!token, tokenSub: token.sub })
+      if (token && session.user) {
         session.user.id = token.sub!
         session.user.role = token.role as string
         session.user.hasSystemAccess = token.hasSystemAccess as boolean
       }
+      console.log('✅ Session final:', { 
+        userId: session.user?.id, 
+        role: session.user?.role,
+        hasAccess: session.user?.hasSystemAccess 
+      })
       return session
     }
   },
   pages: {
-    signIn: '/login',
+    signIn: '/',
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === 'development',
+  debug: false, // Desabilitado para reduzir logs
 } 

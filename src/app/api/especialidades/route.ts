@@ -127,8 +127,7 @@ export async function GET(request: NextRequest) {
       ORDER BY nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
-    const dataParams = [...queryParams, parseInt(limit), offset];
-    const especialidadeRows = await executeWithRetry(accessPool, dataQuery, dataParams);
+    const especialidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);
     return NextResponse.json({
       data: especialidadeRows,
       pagination: {
@@ -148,35 +147,47 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('🔍 POST especialidades - body recebido:', body);
+    
     const validatedData = createEspecialidadeSchema.safeParse(body);
     if (!validatedData.success) {
+      console.log('❌ POST especialidades - dados inválidos:', validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    
     const { ...payload } = validatedData.data;
-    const [result] = await accessPool.execute(
+    console.log('✅ POST especialidades - dados validados:', payload);
+    
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO especialidades (
-        nome, codigo, status
-      ) VALUES (?, ?, ?)`,
+        nome, codigo, status, createdAt, updatedAt
+      ) VALUES (?, ?, ?, NOW(), NOW())`,
       [
         payload.nome, payload.codigo, 'Ativo'
       ]
     );
+    
+    console.log('✅ POST especialidades - inserção bem sucedida:', result);
+    
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
+    console.error('❌ POST especialidades - erro:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
@@ -200,9 +211,9 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
-    await accessPool.execute(
+    await executeWithRetry(accessPool,
       `UPDATE especialidades SET 
-        nome = ?, codigo = ?
+        nome = ?, codigo = ?, updatedAt = NOW()
        WHERE id = ?`,
       [
         payload.nome, payload.codigo, id
@@ -232,7 +243,7 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
-    await accessPool.execute(
+    await executeWithRetry(accessPool,
       'UPDATE especialidades SET status = "Inativo" WHERE id = ?',
       [id]
     );

@@ -260,7 +260,7 @@ export default function EditarCliente() {
       }
     }
     fetchData();
-  }, []);
+  }, [clienteId]);
   return (
     <div>
       <Breadcrumb
@@ -270,7 +270,6 @@ export default function EditarCliente() {
           { label: "Editar Cliente" }, // Último item sem link
         ]}
       />
-      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -278,8 +277,6 @@ export default function EditarCliente() {
         </div>
       ) : (
         <div className="flex flex-col flex-1 h-full">
-          {" "}
-          {}
           <Form {...form}>
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
@@ -296,9 +293,11 @@ export default function EditarCliente() {
             </div>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
-              className="flex-1 overflow-y-auto space-y-4 p-2"
+              className="flex-1 overflow-y-auto space-y-6 p-2"
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Dados Pessoais</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="nome"
@@ -344,8 +343,9 @@ export default function EditarCliente() {
                     </FormItem>
                   )}
                 />
+                </div>
               </div>
-              {}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
@@ -671,7 +671,7 @@ export default function EditarCliente() {
                   )}
                 />
               </div>
-              {}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}

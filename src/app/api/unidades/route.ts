@@ -12,8 +12,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
     if (all === 'true' || limit === '1000') {
-      const [rows] = await accessPool.execute(
-        'SELECT * FROM unidades ORDER BY nome ASC'
+      const rows = await executeWithRetry(accessPool,
+        'SELECT * FROM unidades ORDER BY nome ASC',
+        []
       );
       console.log('🔍 Debug - Unidades encontradas:', (rows as Array<{
         id: number;
@@ -59,8 +60,7 @@ export async function GET(request: NextRequest) {
       ORDER BY nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
-    const dataParams = [...queryParams, parseInt(limit), offset];
-    const unidadeRows = await executeWithRetry(accessPool, dataQuery, dataParams);
+    const unidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);
     return NextResponse.json({
       data: unidadeRows,
       pagination: {
@@ -80,35 +80,47 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('🔍 POST unidades - dados recebidos:', body);
+    
     const validatedData = createUnidadeSchema.safeParse(body);
     if (!validatedData.success) {
+      console.log('❌ POST unidades - dados inválidos:', validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    
     const { ...payload } = validatedData.data;
-    const [result] = await accessPool.execute(
+    console.log('✅ POST unidades - dados validados:', payload);
+    
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO unidades (
-        nome
-      ) VALUES (?)`,
+        nome, createdAt, updatedAt
+      ) VALUES (?, NOW(), NOW())`,
       [
-        payload.nome,
+        payload.nome
       ]
     );
+    
+    console.log('✅ POST unidades - inserção bem sucedida:', result);
+    
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
+    console.error('❌ POST unidades - erro:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
@@ -132,9 +144,9 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
-    await accessPool.execute(
+    await executeWithRetry(accessPool,
       `UPDATE unidades SET 
-        nome = ?
+        nome = ?, updatedAt = NOW()
        WHERE id = ?`,
       [
         payload.nome,
@@ -165,8 +177,8 @@ export async function DELETE(request: NextRequest) {
         { status: 400 }
       );
     }
-    await accessPool.execute(
-      'UPDATE unidades SET status = "Inativo" WHERE id = ?',
+    await executeWithRetry(accessPool,
+      'DELETE FROM unidades WHERE id = ?',
       [id]
     );
     return NextResponse.json({ success: true });

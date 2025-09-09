@@ -15,13 +15,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
+import { Mail, Lock, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 export default function Home() {
   const router = useRouter();
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     setErrorMessage(null);
@@ -72,13 +73,26 @@ export default function Home() {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"}
                   placeholder="Senha" 
-                  className="pl-10" 
+                  className="pl-10 pr-10" 
                   required 
                   value={senha} 
                   onChange={(e) => setSenha(e.target.value)} 
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </Button>
               </div>
             </div>
             {errorMessage && (

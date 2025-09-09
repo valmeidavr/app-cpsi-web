@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createTurmaSchema, updateTurmaSchema } from "./schema/formSchemaTurmas";
 export type CreateTurmaDTO = z.infer<typeof createTurmaSchema>;
 export type UpdateTurmaDTO = z.infer<typeof updateTurmaSchema>;
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 [TURMAS API] Iniciando requisição GET');
+    console.log('🔍 [TURMAS API] Iniciando requisição GET - Updated');
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       FROM turmas t
       LEFT JOIN procedimentos p ON t.procedimento_id = p.id
       LEFT JOIN prestadores pr ON t.prestador_id = pr.id
-      WHERE t.status IS NULL OR t.status != 'Inativo'
+      WHERE 1=1
     `;
     const params: (string | number)[] = [];
     if (search) {
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
       FROM turmas t
       LEFT JOIN procedimentos p ON t.procedimento_id = p.id
       LEFT JOIN prestadores pr ON t.prestador_id = pr.id
-      WHERE t.status IS NULL OR t.status != 'Inativo'
+      WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
     if (search) {
@@ -88,24 +88,34 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   try {
+    console.log('📝 [TURMAS API] Iniciando requisição POST');
     const body = await request.json();
+    console.log('📊 [TURMAS API] Dados recebidos:', body);
+    
     const validatedData = createTurmaSchema.safeParse(body);
     if (!validatedData.success) {
+      console.error('❌ [TURMAS API] Erro de validação:', validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    
     const { ...payload } = validatedData.data;
-    const [result] = await accessPool.execute(
-      `INSERT INTO turmas (
-        nome, horario_inicio, horario_fim, data_inicio, data_fim, limite_vagas, 
-        procedimento_id, prestador_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    console.log('✅ [TURMAS API] Dados validados:', payload);
+    
+    const query = `INSERT INTO turmas (
+        nome, horario, dataInicio, dataFim, limiteVagas, 
+        procedimento_id, prestador_id, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`;
+      
+    console.log('🔍 [TURMAS API] Query INSERT:', query);
+    
+    const result = await executeWithRetry(accessPool,
+      query,
       [
         payload.nome, 
-        payload.horario_inicio, 
-        payload.horario_fim, 
+        payload.horario_inicio, // será usado como horario
         payload.data_inicio, 
         null, // data_fim começa como null
         payload.limite_vagas, 
@@ -113,11 +123,14 @@ export async function POST(request: NextRequest) {
         payload.prestador_id 
       ]
     );
+    
+    console.log('✅ [TURMAS API] Turma criada com sucesso:', result);
     return NextResponse.json({ 
       success: true, 
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
+    console.error('❌ [TURMAS API] Erro ao criar turma:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -125,13 +138,14 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
 }
 export async function PUT(request: NextRequest) {
   try {
+    console.log('📝 [TURMAS API] Iniciando requisição PUT');
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
@@ -140,24 +154,34 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
+    
     const body = await request.json();
+    console.log('📊 [TURMAS API] Dados recebidos para atualização:', body);
+    
     const validatedData = updateTurmaSchema.safeParse(body);
     if (!validatedData.success) {
+      console.error('❌ [TURMAS API] Erro de validação:', validatedData.error.flatten());
       return NextResponse.json(
         { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
+    
     const { ...payload } = validatedData.data;
-    await accessPool.execute(
-      `UPDATE turmas SET 
-        nome = ?, horario_inicio = ?, horario_fim = ?, data_inicio = ?,
-        limite_vagas = ?, procedimento_id = ?, prestador_id = ?
-       WHERE id = ?`,
+    console.log('✅ [TURMAS API] Dados validados:', payload);
+    
+    const query = `UPDATE turmas SET 
+        nome = ?, horario = ?, dataInicio = ?,
+        limiteVagas = ?, procedimento_id = ?, prestador_id = ?, updatedAt = NOW()
+       WHERE id = ?`;
+       
+    console.log('🔍 [TURMAS API] Query UPDATE:', query);
+    
+    await executeWithRetry(accessPool,
+      query,
       [
         payload.nome, 
-        payload.horario_inicio, 
-        payload.horario_fim, 
+        payload.horario_inicio, // será usado como horario
         payload.data_inicio, 
         payload.limite_vagas, 
         payload.procedimento_id, 
@@ -165,8 +189,11 @@ export async function PUT(request: NextRequest) {
         id
       ]
     );
+    
+    console.log('✅ [TURMAS API] Turma atualizada com sucesso');
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('❌ [TURMAS API] Erro ao atualizar turma:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -174,29 +201,38 @@ export async function PUT(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
 }
 export async function DELETE(request: NextRequest) {
   try {
+    console.log('🗑️ [TURMAS API] Iniciando requisição DELETE');
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
+    
     if (!id) {
+      console.error('❌ [TURMAS API] ID não fornecido');
       return NextResponse.json(
         { error: 'ID da turma é obrigatório' },
         { status: 400 }
       );
     }
-    await accessPool.execute(
-      'UPDATE turmas SET status = "Inativo" WHERE id = ?',
+    
+    console.log('🔍 [TURMAS API] Deletando turma com ID:', id);
+    
+    await executeWithRetry(accessPool,
+      'DELETE FROM turmas WHERE id = ?',
       [id]
     );
+    
+    console.log('✅ [TURMAS API] Turma deletada com sucesso');
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('❌ [TURMAS API] Erro ao deletar turma:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

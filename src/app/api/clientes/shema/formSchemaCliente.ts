@@ -68,7 +68,7 @@ export const createClienteSchema = z.object({
   desconto: z.record(z.number().optional()),
   telefone1: z
     .string()
-    .regex(/^\(?\d{2}\)?\s?9?\d{4}-\d{4}$/, { message: "Telefone inválido" }),
+    .regex(/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/, { message: "Telefone inválido" }),
   telefone2: z.string().optional(),
 });
 export const updateClienteSchema = createClienteSchema.partial();

@@ -219,16 +219,26 @@ export default function ExpedientePage() {
       setCarregandoDadosExpediente(true);
       if (!alocacao_id)
         throw new Error("Não foi possível encontrar a Alocação selecionada");
-      form.setValue("alocacao_id", alocacao_id);
+      
+      // Incluir alocacao_id nos valores a serem enviados
+      const dataToSend = {
+        ...values,
+        alocacao_id: alocacao_id
+      };
+      
+      console.log("📤 Enviando dados para criar expediente:", dataToSend);
+      
       const response = await fetch("/api/expediente", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(dataToSend),
       });
+      
       if (!response.ok) {
         const errorData = await response.json();
+        console.error("❌ Erro da API:", errorData);
         throw new Error(errorData.error || "Erro ao criar expediente");
       }
       const result = await response.json();
