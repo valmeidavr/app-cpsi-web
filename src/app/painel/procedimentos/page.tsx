@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Especialidade } from "@/app/types/Especialidade";
 import { Procedimento } from "@/app/types/Procedimento";
 export default function Procedimentos() {
@@ -177,20 +178,39 @@ export default function Procedimentos() {
               {procedimentos.map((procedimento) => (
                 <TableRow
                   key={procedimento.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    procedimento.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{procedimento.id}</TableCell>
                   <TableCell>{procedimento.nome}</TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        procedimento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="outline"
+                    >
                       {procedimento.codigo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge>{procedimento.tipo}</Badge>
+                    <Badge
+                      className={cn(
+                        procedimento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >{procedimento.tipo}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        procedimento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="outline"
+                    >
                       {especialidades
                         .filter(
                           (especialidade) =>

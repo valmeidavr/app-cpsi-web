@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
@@ -135,15 +136,28 @@ export default function Convenios() {
               {convenios.map((convenio) => (
                 <TableRow
                   key={convenio.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (convenio as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{convenio.id}</TableCell>
                   <TableCell>{convenio.nome}</TableCell>
                   <TableCell>
-                    <Badge>{convenio.regras}</Badge>
+                    <Badge
+                      className={cn(
+                        (convenio as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >{convenio.regras}</Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        (convenio as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="outline"
+                    >
                       {tabelaFaturamentos
                         .filter(
                           (tabela) => tabela.id == convenio.tabela_faturamento_id
@@ -154,7 +168,12 @@ export default function Convenios() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="bg-green-600 text-white">
+                    <Badge 
+                      className={cn(
+                        "bg-green-600 text-white",
+                        (convenio as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >
                       {convenio.desconto}%
                     </Badge>
                   </TableCell>

@@ -35,6 +35,7 @@ import {
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 import { toast } from "sonner";
 import { Cliente } from "@/app/types/Cliente";
+import { cn } from "@/lib/utils";
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -172,12 +173,22 @@ export default function ClientesPage() {
               {clientes.map((cliente) => (
                 <TableRow
                   key={cliente.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    cliente.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{cliente.id}</TableCell>
                   <TableCell>{cliente.nome}</TableCell>
                   <TableCell className="text-[13px]">
-                    <Badge variant="outline">{formatarCPF(cliente.cpf)}</Badge>
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        cliente.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >
+                      {formatarCPF(cliente.cpf)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <Tooltip.Provider>

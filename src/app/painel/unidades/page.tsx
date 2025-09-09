@@ -28,6 +28,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { createUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
@@ -220,11 +221,20 @@ export default function Unidades() {
               {unidades.map((unidade) => (
                 <TableRow
                   key={unidade.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (unidade as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{unidade.id}</TableCell>
                   <TableCell>
-                    <Badge className=" text-[13px]" variant="outline">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        (unidade as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="outline"
+                    >
                       {unidade.nome}
                     </Badge>
                   </TableCell>

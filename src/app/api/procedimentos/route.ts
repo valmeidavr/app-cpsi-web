@@ -13,23 +13,23 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search') || '';
     
     console.log('📊 [PROCEDIMENTOS API] Parâmetros:', { page, limit, search });
-    let query = 'SELECT * FROM procedimentos WHERE status = "Ativo"';
+    let query = 'SELECT * FROM procedimentos';
     const params: (string | number)[] = [];
     if (search) {
-      query += ' AND (nome LIKE ? OR codigo LIKE ?)';
+      query += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     
     console.log('🔍 [PROCEDIMENTOS API] Query principal:', query);
     console.log('📊 [PROCEDIMENTOS API] Parâmetros da query:', params);
     const [procedimentoRows] = await accessPool.execute(query, params);
     console.log('✅ [PROCEDIMENTOS API] Query executada com sucesso. Resultados:', procedimentoRows);
-    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos WHERE status = "Ativo"';
+    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos';
     const countParams: (string)[] = [];
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR codigo LIKE ?)';
+      countQuery += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
     

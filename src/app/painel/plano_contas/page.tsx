@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { PlanoConta } from "@/app/types/PlanoConta";
@@ -118,23 +119,31 @@ export default function PlanoContas() {
               {planoContas.map((plano_conta) => (
                 <TableRow
                   key={plano_conta.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (plano_conta as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{plano_conta.id}</TableCell>
                   <TableCell>{plano_conta.nome}</TableCell>
                   <TableCell>
                     <Badge
-                      className={`${
-                        plano_conta.tipo === "ENTRADA"
-                          ? "bg-green-500"
-                          : "bg-destructive"
-                      }`}
+                      className={cn(
+                        plano_conta.tipo === "ENTRADA" ? "bg-green-500" : "bg-destructive",
+                        (plano_conta as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
                     >
                       {plano_conta.tipo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="default">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        (plano_conta as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="default"
+                    >
                       {plano_conta.categoria}
                     </Badge>
                   </TableCell>

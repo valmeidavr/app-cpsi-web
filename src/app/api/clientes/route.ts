@@ -20,8 +20,6 @@ export async function GET(request: NextRequest) {
     if (search) {
       whereClause = ' WHERE (nome LIKE ? OR email LIKE ? OR cpf LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
-    } else {
-      whereClause = ' WHERE status = "Ativo"';
     }
     const countQuery = `SELECT COUNT(*) as total FROM clientes${whereClause}`;
     const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
@@ -31,7 +29,7 @@ export async function GET(request: NextRequest) {
       SELECT DISTINCT id, nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
                      uf, telefone1, telefone2, status, tipo, created_at, updated_at
       FROM clientes${whereClause}
-      ORDER BY nome ASC, id ASC
+      ORDER BY status DESC, nome ASC, id ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams];

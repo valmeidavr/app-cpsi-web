@@ -7,7 +7,7 @@ export async function GET(
   try {
     const { id } = await params;
     const [rows] = await accessPool.execute(
-      'SELECT login, nome, email, status FROM usuarios WHERE login = ? AND status = "Ativo"',
+      'SELECT login, nome, email, status FROM usuarios WHERE login = ?',
       [id]
     );
     const usuarios = rows as Array<{
@@ -24,6 +24,32 @@ export async function GET(
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    
+    // Atualizar apenas o status
+    if (body.status) {
+      await accessPool.execute(
+        'UPDATE usuarios SET status = ? WHERE login = ?',
+        [body.status, id]
+      );
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao atualizar status:', error);
+    return NextResponse.json(
+      { error: 'Erro ao atualizar status' },
       { status: 500 }
     );
   }

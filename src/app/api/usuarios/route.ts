@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     if ((limit === '1000' || all === 'true') && !search) {
       try {
         const [rows] = await accessPool.execute(
-          'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
+          'SELECT login, nome, email, status FROM usuarios ORDER BY status DESC, nome ASC'
         );
         const usuarios = rows as Array<{
           login: string;
@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
         throw dbError;
       }
     }
-    let query = 'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo"'
+    let query = 'SELECT login, nome, email, status FROM usuarios WHERE 1=1'
     if (search) {
       query += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
     const offset = (parseInt(page) - 1) * parseInt(limit)
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
+    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
     const [userRows] = await accessPool.execute(query)
     const usuarios = userRows as Array<{
       login: string;
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         }
       })
     );
-    let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE status = "Ativo"'
+    let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE 1=1'
     if (search) {
       countQuery += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }

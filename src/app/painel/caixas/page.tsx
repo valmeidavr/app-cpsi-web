@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import { Caixa } from "@/app/types/Caixa";
@@ -118,21 +119,29 @@ export default function Caixas() {
               {caixa.map((caixas) => (
                 <TableRow
                   key={caixas.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (caixas as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{caixas.id}</TableCell>
                   <TableCell>{caixas.nome}</TableCell>
                   <TableCell>
                     <Badge
-                      className={`${
-                        caixas.saldo <= 0 ? "bg-destructive" : "bg-green-500"
-                      }`}
+                      className={cn(
+                        caixas.saldo <= 0 ? "bg-destructive" : "bg-green-500",
+                        (caixas as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
                     >
                       {caixas.saldo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge>{caixas.tipo}</Badge>
+                    <Badge
+                      className={cn(
+                        (caixas as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >{caixas.tipo}</Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>

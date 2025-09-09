@@ -7,7 +7,7 @@ export async function GET(
   try {
     const { id } = await params;
     const [rows] = await accessPool.execute(
-      'SELECT * FROM especialidades WHERE id = ? AND status = "Ativo"',
+      'SELECT * FROM especialidades WHERE id = ?',
       [id]
     );
     if ((rows as Array<{
@@ -56,6 +56,32 @@ export async function PUT(
   } catch (error) {
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    
+    // Atualizar apenas o status
+    if (body.status) {
+      await accessPool.execute(
+        'UPDATE especialidades SET status = ? WHERE id = ?',
+        [body.status, id]
+      );
+    }
+    
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Erro ao atualizar status:', error);
+    return NextResponse.json(
+      { error: 'Erro ao atualizar status' },
       { status: 500 }
     );
   }

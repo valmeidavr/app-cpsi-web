@@ -50,6 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
@@ -370,33 +371,56 @@ export default function Lancamentos() {
                 {lancamentos.map((lancamento) => (
                   <TableRow
                     key={lancamento.id}
-                    className={"odd:bg-gray-100 even:bg-white"}
+                    className={cn(
+                      "odd:bg-gray-100 even:bg-white",
+                      lancamento.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                    )}
                   >
                     <TableCell>{lancamento.id}</TableCell>
                     <TableCell>
                       {formatDate(lancamento.data_lancamento, "dd/MM/yyyy")}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
                         {lancamento.caixa ? lancamento.caixa.nome : "N/A"}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       {lancamento.tipo === "ENTRADA" && (
-                        <Badge className="bg-green-500">
+                        <Badge 
+                          className={cn(
+                            "bg-green-500",
+                            lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                          )}
+                        >
                           R${lancamento.valor}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
                       {lancamento.tipo === "SAIDA" && (
-                        <Badge className="bg-destructive">
+                        <Badge 
+                          className={cn(
+                            "bg-destructive",
+                            lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                          )}
+                        >
                           R${lancamento.valor}
                         </Badge>
                       )}
                     </TableCell>
                     <TableCell>
-                      <Badge variant="default">
+                      <Badge 
+                        variant="default"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
                         <div>
                           {lancamento.plano_conta
                             ? lancamento.plano_conta.nome
@@ -405,7 +429,12 @@ export default function Lancamentos() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{lancamento.usuario?.nome || 'N/A'}</Badge>
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >{lancamento.usuario?.nome || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="flex gap-3 justify-center">
                       <Tooltip.Provider>

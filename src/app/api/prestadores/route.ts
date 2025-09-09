@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const all = searchParams.get('all') || '';
     if (all === 'true' || limit === '1000') {
       const [rows] = await accessPool.execute(
-        'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC'
+        'SELECT * FROM prestadores ORDER BY status DESC, nome ASC'
       );
       return NextResponse.json({
         data: rows,
@@ -28,10 +28,10 @@ export async function GET(request: NextRequest) {
         }
       });
     }
-    let whereClause = ' WHERE (status IS NULL OR status = "Ativo")';
+    let whereClause = '';
     const queryParams: (string | number)[] = [];
     if (search) {
-      whereClause += ' AND (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
+      whereClause = ' WHERE (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
     const countQuery = `SELECT COUNT(*) as total FROM prestadores${whereClause}`;
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT * FROM prestadores${whereClause}
-      ORDER BY nome ASC
+      ORDER BY status DESC, nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams];

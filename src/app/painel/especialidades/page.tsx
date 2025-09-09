@@ -25,6 +25,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { Especialidade } from "@/app/types/Especialidade";
 export default function Especialidades() {
   const [especialidades, setEspecialidades] = useState<Especialidade[]>([]);
@@ -162,12 +163,21 @@ export default function Especialidades() {
               {especialidades.map((especialidade) => (
                 <TableRow
                   key={especialidade.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    especialidade.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{especialidade.id}</TableCell>
                   <TableCell>{especialidade.nome}</TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="outline">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        especialidade.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="outline"
+                    >
                       {especialidade.codigo}
                     </Badge>
                   </TableCell>

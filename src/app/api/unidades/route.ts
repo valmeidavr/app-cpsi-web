@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const all = searchParams.get('all') || '';
     if (all === 'true' || limit === '1000') {
       const rows = await executeWithRetry(accessPool,
-        'SELECT * FROM unidades ORDER BY nome ASC',
+        'SELECT * FROM unidades ORDER BY status DESC, nome ASC',
         []
       );
       console.log('🔍 Debug - Unidades encontradas:', (rows as Array<{
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT * FROM unidades${whereClause}
-      ORDER BY nome ASC
+      ORDER BY status DESC, nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const unidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);

@@ -10,16 +10,16 @@ export async function GET(request: NextRequest) {
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
-    let query = 'SELECT * FROM plano_contas ';
+    let query = 'SELECT * FROM plano_contas WHERE 1=1';
     const params: (string | number)[] = [];
     if (search) {
       query += ' AND (nome LIKE ? OR categoria LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     const [planoRows] = await accessPool.execute(query, params);
-    let countQuery = 'SELECT COUNT(*) as total FROM plano_contas ';
+    let countQuery = 'SELECT COUNT(*) as total FROM plano_contas WHERE 1=1';
     const countParams: (string)[] = [];
     if (search) {
       countQuery += ' AND (nome LIKE ? OR categoria LIKE ?)';

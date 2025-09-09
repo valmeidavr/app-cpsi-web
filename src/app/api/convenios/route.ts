@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createConvenioSchema, updateConvenioSchema } from "./schema/formSchemaConvenios";
 export type CreateConvenioDTO = z.infer<typeof createConvenioSchema>;
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`, `%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     
     console.log('🔍 [CONVENIOS API] Query principal:', query);
     console.log('📊 [CONVENIOS API] Parâmetros da query:', params);

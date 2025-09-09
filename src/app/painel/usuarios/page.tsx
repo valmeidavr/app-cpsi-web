@@ -24,6 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { http } from "@/util/http";
 import { Usuario } from "@/app/types/Usuario";
 export default function UsuariosPage() {
@@ -158,7 +159,10 @@ export default function UsuariosPage() {
                 {usuarios.map((usuario) => (
                   <TableRow
                     key={usuario.login}
-                    className="odd:bg-gray-100 even:bg-white"
+                    className={cn(
+                      "odd:bg-gray-100 even:bg-white",
+                      usuario.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                    )}
                   >
                     <TableCell>{usuario.login}</TableCell>
                     <TableCell>{usuario.nome}</TableCell>
@@ -192,7 +196,13 @@ export default function UsuariosPage() {
                       <div className="flex flex-wrap gap-1">
                         {usuario.grupos && usuario.grupos.length > 0 ? (
                           usuario.grupos.map((grupo, index) => (
-                            <Badge key={index} variant="secondary">
+                            <Badge 
+                              key={index} 
+                              variant="secondary"
+                              className={cn(
+                                usuario.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                              )}
+                            >
                               {grupo}
                             </Badge>
                           ))

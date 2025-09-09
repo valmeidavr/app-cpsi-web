@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         try {
           if (lancamento.usuario_id) {
             const [userRows] = await accessPool.execute(
-              'SELECT nome FROM usuarios WHERE login = ? AND status = "Ativo"',
+              'SELECT nome FROM usuarios WHERE login = ?',
               [lancamento.usuario_id]
             );
             const usuario = (userRows as Array<{ nome: string }>)[0];
@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
     if (usuarioId) {
       try {
         const [userRows] = await accessPool.execute(
-          'SELECT login, nome FROM usuarios WHERE login = ? AND status = "Ativo"',
+          'SELECT login, nome FROM usuarios WHERE login = ?',
           [usuarioId]
         );
         if ((userRows as Array<{ login: string; nome: string }>).length === 0) {

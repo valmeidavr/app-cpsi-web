@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
 import { Prestador } from "@/app/types/Prestador";
 export default function Prestadores() {
@@ -183,14 +184,20 @@ export default function Prestadores() {
               {prestadores.map((prestador) => (
                 <TableRow
                   key={prestador.id}
-                  className={`odd:bg-gray-100 even:bg-white ${
-                    prestador.status === "Inativo" ? "opacity-60" : ""
-                  }`}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    prestador.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{prestador.id}</TableCell>
                   <TableCell>{prestador.nome}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        prestador.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >
                       {formatarCPF(prestador.cpf)}
                     </Badge>
                   </TableCell>
