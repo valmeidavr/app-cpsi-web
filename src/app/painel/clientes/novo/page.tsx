@@ -102,7 +102,7 @@ export default function CustomerRegistrationForm() {
       bairro: "",
       cidade: "",
       uf: "",
-      tipo: TipoCliente.SOCIO,
+      tipo: undefined,
       telefone1: "",
       telefone2: "",
       dtnascimento: "",
@@ -153,9 +153,34 @@ export default function CustomerRegistrationForm() {
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente salvo com sucesso!");
       router.push(`/painel/clientes?${queryParams.toString()}`);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Erro ao salvar cliente";
+    } catch (error: any) {
+      console.error('🔴 Erro ao salvar cliente:', error);
+      
+      // Verifica se é um erro de validação com detalhes específicos
+      if (error.response?.data?.details?.fieldErrors) {
+        const fieldErrors = error.response.data.details.fieldErrors;
+        const errorMessages: string[] = [];
+        
+        // Extrai todas as mensagens de erro dos campos
+        Object.entries(fieldErrors).forEach(([field, messages]) => {
+          if (Array.isArray(messages)) {
+            messages.forEach((message: string) => {
+              errorMessages.push(`${field}: ${message}`);
+            });
+          }
+        });
+        
+        if (errorMessages.length > 0) {
+          toast.error(`Erro de validação: ${errorMessages.join(', ')}`);
+          return;
+        }
+      }
+      
+      // Se não é um erro de validação específico, usa a mensagem genérica
+      const errorMessage = error.response?.data?.error || 
+        error.response?.data?.message || 
+        (error instanceof Error ? error.message : "Erro ao salvar cliente");
+      
       toast.error(errorMessage);
     } finally {
       setLoading(false);
@@ -230,7 +255,7 @@ export default function CustomerRegistrationForm() {
   };
   return (
     <div className="w-full">
-      <div className="flex flex-col flex-1 h-full">
+      <div className="flex flex-col">
         <Breadcrumb
           items={[
             { label: "Painel", href: "/painel" },
@@ -242,7 +267,7 @@ export default function CustomerRegistrationForm() {
         <h1 className="text-2xl font-bold mb-4 mt-5">Novo Cliente</h1>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex-1 overflow-y-auto space-y-6 p-2"
+          className="space-y-6 p-2 pb-8"
         >
           <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
             <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Dados Pessoais</h2>
@@ -686,10 +711,8 @@ export default function CustomerRegistrationForm() {
                 <FormItem>
                   <FormLabel>Tipo de Cliente *</FormLabel>
                   <Select
-                    onValueChange={(value) => {
-                      field.onChange(Number(value));
-                    }}
-                    value={String(field.value)}
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
                   >
                     <FormControl
                       className={
@@ -699,16 +722,13 @@ export default function CustomerRegistrationForm() {
                       }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder="Selecionar" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="0" disabled>
-                        Selecione
-                      </SelectItem>
                       {Object.values(TipoCliente).map((item) => {
                         return (
-                          <SelectItem key={item} value={String(item)}>
+                          <SelectItem key={item} value={item}>
                             {item}
                           </SelectItem>
                         );

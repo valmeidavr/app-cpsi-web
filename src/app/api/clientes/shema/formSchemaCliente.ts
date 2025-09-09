@@ -13,25 +13,42 @@ export const createClienteSchema = z.object({
     .default(""),
   dtnascimento: z
     .string()
-    .min(10, { message: "O campo é obrigatório" })
+    .min(8, { message: "Data de nascimento é obrigatória" })
     .refine(
       (value) => {
-        const parsedDate = parse(value, "dd/MM/yyyy", new Date());
-        const currentDate = new Date();
-        const minYear = 1920;
-        const year = parseInt(value.split("/")[2]);
-        return (
-          isValid(parsedDate) && parsedDate <= currentDate && year >= minYear
-        );
+        // Validação: aceitar data em formato ISO (yyyy-MM-dd) ou brasileiro (dd/MM/yyyy)
+        const dateRegexISO = /^\d{4}-\d{2}-\d{2}$/;
+        const dateRegexBR = /^\d{2}\/\d{2}\/\d{4}$/;
+        
+        if (!dateRegexISO.test(value) && !dateRegexBR.test(value)) {
+          return false;
+        }
+        
+        let testDate;
+        let year;
+        
+        if (dateRegexISO.test(value)) {
+          // Formato ISO: yyyy-MM-dd
+          testDate = new Date(value);
+          year = testDate.getFullYear();
+        } else if (dateRegexBR.test(value)) {
+          // Para formato brasileiro, converter e testar
+          const [day, month, yearStr] = value.split('/');
+          year = parseInt(yearStr);
+          testDate = new Date(year, parseInt(month) - 1, parseInt(day));
+        }
+        
+        const currentYear = new Date().getFullYear();
+        const isValidDate = !isNaN(testDate.getTime());
+        const isYearInRange = year >= 1920 && year <= currentYear;
+        const isFutureDate = testDate > new Date();
+        
+        return isValidDate && isYearInRange && !isFutureDate;
       },
       {
         message: "Data inválida ou fora do intervalo permitido (1920 até hoje)",
       }
-    )
-    .transform((val) =>
-      format(parse(val, "dd/MM/yyyy", new Date()), "yyyy-MM-dd")
-    )
-    .default(""),
+    ),
   sexo: z.string().min(1, { message: "Sexo é obrigatório" }).default(""),
   cpf: z.string()
     .regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
@@ -41,23 +58,11 @@ export const createClienteSchema = z.object({
       message: "CPF inválido - dígitos verificadores incorretos",
     }),
   cep: z.string().optional(),
-  tipo: z.union([
-    z.nativeEnum(TipoCliente),
-    z.string().refine((val) => Object.values(TipoCliente).includes(val as TipoCliente), {
-      message: "Tipo de cliente inválido"
-    }),
-    z.number().refine((val) => val >= 0 && val < Object.keys(TipoCliente).length, {
-      message: "Tipo de cliente inválido"
-    })
-  ], {
+  tipo: z.string({
     required_error: "Tipo de cliente é obrigatório",
     invalid_type_error: "Tipo de cliente inválido",
-  }).transform((val) => {
-    if (typeof val === 'number') {
-      const enumValues = Object.values(TipoCliente);
-      return enumValues[val] || TipoCliente.SOCIO;
-    }
-    return val;
+  }).refine((val) => Object.values(TipoCliente).includes(val as TipoCliente), {
+    message: "Tipo de cliente inválido"
   }),
   logradouro: z.string().optional(),
   numero: z.string().optional(),

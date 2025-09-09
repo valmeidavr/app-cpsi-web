@@ -151,14 +151,20 @@ export default function PainelHome() {
             
             <div className="grid gap-8 lg:grid-cols-2">
               {/* Movimento de Caixa */}
-              <MovimentoCaixaChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+              <div className="h-[600px]">
+                <MovimentoCaixaChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+              </div>
 
               {/* Agendamentos */}
-              <AgendamentosChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+              <div className="h-[600px]">
+                <AgendamentosChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+              </div>
             </div>
             
             {/* Novos Clientes - largura total */}
-            <NovosClientesChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+            <div className="h-[600px]">
+              <NovosClientesChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+            </div>
           </div>
         </div>
       </div>

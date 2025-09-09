@@ -96,7 +96,44 @@ export async function PUT(
         { status: 400 }
       );
     }
+    
     const { convenios, desconto = {}, ...payload } = validatedData.data;
+    
+    // Tratar data de nascimento
+    if (payload.dtnascimento) {
+      let parsedDate: Date;
+      
+      // Verificar se é formato brasileiro (dd/MM/yyyy)
+      if (payload.dtnascimento.includes('/')) {
+        const [day, month, year] = payload.dtnascimento.split('/');
+        parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        // Formato ISO (yyyy-MM-dd)
+        parsedDate = new Date(payload.dtnascimento + 'T00:00:00.000Z');
+      }
+      
+      // Verificar se a data é válida
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`Data de nascimento inválida: ${payload.dtnascimento}`);
+      }
+      
+      payload.dtnascimento = parsedDate.toISOString().split('T')[0];
+    }
+    
+    // Limpar dados
+    if (payload.cpf) {
+      payload.cpf = payload.cpf.replace(/\D/g, "").slice(0, 11);
+    }
+    if (payload.cep) {
+      payload.cep = payload.cep.replace(/\D/g, "").slice(0, 8);
+    }
+    if (payload.telefone1) {
+      payload.telefone1 = payload.telefone1.replace(/\D/g, "").slice(0, 11);
+    }
+    if (payload.telefone2) {
+      payload.telefone2 = payload.telefone2.replace(/\D/g, "").slice(0, 11);
+    }
+
     await accessPool.execute(
       `UPDATE clientes SET 
         nome = ?, email = ?, dtnascimento = ?, sexo = ?, tipo = ?, 
@@ -109,10 +146,13 @@ export async function PUT(
         payload.cidade, payload.uf, payload.telefone1, payload.telefone2, id
       ]
     );
+    
+    // Atualizar convênios
     await accessPool.execute(
       'DELETE FROM convenios_clientes WHERE cliente_id = ?',
       [id]
     );
+    
     if (convenios && convenios.length > 0) {
       for (const convenioId of convenios) {
         const descontoValue = desconto[convenioId];
@@ -125,14 +165,50 @@ export async function PUT(
         );
       }
     }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Erro na atualização de cliente:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
+    // Se for um erro de banco de dados
+    if (error && typeof error === 'object' && 'code' in error) {
+      const dbError = error as any;
+      
+      // Erro de chave duplicada (CPF/email já existe)
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        return NextResponse.json(
+          { error: "CPF ou email já cadastrado no sistema" },
+          { status: 409 }
+        );
+      }
+      
+      // Erro de campo obrigatório faltando
+      if (dbError.code === 'ER_NO_DEFAULT_FOR_FIELD' || dbError.code === 'ER_BAD_NULL_ERROR') {
+        return NextResponse.json(
+          { error: "Campos obrigatórios não informados", details: dbError.message },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Em desenvolvimento, mostrar mais detalhes do erro
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        { 
+          error: "Erro interno do servidor", 
+          details: error instanceof Error ? error.message : String(error) 
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

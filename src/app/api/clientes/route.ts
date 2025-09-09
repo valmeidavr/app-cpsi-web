@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT DISTINCT id, nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
-                     uf, telefone1, telefone2, status, tipo, createdAt, updatedAt
+                     uf, telefone1, telefone2, status, tipo, created_at, updated_at
       FROM clientes${whereClause}
       ORDER BY nome ASC, id ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
         telefone2: string;
         status: string;
         tipo: string;
-        createdAt: Date;
-        updatedAt: Date;
+        created_at: Date;
+        updated_at: Date;
       }>),
       pagination: {
         page: parseInt(page),
@@ -81,8 +81,24 @@ export async function POST(request: NextRequest) {
     }
     const { convenios, desconto = {}, ...payload } = validatedData.data;
     if (payload.dtnascimento) {
-      const parsedDate = new Date(payload.dtnascimento);
-      payload.dtnascimento = getDateOnlyUTCISO(parsedDate);
+      // Para datas de nascimento, preservar a data exata sem ajuste de timezone
+      let parsedDate: Date;
+      
+      // Verificar se é formato brasileiro (dd/MM/yyyy)
+      if (payload.dtnascimento.includes('/')) {
+        const [day, month, year] = payload.dtnascimento.split('/');
+        parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        // Formato ISO (yyyy-MM-dd)
+        parsedDate = new Date(payload.dtnascimento + 'T00:00:00.000Z');
+      }
+      
+      // Verificar se a data é válida
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`Data de nascimento inválida: ${payload.dtnascimento}`);
+      }
+      
+      payload.dtnascimento = parsedDate.toISOString().split('T')[0];
     }
     payload.cpf = limparCPF(String(payload.cpf));
     if (payload.cep) {
@@ -133,12 +149,47 @@ export async function POST(request: NextRequest) {
       id: clienteId,
     });
   } catch (error) {
+    console.error('Erro no cadastro de cliente:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
+    // Se for um erro de banco de dados
+    if (error && typeof error === 'object' && 'code' in error) {
+      const dbError = error as any;
+      
+      // Erro de chave duplicada (CPF/email já existe)
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        return NextResponse.json(
+          { error: "CPF ou email já cadastrado no sistema" },
+          { status: 409 }
+        );
+      }
+      
+      // Erro de campo obrigatório faltando
+      if (dbError.code === 'ER_NO_DEFAULT_FOR_FIELD' || dbError.code === 'ER_BAD_NULL_ERROR') {
+        return NextResponse.json(
+          { error: "Campos obrigatórios não informados", details: dbError.message },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Em desenvolvimento, mostrar mais detalhes do erro
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        { 
+          error: "Erro interno do servidor", 
+          details: error instanceof Error ? error.message : String(error) 
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }
@@ -165,8 +216,24 @@ export async function PUT(request: NextRequest) {
     }
     const { convenios, desconto = {}, ...payload } = validatedData.data;
     if (payload.dtnascimento) {
-      const parsedDate = new Date(payload.dtnascimento);
-      payload.dtnascimento = getDateOnlyUTCISO(parsedDate);
+      // Para datas de nascimento, preservar a data exata sem ajuste de timezone
+      let parsedDate: Date;
+      
+      // Verificar se é formato brasileiro (dd/MM/yyyy)
+      if (payload.dtnascimento.includes('/')) {
+        const [day, month, year] = payload.dtnascimento.split('/');
+        parsedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      } else {
+        // Formato ISO (yyyy-MM-dd)
+        parsedDate = new Date(payload.dtnascimento + 'T00:00:00.000Z');
+      }
+      
+      // Verificar se a data é válida
+      if (isNaN(parsedDate.getTime())) {
+        throw new Error(`Data de nascimento inválida: ${payload.dtnascimento}`);
+      }
+      
+      payload.dtnascimento = parsedDate.toISOString().split('T')[0];
     }
     payload.cpf = limparCPF(String(payload.cpf));
     if (payload.cep) {
@@ -215,12 +282,47 @@ export async function PUT(request: NextRequest) {
     }
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('Erro na atualização de cliente:', error);
+    
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
         { status: 400 }
       );
     }
+    
+    // Se for um erro de banco de dados
+    if (error && typeof error === 'object' && 'code' in error) {
+      const dbError = error as any;
+      
+      // Erro de chave duplicada (CPF/email já existe)
+      if (dbError.code === 'ER_DUP_ENTRY') {
+        return NextResponse.json(
+          { error: "CPF ou email já cadastrado no sistema" },
+          { status: 409 }
+        );
+      }
+      
+      // Erro de campo obrigatório faltando
+      if (dbError.code === 'ER_NO_DEFAULT_FOR_FIELD' || dbError.code === 'ER_BAD_NULL_ERROR') {
+        return NextResponse.json(
+          { error: "Campos obrigatórios não informados", details: dbError.message },
+          { status: 400 }
+        );
+      }
+    }
+    
+    // Em desenvolvimento, mostrar mais detalhes do erro
+    if (process.env.NODE_ENV === 'development') {
+      return NextResponse.json(
+        { 
+          error: "Erro interno do servidor", 
+          details: error instanceof Error ? error.message : String(error) 
+        },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
       { error: "Erro interno do servidor" },
       { status: 500 }

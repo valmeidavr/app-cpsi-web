@@ -222,7 +222,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-gray-900 text-gray-100 transition-all duration-300 ease-in-out",
+        "flex flex-col min-h-screen bg-gray-900 text-gray-100 transition-all duration-300 ease-in-out",
         collapsed ? "w-16" : "w-64"
       )}
     >
