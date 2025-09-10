@@ -85,12 +85,23 @@ export default function UsuariosPage() {
     if (!usuarioSelecionado) return;
     setLoadingInativar(true);
     try {
-      setUsuarios((prevUsuarios) =>
-        prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
-      );
-      toast.success("Usuário removido da lista!");
-      setIsDialogOpen(false);
+      const response = await fetch(`/api/usuarios?login=${usuarioSelecionado.login}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove da lista local após sucesso na API
+        setUsuarios((prevUsuarios) =>
+          prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
+        );
+        toast.success("Usuário deletado com sucesso!");
+        setIsDialogOpen(false);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Erro ao deletar usuário");
+      }
     } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
       toast.error("Erro ao deletar usuário");
     } finally {
       setLoadingInativar(false);
@@ -121,14 +132,6 @@ export default function UsuariosPage() {
           </Button>
         </div>
         <div className="flex gap-2">
-          {}
-          <Button variant="outline" asChild>
-            <Link href="/painel/usuarios/gerenciar-acesso">
-              <Users className="h-5 w-5 mr-2" />
-              Gerenciar Acesso
-            </Link>
-          </Button>
-          {}
           <Button asChild>
             <Link href="/painel/usuarios/novo">
               <Plus className="h-5 w-5 mr-2" />
@@ -193,21 +196,80 @@ export default function UsuariosPage() {
                       </Tooltip.Provider>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5 max-w-xs">
                         {usuario.grupos && usuario.grupos.length > 0 ? (
-                          usuario.grupos.map((grupo, index) => (
-                            <Badge 
-                              key={index} 
-                              variant="secondary"
-                              className={cn(
-                                usuario.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
-                              )}
-                            >
-                              {grupo}
-                            </Badge>
-                          ))
+                          usuario.grupos.map((grupo, index) => {
+                            // Definir cores por sistema com base no nome do sistema
+                            const getSystemColor = (sistema: string) => {
+                              const sistemaLower = sistema.toLowerCase();
+                              if (sistemaLower.includes('saude') || sistemaLower.includes('principal')) {
+                                return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
+                              } else if (sistemaLower.includes('cpsi') || sistemaLower.includes('financeiro')) {
+                                return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100";
+                              } else if (sistemaLower.includes('agendamento')) {
+                                return "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100";
+                              } else if (sistemaLower.includes('relatorio')) {
+                                return "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100";
+                              } else {
+                                return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100";
+                              }
+                            };
+
+                            const getSystemIcon = (sistema: string) => {
+                              const iconClass = "w-3 h-3 mr-1.5";
+                              const sistemaLower = sistema.toLowerCase();
+                              if (sistemaLower.includes('saude') || sistemaLower.includes('principal')) {
+                                return <Users className={iconClass} />;
+                              } else if (sistemaLower.includes('cpsi') || sistemaLower.includes('financeiro')) {
+                                return <div className={`${iconClass} rounded-full bg-current`} />;
+                              } else if (sistemaLower.includes('agendamento')) {
+                                return <div className={`${iconClass} rounded bg-current`} />;
+                              } else if (sistemaLower.includes('relatorio')) {
+                                return <div className={`${iconClass} rounded-sm bg-current`} />;
+                              } else {
+                                return <Users className={iconClass} />;
+                              }
+                            };
+
+                            return (
+                              <Tooltip.Provider key={index}>
+                                <Tooltip.Root>
+                                  <Tooltip.Trigger asChild>
+                                    <Badge 
+                                      className={cn(
+                                        "px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-default flex items-center",
+                                        usuario.status === "Inativo" 
+                                          ? "bg-gray-50 text-gray-400 border-gray-200" 
+                                          : getSystemColor(grupo.sistema)
+                                      )}
+                                    >
+                                      {getSystemIcon(grupo.sistema)}
+                                      <div className="flex flex-col items-start">
+                                        <span className="font-semibold text-xs leading-tight">{grupo.nome}</span>
+                                        <span className="text-[10px] opacity-75 leading-tight">{grupo.sistema}</span>
+                                      </div>
+                                    </Badge>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Portal>
+                                    <Tooltip.Content
+                                      side="top"
+                                      className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg border border-gray-700"
+                                    >
+                                      <div className="font-medium">{grupo.sistema}</div>
+                                      <div className="text-gray-300">Grupo: {grupo.nome}</div>
+                                    </Tooltip.Content>
+                                  </Tooltip.Portal>
+                                </Tooltip.Root>
+                              </Tooltip.Provider>
+                            );
+                          })
                         ) : (
-                          <span className="text-gray-500 text-sm">Sem acesso</span>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
+                            <div className="w-2 h-2 rounded-full bg-gray-300" />
+                            <span className="text-gray-500 text-xs font-medium">
+                              Sem acesso
+                            </span>
+                          </div>
                         )}
                       </div>
                     </TableCell>
@@ -315,7 +377,7 @@ export default function UsuariosPage() {
             <DialogHeader>
               <DialogTitle>Confirmar Ação</DialogTitle>
             </DialogHeader>
-            <p>Tem certeza que deseja deletar este usuario?</p>
+            <p>Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita e o usuário será removido permanentemente do sistema.</p>
             <DialogFooter>
               <Button
                 variant="secondary"

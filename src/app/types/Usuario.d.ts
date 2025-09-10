@@ -17,6 +17,12 @@ export type Grupo = {
   nome: string;
   sistema: Sistema;
 };
+export type GrupoComSistema = {
+  nome: string;
+  sistema: string;
+  sistemaId: number;
+};
+
 export type Usuario = {
   id?: number;
   login: string;
@@ -24,5 +30,5 @@ export type Usuario = {
   email: string;
   status?: string;
   sistemas?: Sistema[];
-  grupos?: string[];
+  grupos?: GrupoComSistema[];
 };

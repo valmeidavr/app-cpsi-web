@@ -61,4 +61,23 @@ export async function PUT(
       { status: 500 }
     );
   }
-} 
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    await accessPool.execute(
+      'DELETE FROM valor_procedimentos WHERE id = ?',
+      [id]
+    );
+    return NextResponse.json({ success: true, message: 'Valor de procedimento excluído com sucesso' });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}

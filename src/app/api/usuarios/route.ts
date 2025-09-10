@@ -24,9 +24,10 @@ export async function GET(request: NextRequest) {
     if ((limit === '1000' || all === 'true') && !search) {
       try {
         const [rows] = await accessPool.execute(
-          'SELECT login, nome, email, status FROM usuarios ORDER BY status DESC, nome ASC'
+          'SELECT id, login, nome, email, status FROM usuarios ORDER BY status ASC, nome ASC'
         );
         const usuarios = rows as Array<{
+          id: number;
           login: string;
           nome: string;
           email: string;
@@ -45,14 +46,15 @@ export async function GET(request: NextRequest) {
         throw dbError;
       }
     }
-    let query = 'SELECT login, nome, email, status FROM usuarios WHERE 1=1'
+    let query = 'SELECT id, login, nome, email, status FROM usuarios WHERE 1=1'
     if (search) {
       query += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
     const offset = (parseInt(page) - 1) * parseInt(limit)
-    query += ` ORDER BY status DESC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
+    query += ` ORDER BY status ASC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
     const [userRows] = await accessPool.execute(query)
     const usuarios = userRows as Array<{
+      id: number;
       login: string;
       nome: string;
       email: string;
@@ -62,13 +64,18 @@ export async function GET(request: NextRequest) {
       usuarios.map(async (usuario) => {
         try {
           const [grupoRows] = await accessPool.execute(
-            `SELECT g.nome as grupo_nome 
+            `SELECT g.nome as grupo_nome, g.sistemaId, s.nome as sistema_nome
              FROM usuariogrupo ug 
-             LEFT JOIN grupos g ON ug.grupo_id = g.id 
-             WHERE ug.usuario_login = ?`,
-            [usuario.login]
+             INNER JOIN grupo g ON ug.grupo_id = g.id 
+             INNER JOIN sistema s ON g.sistemaId = s.id
+             WHERE ug.usuario_id = ?`,
+            [usuario.id]
           );
-          const grupos = (grupoRows as Array<{ grupo_nome: string }>).map(g => g.grupo_nome);
+          const grupos = (grupoRows as Array<{ grupo_nome: string; sistemaId: number; sistema_nome: string }>).map(g => ({
+            nome: g.grupo_nome,
+            sistema: g.sistema_nome,
+            sistemaId: g.sistemaId
+          }));
           return {
             ...usuario,
             grupos: grupos
@@ -196,19 +203,34 @@ export async function DELETE(request: NextRequest) {
     if (!login) {
       return NextResponse.json({ error: 'Login é obrigatório' }, { status: 400 });
     }
+    
+    // Verificar se o usuário existe
     const [existingUser] = await accessPool.execute(
-      'SELECT login FROM usuarios WHERE login = ?',
+      'SELECT id, login FROM usuarios WHERE login = ?',
       [login]
     );
-    if (!(existingUser as Array<{ login: string }>).length) {
+    
+    if (!(existingUser as Array<{ id: number; login: string }>).length) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
+    
+    const userId = (existingUser as Array<{ id: number; login: string }>)[0].id;
+    
+    // Deletar primeiro os relacionamentos na tabela usuariogrupo
     await accessPool.execute(
-      'UPDATE usuarios SET status = "Inativo" WHERE login = ?',
+      'DELETE FROM usuariogrupo WHERE usuario_id = ?',
+      [userId]
+    );
+    
+    // Depois deletar o usuário
+    await accessPool.execute(
+      'DELETE FROM usuarios WHERE login = ?',
       [login]
     );
-    return NextResponse.json({ success: true, message: 'Usuário desativado com sucesso' });
+    
+    return NextResponse.json({ success: true, message: 'Usuário deletado permanentemente com sucesso' });
   } catch (error) {
+    console.error('Erro ao deletar usuário:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const unidadeId = searchParams.get('unidade_id') || '';
     if (all === 'true' || limit === '1000') {
       try {
-        let query = 'SELECT * FROM especialidades ORDER BY status DESC, nome ASC';
+        let query = 'SELECT * FROM especialidades ORDER BY status ASC, nome ASC';
         
         if (comExpediente === 'true') {
           let whereClause = '';
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
             INNER JOIN alocacoes a ON e.id = a.especialidade_id
             INNER JOIN expedientes exp ON a.id = exp.alocacao_id
             WHERE 1=1 ${whereClause}
-            ORDER BY e.status DESC, e.nome ASC
+            ORDER BY e.status ASC, e.nome ASC
           `;
           
           const [rows] = await accessPool.execute(query, queryParams);
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
           });
         }
         const [allRows] = await accessPool.execute(
-          'SELECT * FROM especialidades ORDER BY status DESC, nome ASC'
+          'SELECT * FROM especialidades ORDER BY status ASC, nome ASC'
         );
         console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as Array<{
           id: number;
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
       } catch (queryError) {
         try {
           const [simpleRows] = await accessPool.execute(
-            'SELECT id, nome FROM especialidades ORDER BY status DESC, nome ASC'
+            'SELECT id, nome FROM especialidades ORDER BY status ASC, nome ASC'
           );
           console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as Array<{
             id: number;
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
-      ORDER BY e.status DESC, e.nome ASC
+      ORDER BY e.status ASC, e.nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const especialidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);

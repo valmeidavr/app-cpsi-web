@@ -12,6 +12,9 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const convenio_id = searchParams.get("convenio_id");
     const tipoCliente = searchParams.get("tipoCliente");
+    const tabela_faturamento_id = searchParams.get("tabela_faturamento_id");
+    const procedimento_id = searchParams.get("procedimento_id");
+    const valor = searchParams.get("valor");
     const conveniosId = searchParams.get("conveniosId"); // Para compatibilidade
     const convenioId = convenio_id || conveniosId;
     if (convenioId && tipoCliente) {
@@ -54,18 +57,66 @@ export async function GET(request: NextRequest) {
       );
       return NextResponse.json(dadosValidos);
     }
+    
+    // Sempre incluir JOIN com convenios se convenioId for fornecido
+    let extraJoin = "";
+    if (convenioId) {
+      extraJoin = "INNER JOIN convenios c ON tf.id = c.tabela_faturamento_id";
+    }
+    
     const baseQuery = `
       FROM valor_procedimentos vp
       INNER JOIN procedimentos p ON vp.procedimento_id = p.id
       INNER JOIN tabela_faturamentos tf ON vp.tabela_faturamento_id = tf.id
+      ${extraJoin}
     `;
     const whereClauses: string[] = [];
     const params: (string | number)[] = [];
+    
+    // Construir condições WHERE
+    const conditions: string[] = [];
+    
+    // Filtro por convênio (se fornecido)
+    if (convenioId) {
+      conditions.push("c.id = ?");
+      params.push(convenioId);
+    }
+    
+    // Filtro por tipo cliente (se fornecido)
+    if (tipoCliente) {
+      conditions.push("vp.tipo = ?");
+      params.push(tipoCliente);
+    }
+    
+    // Filtro por tabela faturamento (se fornecido)
+    if (tabela_faturamento_id) {
+      conditions.push("vp.tabela_faturamento_id = ?");
+      params.push(parseInt(tabela_faturamento_id));
+    }
+    
+    // Filtro por procedimento (se fornecido)
+    if (procedimento_id) {
+      conditions.push("vp.procedimento_id = ?");
+      params.push(parseInt(procedimento_id));
+    }
+    
+    // Filtro por valor (se fornecido)
+    if (valor) {
+      conditions.push("vp.valor = ?");
+      params.push(parseFloat(valor));
+    }
+    
+    // Filtro de busca (se fornecido)  
     if (search) {
-      whereClauses.push("WHERE (p.nome LIKE ? OR vp.tipo LIKE ?)");
+      conditions.push("(p.nome LIKE ? OR vp.tipo LIKE ?)");
       params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    // Construir string WHERE
+    if (conditions.length > 0) {
+      whereClauses.push("WHERE " + conditions.join(" AND "));
     } else {
-      whereClauses.push("WHERE 1=1"); // Sem filtros específicos
+      whereClauses.push("WHERE 1=1");
     }
     const whereString = whereClauses.join(" ");
     const offset = (parseInt(page) - 1) * parseInt(limit);

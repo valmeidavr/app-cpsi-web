@@ -19,8 +19,7 @@ body[data-scroll-locked="1"] {
   pointer-events: auto !important;
 }
 /* 🔹 Garante que o conteúdo principal cresça corretamente */
-#__next,
-main {
+#__next {
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* Mantém o conteúdo pelo menos na altura da tela */

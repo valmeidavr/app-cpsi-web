@@ -45,17 +45,10 @@ export async function POST(request: NextRequest) {
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
       [userLogin, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
     );
-    if (validatedData.grupos && validatedData.grupos.length > 0) {
-      for (const grupoId of validatedData.grupos) {
-        await accessPool.execute(
-          'INSERT INTO usuariogrupo (usuario_login, grupo_id) VALUES (?, ?)',
-          [userLogin, grupoId]
-        );
-      }
-    }
     return NextResponse.json({ 
       success: true, 
-      id: userLogin 
+      id: userLogin,
+      login: userLogin
     });
   } catch (error) {
     if (error instanceof z.ZodError) {

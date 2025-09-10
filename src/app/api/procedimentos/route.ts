@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { accessPool } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createProcedimentoSchema, updateProcedimentoSchema } from "./schema/formSchemaProcedimentos";
 export type CreateProcedimentoDTO = z.infer<typeof createProcedimentoSchema>;
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       params.push(`%${search}%`, `%${search}%`);
     }
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ` ORDER BY nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    query += ` ORDER BY status ASC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
     
     console.log('🔍 [PROCEDIMENTOS API] Query principal:', query);
     console.log('📊 [PROCEDIMENTOS API] Parâmetros da query:', params);

@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const unidadeId = searchParams.get('unidade_id') || '';
     const especialidadeId = searchParams.get('especialidade_id') || '';
     if (all === 'true' || limit === '1000') {
-      let query = 'SELECT * FROM prestadores ORDER BY status DESC, nome ASC';
+      let query = 'SELECT * FROM prestadores ORDER BY status ASC, nome ASC';
       
       if (comExpediente === 'true') {
         let whereClause = ' WHERE 1=1';
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
           INNER JOIN alocacoes a ON p.id = a.prestador_id
           INNER JOIN expedientes e ON a.id = e.alocacao_id
           ${whereClause}
-          ORDER BY p.status DESC, p.nome ASC
+          ORDER BY p.status ASC, p.nome ASC
         `;
         
         const [rows] = await accessPool.execute(query, queryParams);
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
-      ORDER BY p.status DESC, p.nome ASC
+      ORDER BY p.status ASC, p.nome ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams];

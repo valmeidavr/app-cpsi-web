@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       SELECT DISTINCT id, nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
                      uf, telefone1, telefone2, status, tipo, created_at, updated_at
       FROM clientes${whereClause}
-      ORDER BY status DESC, nome ASC, id ASC
+      ORDER BY status ASC, nome ASC, id ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [...queryParams];

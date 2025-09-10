@@ -7,6 +7,7 @@ export type ValorProcedimento = {
   tipo: TipoCliente;
   tabela_faturamento_id: number;
   procedimento_id: number;
+  convenio_id?: number;
   createdAt: Date;
   updatedAt: Date;
   procedimento: Procedimento;

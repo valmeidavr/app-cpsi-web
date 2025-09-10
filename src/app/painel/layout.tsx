@@ -25,8 +25,8 @@ export default function PainelLayout({
           <Header />
         </div>
         {}
-        <div className="mt-16 flex-1 p-6 flex justify-center">
-          <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8 w-11/12 max-w-6xl border border-gray-300">
+        <div className="mt-16 flex-1 p-6">
+          <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8 max-w-6xl mx-auto border border-gray-300">
             {children}
           </div>
         </div>
