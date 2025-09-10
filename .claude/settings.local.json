@@ -24,7 +24,9 @@
       "Bash(cat:*)",
       "Bash(timeout 30s npm run dev)",
       "Bash(timeout 5s npm run dev)",
-      "Bash(timeout 30s npm run build)"
+      "Bash(timeout 30s npm run build)",
+      "Bash(./start-database.ps1)",
+      "Bash(./start-database.bat)"
     ],
     "deny": [],
     "ask": []

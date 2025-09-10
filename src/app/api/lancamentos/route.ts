@@ -135,18 +135,19 @@ export async function POST(request: NextRequest) {
     }
     const { ...payload } = validatedData.data;
     let usuarioId = payload.usuario_id;
-    if (usuarioId) {
+    if (usuarioId && usuarioId !== "0") {
       try {
         const [userRows] = await accessPool.execute(
-          'SELECT login, nome FROM usuarios WHERE login = ?',
-          [usuarioId]
+          'SELECT id, nome FROM usuarios WHERE id = ? AND status = "Ativo"',
+          [parseInt(usuarioId)]
         );
-        if ((userRows as Array<{ login: string; nome: string }>).length === 0) {
+        if ((userRows as Array<{ id: number; nome: string }>).length === 0) {
           return NextResponse.json(
             { error: 'Usuário não encontrado ou inativo' },
             { status: 400 }
           );
         }
+        usuarioId = parseInt(usuarioId);
       } catch (error) {
         return NextResponse.json(
           { error: 'Erro ao verificar usuário' },
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
         );
       }
     } else {
-      usuarioId = 'admin';
+      usuarioId = null;
     }
     const [planoContaRows] = await accessPool.execute(
       'SELECT tipo FROM plano_contas WHERE id = ?',
@@ -184,6 +185,7 @@ export async function POST(request: NextRequest) {
       id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
+    console.error('Erro ao salvar lançamento:', error);
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.flatten() },
@@ -191,7 +193,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

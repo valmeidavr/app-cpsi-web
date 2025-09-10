@@ -21,7 +21,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+// Função para obter data atual no formato YYYY-MM-DD
+const getCurrentDateString = () => {
+  return new Date().toISOString().split('T')[0];
+};
 import { Cliente } from "@/app/types/Cliente";
 import {
   Table,
@@ -109,7 +112,7 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       const payload = {
         cliente_id,
         turma_id,
-        data_inscricao: getDateOnlyUTCISO(),
+        data_inscricao: getCurrentDateString(),
       };
       await http.post("/api/alunos_turmas", payload);
       await carregarAlunos();

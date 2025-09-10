@@ -10,6 +10,10 @@ export type Turma = {
   limite_vagas: number;
   prestador: Prestador;
   procedimento: Procedimento;
+  prestador_id?: number;
+  procedimento_id?: number;
+  prestador_nome?: string;
+  procedimento_nome?: string;
   TurmasDias: Array<{
     id: number;
     turma_id: number;

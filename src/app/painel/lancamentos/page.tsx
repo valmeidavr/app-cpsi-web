@@ -95,9 +95,13 @@ export default function Lancamentos() {
         params.append('data_inicio', filters.data_inicio);
         params.append('data_fim', filters.data_fim);
       }
+      console.log('🔍 [FRONTEND] Carregando lançamentos com URL:', `/api/lancamentos?${params}`);
       const response = await fetch(`/api/lancamentos?${params}`);
       const data = await response.json();
+      
       if (response.ok) {
+        console.log('📊 [FRONTEND] Lançamentos carregados:', data.data.length, 'itens');
+        console.log('📊 [FRONTEND] Primeiro lançamento status:', data.data[0]?.status);
         setLancamentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalLancamentos(data.pagination.total);
@@ -145,20 +149,38 @@ export default function Lancamentos() {
     try {
       const novoStatus =
         lancamentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
-      await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
+        
+      console.log('🔄 [FRONTEND] Alterando status do lançamento:', lancamentoSelecionado.id);
+      console.log('🔄 [FRONTEND] Status atual:', lancamentoSelecionado.status);
+      console.log('🔄 [FRONTEND] Novo status:', novoStatus);
+      
+      const response = await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: novoStatus }),
       });
+      
+      const responseData = await response.json();
+      console.log('📊 [FRONTEND] Resposta da API:', responseData);
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Erro ao atualizar status');
+      }
+      
       toast.success(
         `Lançamento ${
           novoStatus === "Ativo" ? "ativado" : "desativado"
         } com sucesso!`
       );
+      
+      // Aguardar um pouco antes de recarregar para garantir que a transação foi commitada
+      await new Promise(resolve => setTimeout(resolve, 500));
       await carregarLancamentos(form.getValues());
+      
     } catch (error) {
+      console.error('❌ [FRONTEND] Erro ao alterar status:', error);
       toast.error("Erro ao tentar alterar o status do lançamento.");
     } finally {
       setLoadingAction(false);
@@ -361,8 +383,8 @@ export default function Lancamentos() {
                   <TableHead className="h-12-1">ID</TableHead>
                   <TableHead className="h-12-1">Data Lançamento</TableHead>
                   <TableHead className="h-12-1">Caixa</TableHead>
-                  <TableHead className="h-12-1">Entrada</TableHead>
-                  <TableHead className="h-12-1">Saída</TableHead>
+                  <TableHead className="h-12-1">Tipo</TableHead>
+                  <TableHead className="h-12-1">Valor</TableHead>
                   <TableHead className="h-12-1">Plano de Conta</TableHead>
                   <TableHead className="h-12-1">Pagante</TableHead>
                   <TableHead className="h-12-1">Ações</TableHead>
@@ -388,32 +410,32 @@ export default function Lancamentos() {
                           lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
                         )}
                       >
-                        {lancamento.caixa ? lancamento.caixa.nome : "N/A"}
+                        {lancamento.caixa_nome || "N/A"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {lancamento.tipo === "ENTRADA" && (
-                        <Badge 
-                          className={cn(
-                            "bg-green-500",
-                            lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
-                          )}
-                        >
-                          {formatValor(lancamento.valor)}
-                        </Badge>
-                      )}
+                      <Badge 
+                        className={cn(
+                          lancamento.tipo === "ENTRADA" ? "bg-green-500" : 
+                          lancamento.tipo === "SAIDA" ? "bg-destructive" :
+                          "bg-orange-400",
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
+                        {lancamento.tipo === "ENTRADA" ? "Entrada" : 
+                         lancamento.tipo === "SAIDA" ? "Saída" : 
+                         "Transferência"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      {lancamento.tipo === "SAIDA" && (
-                        <Badge 
-                          className={cn(
-                            "bg-destructive",
-                            lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
-                          )}
-                        >
-                          {formatValor(lancamento.valor)}
-                        </Badge>
-                      )}
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
+                        {formatValor(lancamento.valor)}
+                      </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge 
@@ -423,9 +445,7 @@ export default function Lancamentos() {
                         )}
                       >
                         <div>
-                          {lancamento.plano_conta
-                            ? lancamento.plano_conta.nome
-                            : "N/A"}
+                          {lancamento.plano_conta_nome || "N/A"}
                         </div>
                       </Badge>
                     </TableCell>
@@ -435,7 +455,7 @@ export default function Lancamentos() {
                         className={cn(
                           lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
                         )}
-                      >{lancamento.usuario?.nome || 'N/A'}</Badge>
+                      >{lancamento.cliente_nome || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="flex gap-3 justify-center">
                       <Tooltip.Provider>

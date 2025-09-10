@@ -123,11 +123,11 @@ export default function EditarTurma() {
           form.reset({
             nome: data.nome,
             horario_inicio: data.horario_inicio,
-                          horario_fim: data.horario_fim,
-                          data_inicio: data.data_inicio,
-                          limite_vagas: data.limite_vagas,
-                    prestador_id: data.prestador_id,
-        procedimento_id: data.procedimento_id,
+            horario_fim: data.horario_inicio, // Use o mesmo horário por enquanto
+            data_inicio: data.data_inicio,
+            limite_vagas: data.limite_vagas,
+            prestador_id: data.prestador_id,
+            procedimento_id: data.procedimento_id,
           });
         } else {
           toast.error("Erro ao carregar dados da turma");
@@ -156,7 +156,7 @@ export default function EditarTurma() {
         </div>
       ) : (
         <Form {...form}>
-          <h1 className="text-2xl font-bold mb-4 mt-5">Nova Turma</h1>
+          <h1 className="text-2xl font-bold mb-4 mt-5">Editar Turma</h1>
           <form
             onSubmit={form.handleSubmit(onSubmit)}
             className="flex-1 overflow-y-auto space-y-4 p-2"
@@ -239,7 +239,7 @@ export default function EditarTurma() {
                                   name="prestador_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Turma *</FormLabel>
+                    <FormLabel>Prestador *</FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(Number(value))}
                       value={String(field.value)}

@@ -100,6 +100,25 @@ export async function POST(request: NextRequest) {
 
     console.log('✅ Dados validados:', validatedData.data);
 
+    // Garantir que a data esteja no formato correto (YYYY-MM-DD)
+    let dataInscricao = validatedData.data.data_inscricao;
+    if (!dataInscricao) {
+      dataInscricao = new Date().toISOString().split('T')[0];
+    } else {
+      // Se a data vier como ISO string completa, extrair apenas a parte da data
+      if (dataInscricao.includes('T')) {
+        dataInscricao = dataInscricao.split('T')[0];
+      }
+      // Verificar se está no formato correto (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(dataInscricao)) {
+        console.warn('Data em formato inválido:', dataInscricao);
+        dataInscricao = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    console.log('📅 Data de inscrição formatada:', dataInscricao);
+
     const [result] = await accessPool.execute(
       `INSERT INTO alunos_turmas (
         cliente_id, turma_id, data_inscricao
@@ -107,7 +126,7 @@ export async function POST(request: NextRequest) {
       [
         validatedData.data.cliente_id, 
         validatedData.data.turma_id, 
-        validatedData.data.data_inscricao || new Date().toISOString().split('T')[0]
+        dataInscricao
       ]
     );
 

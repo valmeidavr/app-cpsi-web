@@ -83,27 +83,51 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+    
+    console.log('🔄 [LANCAMENTOS PATCH] ID:', id);
+    console.log('🔄 [LANCAMENTOS PATCH] Body:', body);
+    console.log('🔄 [LANCAMENTOS PATCH] Novo status:', body.status);
+    
     const [existingRows] = await accessPool.execute(
-      'SELECT id FROM lancamentos WHERE id = ?',
+      'SELECT id, status FROM lancamentos WHERE id = ?',
       [id]
     );
-    if ((existingRows as Array<{ id: number }>).length === 0) {
+    
+    if ((existingRows as Array<{ id: number; status: string }>).length === 0) {
+      console.log('❌ [LANCAMENTOS PATCH] Lançamento não encontrado');
       return NextResponse.json(
         { error: 'Lançamento não encontrado' },
         { status: 404 }
       );
     }
+    
+    const lancamentoExistente = (existingRows as Array<{ id: number; status: string }>)[0];
+    console.log('📊 [LANCAMENTOS PATCH] Status atual no banco:', lancamentoExistente.status);
+    
     await accessPool.execute(
       'UPDATE lancamentos SET status = ? WHERE id = ?',
       [body.status, id]
     );
+    
+    // Verificar se a atualização foi bem-sucedida
+    const [updatedRows] = await accessPool.execute(
+      'SELECT id, status FROM lancamentos WHERE id = ?',
+      [id]
+    );
+    
+    const lancamentoAtualizado = (updatedRows as Array<{ id: number; status: string }>)[0];
+    console.log('✅ [LANCAMENTOS PATCH] Status após atualização:', lancamentoAtualizado.status);
+    
     return NextResponse.json({ 
       success: true, 
-      message: `Lançamento ${body.status === 'Ativo' ? 'ativado' : 'desativado'} com sucesso` 
+      message: `Lançamento ${body.status === 'Ativo' ? 'ativado' : 'desativado'} com sucesso`,
+      oldStatus: lancamentoExistente.status,
+      newStatus: lancamentoAtualizado.status
     });
   } catch (error) {
+    console.error('❌ [LANCAMENTOS PATCH] Erro:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

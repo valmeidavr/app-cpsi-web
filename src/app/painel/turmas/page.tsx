@@ -39,7 +39,6 @@ import { toast } from "sonner";
 import { http } from "@/util/http";
 import { formatDate, parseISO, isValid } from "date-fns";
 import { Turma } from "@/app/types/Turma";
-import AdicionarAlunosModal from "./_components/AdicionarAlunosModalComponent";
 
 // Helper function to safely format dates
 const safeFormatDate = (dateString: string | null | undefined, format: string): string => {
@@ -75,12 +74,6 @@ export default function Turmas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
   const router = useRouter();
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [turmaSelecionadaId, setTurmaSelecionadaId] = useState<number>(0);
-  const abrirAdicionarAlunosModal = (turmaId: number, open: boolean) => {
-    setTurmaSelecionadaId(turmaId);
-    setIsModalOpen(open);
-  };
   const carregarTurmas = async () => {
     setCarregando(true);
     try {
@@ -239,49 +232,49 @@ export default function Turmas() {
                   </TableCell>
                   <TableCell>{turma.limite_vagas}</TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {}
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Button
-                            size="icon"
-                            variant="default"
-                            onClick={() => {
-                              abrirAdicionarAlunosModal(turma.id, true);
-                            }}
-                          >
-                            <Plus className="h-5 w-5" />
-                          </Button>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Adicionar Alunos
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
-                    <Tooltip.Provider>
-                      <Tooltip.Root>
-                        <Tooltip.Trigger asChild>
-                          <Link href={`/painel/turmas/editar/${turma.id}`}>
-                            <Button size="icon" variant="outline">
-                              <Edit className="h-5 w-5" />
-                            </Button>
-                          </Link>
-                        </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content
-                            side="top"
-                            className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
-                          >
-                            Editar Turma
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
-                      </Tooltip.Root>
-                    </Tooltip.Provider>
+                    {/* Só mostrar botões se a turma não estiver finalizada */}
+                    {!turma.data_fim && (
+                      <>
+                        <Tooltip.Provider>
+                          <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                              <Link href={`/painel/turmas/${turma.id}/alunos`}>
+                                <Button size="icon" variant="default">
+                                  <Plus className="h-5 w-5" />
+                                </Button>
+                              </Link>
+                            </Tooltip.Trigger>
+                            <Tooltip.Portal>
+                              <Tooltip.Content
+                                side="top"
+                                className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                              >
+                                Gerenciar Alunos
+                              </Tooltip.Content>
+                            </Tooltip.Portal>
+                          </Tooltip.Root>
+                        </Tooltip.Provider>
+                        <Tooltip.Provider>
+                          <Tooltip.Root>
+                            <Tooltip.Trigger asChild>
+                              <Link href={`/painel/turmas/editar/${turma.id}`}>
+                                <Button size="icon" variant="outline">
+                                  <Edit className="h-5 w-5" />
+                                </Button>
+                              </Link>
+                            </Tooltip.Trigger>
+                            <Tooltip.Portal>
+                              <Tooltip.Content
+                                side="top"
+                                className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
+                              >
+                                Editar Turma
+                              </Tooltip.Content>
+                            </Tooltip.Portal>
+                          </Tooltip.Root>
+                        </Tooltip.Provider>
+                      </>
+                    )}
                     {!turma.data_fim && (
                       <Tooltip.Provider>
                         <Tooltip.Root>
@@ -417,11 +410,6 @@ export default function Turmas() {
           </DialogContent>
         </FormProvider>
       </Dialog>
-      <AdicionarAlunosModal
-        isOpen={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        turmaId={turmaSelecionadaId}
-      />
     </div>
   );
 }
