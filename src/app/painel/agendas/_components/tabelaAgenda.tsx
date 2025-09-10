@@ -88,24 +88,36 @@ const TabelaAgenda = () => {
   const abrirModalAgendamento = async (hora: string, data: Date) => {
     setHoraSelecionada(hora);
     setDataSelecionada(data);
+    
     try {
-      if (!agendamentoSelecionado) {
-        toast.error("Agendamento não selecionado");
-        return;
+      // Se há um agendamento selecionado, estamos EDITANDO
+      if (agendamentoSelecionado) {
+        console.log('✏️ [TABELA] Modo EDIÇÃO - carregando dados do agendamento:', agendamentoSelecionado.dadosAgendamento.id);
+        const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
+        if (!response.ok) {
+          throw new Error("Erro ao carregar dados do agendamento");
+        }
+        const dadosAgendamento = await response.json();
+        form.reset({
+          convenio_id: dadosAgendamento.convenio_id,
+          cliente_id: dadosAgendamento.cliente_id,
+          procedimento_id: dadosAgendamento.procedimento_id,
+          situacao: "AGENDADO",
+          tipo_cliente: dadosAgendamento.tipo_cliente || "NSOCIO",
+        });
+      } else {
+        // Se NÃO há agendamento selecionado, estamos CRIANDO um novo
+        console.log('➕ [TABELA] Modo CRIAÇÃO - slot vazio para novo agendamento');
+        form.reset({
+          convenio_id: 0,
+          cliente_id: 0,
+          procedimento_id: 0,
+          situacao: "AGENDADO",
+          tipo_cliente: "NSOCIO",
+        });
       }
-      const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
-      if (!response.ok) {
-        throw new Error("Erro ao carregar dados do agendamento");
-      }
-      const data = await response.json();
-      form.reset({
-        convenio_id: data.convenio_id,
-        cliente_id: data.cliente_id,
-        procedimento_id: data.procedimento_id,
-        situacao: "AGENDADO",
-        tipo_cliente: data.tipo_cliente || "NSOCIO",
-      });
     } catch (error) {
+      console.error('❌ [TABELA] Erro ao preparar modal:', error);
       toast.error("Erro ao carregar dados do agendamento");
     } finally {
       setModalAgendamentoOpen(true);
@@ -136,7 +148,7 @@ const TabelaAgenda = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ situacao: "CANCELADO" }),
+        body: JSON.stringify({ situacao: "INATIVO" }),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -310,20 +322,7 @@ const TabelaAgenda = () => {
                                       {label}
                                     </DropdownMenuItem>
                                   ))}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs font-medium text-gray-500">
-                                  Outras Ações
-                                </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setAgendamentoSelecionado(agenda);
-                                    abrirModalAgendamento(agenda.hora, date);
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <PencilIcon className="w-4 h-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
+                                {/* Para horários LIVRE, não há opção de editar */}
                               </>
                             ) : (
                               <>
@@ -356,16 +355,19 @@ const TabelaAgenda = () => {
                                 <DropdownMenuLabel className="text-xs font-medium text-gray-500">
                                   Outras Ações
                                 </DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setAgendamentoSelecionado(agenda);
-                                    abrirModalAgendamento(agenda.hora, date);
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <PencilIcon className="w-4 h-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
+                                {/* Editar só aparece para agendamentos AGENDADOS */}
+                                {agenda.situacao === "AGENDADO" && (
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      setAgendamentoSelecionado(agenda);
+                                      abrirModalAgendamento(agenda.hora, date);
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   onSelect={() => {
                                     setHoraSelecionada(agenda.hora);
@@ -433,7 +435,7 @@ const TabelaAgenda = () => {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Criar Agendamento
+                Encaixe
               </Button>
             </div>
             <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -459,6 +461,7 @@ const TabelaAgenda = () => {
           dtagenda: agendamentoSelecionado.dadosAgendamento.dtagenda,
           situacao: agendamentoSelecionado.dadosAgendamento.situacao
         } : null}
+        setAgendamentoSelecionado={setAgendamentoSelecionado}
         horaSelecionada={horaSelecionada}
         dataSelecionada={dataSelecionada}
       />

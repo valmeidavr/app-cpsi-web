@@ -36,6 +36,9 @@ interface AgendaContextType {
   agendamentosGeral: Agenda[];
   loading: boolean;
   setLoading: (v: boolean) => void;
+  loadingUnidades: boolean;
+  loadingEspecialidades: boolean;
+  loadingPrestadores: boolean;
   prestadores: Prestador[];
   unidades: Unidade[];
   especialidades: Especialidade[];
@@ -67,6 +70,9 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
   }>>([]);
   const [carregandoDadosAgenda, setCarregandoDadosAgenda] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingUnidades, setLoadingUnidades] = useState(false);
+  const [loadingEspecialidades, setLoadingEspecialidades] = useState(false);
+  const [loadingPrestadores, setLoadingPrestadores] = useState(false);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Agenda[]>([]);
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [unidades, setUnidades] = useState<Unidade[]>([]);
@@ -152,6 +158,7 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
     carregarDados();
   }, []);
   const fetchPrestadores = async (unidadeId?: number, especialidadeId?: number) => {
+    setLoadingPrestadores(true);
     try {
       let url = "/api/prestadores?com_expediente=true&all=true";
       if (unidadeId) {
@@ -166,9 +173,12 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         setPrestadores(data.data || []);
       }
     } catch (_error) {
+    } finally {
+      setLoadingPrestadores(false);
     }
   };
   const fetchUnidades = async () => {
+    setLoadingUnidades(true);
     try {
       const response = await fetch("/api/unidades?com_expediente=true&limit=1000");
       if (response.ok) {
@@ -176,9 +186,12 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         setUnidades(data.data || []);
       }
     } catch (_error) {
+    } finally {
+      setLoadingUnidades(false);
     }
   };
   const fetchEspecialidades = async (unidadeId?: number) => {
+    setLoadingEspecialidades(true);
     try {
       let url = "/api/especialidades?com_expediente=true&limit=1000";
       if (unidadeId) {
@@ -190,6 +203,8 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         setEspecialidades(data.data || []);
       }
     } catch (_error) {
+    } finally {
+      setLoadingEspecialidades(false);
     }
   };
 
@@ -237,6 +252,9 @@ export const AgendaProvider = ({ children }: { children: React.ReactNode }) => {
         agendamentosGeral,
         loading,
         setLoading,
+        loadingUnidades,
+        loadingEspecialidades,
+        loadingPrestadores,
         prestadores,
         unidades,
         especialidades,

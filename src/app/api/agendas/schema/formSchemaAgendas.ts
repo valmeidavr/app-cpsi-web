@@ -23,9 +23,6 @@ export const createAgendaSchema = z.object({
   convenio_id: z
     .number()
     .int({ message: "Convênio deve ser um número inteiro" }),
-  tipo_cliente: z.enum(["SOCIO", "NSOCIO", "PARCEIRO", "FUNCIONARIO"], {
-    required_error: "Tipo de cliente é obrigatório",
-  }),
   procedimento_id: z
     .number()
     .int({ message: "Procedimento deve ser um número inteiro" })

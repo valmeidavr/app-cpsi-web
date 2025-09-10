@@ -17,6 +17,17 @@ export async function GET(request: NextRequest) {
     const valor = searchParams.get("valor");
     const conveniosId = searchParams.get("conveniosId"); // Para compatibilidade
     const convenioId = convenio_id || conveniosId;
+    
+    console.log('🔍 [API VALOR-PROCEDIMENTO] Parâmetros recebidos:', {
+      convenio_id,
+      conveniosId, 
+      convenioId,
+      tipoCliente,
+      tabela_faturamento_id,
+      procedimento_id,
+      valor
+    });
+    
     if (convenioId && tipoCliente) {
       const query = `
         SELECT DISTINCT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
@@ -27,7 +38,14 @@ export async function GET(request: NextRequest) {
         WHERE c.id = ? AND vp.tipo = ?
         ORDER BY p.nome ASC
       `;
+      
+      console.log('📊 [API VALOR-PROCEDIMENTO] Executando query:', {
+        query: query.trim(),
+        parametros: [convenioId, tipoCliente]
+      });
+      
       const valorRows = await executeWithRetry(accessPool, query, [convenioId, tipoCliente]);
+      console.log('📈 [API VALOR-PROCEDIMENTO] Quantidade de registros retornados:', (valorRows as any[]).length);
       const valorProcedimentosFormatados = (valorRows as Array<{
         id: number;
         valor: number;
@@ -55,6 +73,17 @@ export async function GET(request: NextRequest) {
       const dadosValidos = valorProcedimentosFormatados.filter(item => 
         item && item.id && item.procedimento && item.procedimento.nome
       );
+      
+      console.log('✅ [API VALOR-PROCEDIMENTO] Dados válidos após filtro:', dadosValidos.length);
+      console.log('📋 [API VALOR-PROCEDIMENTO] Primeiros 3 procedimentos:', 
+        dadosValidos.slice(0, 3).map(item => ({
+          id: item.id,
+          nome: item.procedimento.nome,
+          valor: item.valor,
+          tipo: item.tipo
+        }))
+      );
+      
       return NextResponse.json(dadosValidos);
     }
     
@@ -172,8 +201,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    console.error('❌ [API VALOR-PROCEDIMENTO] Erro:', error);
+    console.error('💥 [API VALOR-PROCEDIMENTO] Stack trace:', error instanceof Error ? error.stack : 'Sem stack trace');
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: "Erro interno do servidor", details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

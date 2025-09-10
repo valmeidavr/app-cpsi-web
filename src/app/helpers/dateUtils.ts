@@ -2,24 +2,22 @@
 export function localDateToUTCISO(date: Date, timeString?: string): string {
   if (timeString) {
     const [hours, minutes] = timeString.split(':').map(Number);
-    const localDate = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate(),
-      hours,
-      minutes,
-      0,
-      0
-    );
-    const utcDate = new Date(
-      localDate.getTime() - localDate.getTimezoneOffset() * 60000
-    );
-    return utcDate.toISOString();
+    // Construir string ISO diretamente sem usar construtor Date que aplica timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hoursStr = String(hours).padStart(2, '0');
+    const minutesStr = String(minutes).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hoursStr}:${minutesStr}:00.000Z`;
   }
-  const utcDate = new Date(
-    date.getTime() - date.getTimezoneOffset() * 60000
-  );
-  return utcDate.toISOString();
+  
+  // Para datas sem horário
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  
+  return `${year}-${month}-${day}T00:00:00.000Z`;
 }
 export function utcISOToLocalDate(utcISOString: string): Date {
   return new Date(utcISOString);

@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT DISTINCT id, nome, email, cpf, dtnascimento, cep, logradouro, bairro, cidade, 
-                     uf, telefone1, telefone2, status, tipo, created_at, updated_at
+                     uf, telefone1, telefone2, status, tipo as tipoCliente, created_at, updated_at
       FROM clientes${whereClause}
       ORDER BY status ASC, nome ASC, id ASC
       LIMIT ${parseInt(limit)} OFFSET ${offset}
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         telefone1: string;
         telefone2: string;
         status: string;
-        tipo: string;
+        tipoCliente: string;
         created_at: Date;
         updated_at: Date;
       }>),

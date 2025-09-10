@@ -10,8 +10,8 @@ export const dbSettings = {
     connection: parseInt(process.env.MYSQL_CONNECTION_TIMEOUT || '60000'),
   },
   retry: {
-    maxRetries: parseInt(process.env.MYSQL_MAX_RETRIES || '3'),
-    retryDelay: parseInt(process.env.MYSQL_RETRY_DELAY || '1000'),
+    maxRetries: parseInt(process.env.MYSQL_MAX_RETRIES || '5'),      // Increased from 3 to 5
+    retryDelay: parseInt(process.env.MYSQL_RETRY_DELAY || '2000'),   // Increased from 1s to 2s
   },
   logging: {
     enabled: process.env.NODE_ENV === 'development',

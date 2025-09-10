@@ -65,6 +65,7 @@ interface ModalAgendamentoProps {
     dtagenda: string;
     situacao: string;
   } | null;
+  setAgendamentoSelecionado: (agendamento: any) => void;
   horaSelecionada: string | null;
   dataSelecionada: Date | null;
 }
@@ -72,6 +73,7 @@ const ModalAgendamento = ({
   open,
   setOpen,
   agendamentoSelecionado,
+  setAgendamentoSelecionado,
   horaSelecionada,
   dataSelecionada,
 }: ModalAgendamentoProps) => {
@@ -91,13 +93,16 @@ const ModalAgendamento = ({
       dtagenda: "",
       horario: "",
       tipo: "PROCEDIMENTO",
-      tipo_cliente: undefined, // Inicialmente undefined
     },
   });
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [procedimentos, setProcedimentos] = useState<ValorProcedimento[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingClientes, setLoadingClientes] = useState(false);
+  const [clientesCarregados, setClientesCarregados] = useState(false);
+  const [loadingConvenios, setLoadingConvenios] = useState(false);
+  const [loadingProcedimentos, setLoadingProcedimentos] = useState(false);
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(
     null
   );
@@ -107,7 +112,6 @@ const ModalAgendamento = ({
   const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(
     null
   );
-  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<TipoClienteValorProcedimento | null>(null); // Inicialmente null
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
   const [openSelectConvenios, setOpenSelectConvenios] = useState(false);
@@ -115,12 +119,10 @@ const ModalAgendamento = ({
   const [searchProcedimento, setSearchProcedimento] = useState("");
   const [searchConvenio, setSearchConvenio] = useState("");
   useEffect(() => {
-    if (open) {
+    if (open && !clientesCarregados) {
       fetchClientes();
-      setTipoClienteSelecionado(null);
-      form.setValue("tipo_cliente", undefined);
     }
-  }, [open]);
+  }, [open, clientesCarregados]);
   useEffect(() => {
     if (clienteSelecionado) {
       fetchConvenios(clienteSelecionado.id);
@@ -131,16 +133,108 @@ const ModalAgendamento = ({
       form.setValue("procedimento_id", 0);
     }
   }, [clienteSelecionado]);
+  // useEffect para gerenciar abertura do modal - funciona para os 2 cenários
   useEffect(() => {
-    if (convenioSelecionado && tipoClienteSelecionado) {
-      fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
+    if (open) {
+      console.log('🚀 [MODAL EDIT] Modal aberto - Cenário:', agendamentoSelecionado ? 'EDITAR' : 'CRIAR');
+      
+      if (agendamentoSelecionado && clientes.length > 0) {
+        // CENÁRIO 2: Editar agendamento existente (AGENDADO)
+        console.log('📝 [MODAL EDIT] Preenchendo dados do agendamento existente:', agendamentoSelecionado);
+        
+        // Setar valores no formulário
+        form.setValue("cliente_id", agendamentoSelecionado.cliente_id);
+        form.setValue("convenio_id", agendamentoSelecionado.convenio_id);
+        form.setValue("procedimento_id", agendamentoSelecionado.procedimento_id);
+        form.setValue("dtagenda", agendamentoSelecionado.dtagenda);
+        
+        // Buscar e definir cliente
+        const clienteEncontrado = clientes.find(c => c.id === agendamentoSelecionado.cliente_id);
+        if (clienteEncontrado) {
+          console.log('👤 [MODAL EDIT] Cliente encontrado:', clienteEncontrado.nome);
+          setClienteSelecionado(clienteEncontrado);
+          
+          // Carregar convênios para este cliente
+          fetchConvenios(clienteEncontrado.id);
+        } else {
+          console.log('❌ [MODAL EDIT] Cliente não encontrado com ID:', agendamentoSelecionado.cliente_id);
+        }
+      } else {
+        // CENÁRIO 1: Criar novo agendamento (LIVRE → AGENDADO)
+        console.log('🆕 [MODAL EDIT] Limpando campos para novo agendamento');
+        
+        // Limpar todos os estados
+        setClienteSelecionado(null);
+        setConvenioSelecionado(null);
+        setProcedimentoSelecionado(null);
+        setConvenios([]);
+        setProcedimentos([]);
+        
+        // Reset form para novo agendamento
+        form.reset({
+          cliente_id: 0,
+          convenio_id: 0,
+          procedimento_id: 0,
+          prestador_id: prestador?.id || 0,
+          unidade_id: unidade?.id || 0,
+          especialidade_id: especialidade?.id || 0,
+          dtagenda: dataSelecionada ? localDateToUTCISO(dataSelecionada, horaSelecionada || "00:00") : "",
+          horario: horaSelecionada || "",
+          tipo: "PROCEDIMENTO",
+        });
+      }
+    }
+  }, [open, agendamentoSelecionado, clientes, dataSelecionada, horaSelecionada]);
+
+  // useEffect separado para definir convênio e procedimento quando as listas estiverem disponíveis
+  useEffect(() => {
+    if (open && agendamentoSelecionado && convenios.length > 0) {
+      // Buscar dados do convênio
+      const convenioEncontrado = convenios.find(c => c.id === agendamentoSelecionado.convenio_id);
+      if (convenioEncontrado) {
+        console.log('🏥 [MODAL EDIT] Convênio encontrado:', convenioEncontrado.nome);
+        setConvenioSelecionado(convenioEncontrado);
+      }
+    }
+  }, [open, agendamentoSelecionado, convenios]);
+
+  // useEffect separado para definir procedimento quando a lista estiver disponível
+  useEffect(() => {
+    if (open && agendamentoSelecionado && procedimentos.length > 0) {
+      // Buscar dados do procedimento
+      const procedimentoEncontrado = procedimentos.find(p => p.procedimento.id === agendamentoSelecionado.procedimento_id);
+      if (procedimentoEncontrado) {
+        console.log('💊 [MODAL EDIT] Procedimento encontrado:', procedimentoEncontrado.procedimento.nome);
+        setProcedimentoSelecionado(procedimentoEncontrado);
+      }
+    }
+  }, [open, agendamentoSelecionado, procedimentos]);
+
+  useEffect(() => {
+    console.log('🎯 [MODAL EDIT] useEffect para procedimentos executado:', {
+      convenioSelecionado: convenioSelecionado?.nome,
+      convenioId: convenioSelecionado?.id,
+      clienteSelecionado: clienteSelecionado?.nome,
+      clienteTipoCliente: clienteSelecionado?.tipoCliente,
+      ambosPresentes: !!(convenioSelecionado && clienteSelecionado)
+    });
+    
+    if (convenioSelecionado && clienteSelecionado) {
+      const tipoCliente = clienteSelecionado.tipoCliente as TipoClienteValorProcedimento;
+      console.log('🚀 [MODAL EDIT] Chamando fetchProcedimentos com:', {
+        tipoCliente,
+        convenioId: convenioSelecionado.id
+      });
+      fetchProcedimentos(tipoCliente, convenioSelecionado.id);
     } else {
+      console.log('❌ [MODAL EDIT] Condições não atendidas para buscar procedimentos');
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
     }
-  }, [tipoClienteSelecionado, convenioSelecionado]);
+  }, [convenioSelecionado, clienteSelecionado]);
   const fetchClientes = async () => {
     try {
+      setLoadingClientes(true);
       const response = await fetch("/api/clientes");
       if (!response.ok) {
         const errorData = await response.json();
@@ -148,18 +242,27 @@ const ModalAgendamento = ({
       }
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
+        console.log('👥 [MODAL EDIT] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map(c => ({
+          nome: c.nome,
+          id: c.id,
+          tipoCliente: c.tipoCliente
+        })));
         setClientes(data.data);
+        setClientesCarregados(true);
       } else {
         setClientes([]);
       }
     } catch (error) {
       toast.error("Erro ao carregar clientes");
       setClientes([]);
+    } finally {
+      setLoadingClientes(false);
     }
   };
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
+      setLoadingConvenios(true);
       const response = await fetch(`/api/convenios-clientes?cliente_id=${clienteId}`);
       if (response.ok) {
         const data = await response.json();
@@ -203,6 +306,8 @@ const ModalAgendamento = ({
       form.setValue("convenio_id", 0);
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
+    } finally {
+      setLoadingConvenios(false);
     }
   };
   const fetchProcedimentos = async (
@@ -210,11 +315,32 @@ const ModalAgendamento = ({
     convenio_id: number
   ) => {
     try {
-      const response = await fetch(
-        `/api/valor-procedimento?convenio_id=${convenio_id}&tipoCliente=${String(tipoCliente)}`
-      );
+      setLoadingProcedimentos(true);
+      console.log('🔍 [MODAL EDIT] fetchProcedimentos chamado com:', {
+        tipoCliente,
+        convenio_id,
+        clienteSelecionado: clienteSelecionado?.nome,
+        convenioSelecionado: convenioSelecionado?.nome
+      });
+      
+      if (!tipoCliente) {
+        console.log('⚠️ [MODAL EDIT] tipoCliente não informado, limpando procedimentos');
+        setProcedimentos([]);
+        return;
+      }
+      
+      const url = `/api/valor-procedimento?convenio_id=${convenio_id}&tipoCliente=${String(tipoCliente)}`;
+      console.log('🌐 [MODAL EDIT] URL da requisição:', url);
+      
+      const response = await fetch(url);
+      console.log('📡 [MODAL EDIT] Status da resposta:', response.status);
+      
       if (response.ok) {
         const data = await response.json();
+        console.log('📄 [MODAL EDIT] Dados recebidos:', data);
+        console.log('📊 [MODAL EDIT] Tipo dos dados:', Array.isArray(data) ? 'Array' : typeof data);
+        console.log('📈 [MODAL EDIT] Quantidade de itens:', Array.isArray(data) ? data.length : 'N/A');
+        
         if (Array.isArray(data)) {
           const procedimentosMapeados = data.map((item: {
             id: number;
@@ -269,16 +395,41 @@ const ModalAgendamento = ({
               updated_at: new Date().toISOString()
             }
           }));
-          setProcedimentos(procedimentosMapeados);
+          
+          console.log('🔄 [MODAL EDIT] Procedimentos mapeados (antes dedup):', procedimentosMapeados.length);
+          console.log('📝 [MODAL EDIT] Primeiros 3 procedimentos:', procedimentosMapeados.slice(0, 3).map(p => ({
+            nome: p.procedimento.nome,
+            valor: p.valor,
+            id: p.id
+          })));
+          
+          // Remover duplicados baseado no nome do procedimento, mantendo apenas o primeiro
+          const procedimentosUnicos = procedimentosMapeados.filter((procedimento, index) => {
+            return procedimentosMapeados.findIndex(p => 
+              p.procedimento.nome.toLowerCase() === procedimento.procedimento.nome.toLowerCase()
+            ) === index;
+          });
+          
+          console.log('✅ [MODAL EDIT] Procedimentos únicos (após dedup):', procedimentosUnicos.length);
+          console.log('📋 [MODAL EDIT] Lista final:', procedimentosUnicos.map(p => p.procedimento.nome));
+          
+          setProcedimentos(procedimentosUnicos);
         } else {
+          console.log('⚠️ [MODAL EDIT] Dados não são array, setando procedimentos vazios');
           setProcedimentos([]);
         }
       } else {
+        console.error('❌ [MODAL EDIT] Resposta não OK:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('❌ [MODAL EDIT] Conteúdo do erro:', errorText);
         throw new Error("Erro ao carregar procedimentos");
       }
     } catch (e) {
+      console.error('💥 [MODAL EDIT] Exceção ao buscar procedimentos:', e);
       toast.error("Nenhum procedimento encontrado");
       setProcedimentos([]);
+    } finally {
+      setLoadingProcedimentos(false);
     }
   };
   useEffect(() => {
@@ -309,43 +460,95 @@ const ModalAgendamento = ({
         setLoading(false);
         return;
       }
-      if (!tipoClienteSelecionado) {
-        toast.error("Tipo de cliente é obrigatório.");
-        setLoading(false);
-        return;
-      }
-      const dataFormatada = localDateToUTCISO(dataSelecionada);
-      const dataComHorario = new Date(dataFormatada);
-      const [horas, minutos] = horaSelecionada.split(':');
-      dataComHorario.setHours(parseInt(horas), parseInt(minutos), 0, 0);
+      // Usar diretamente a função corrigida com data e hora
+      const dataComHorarioISO = localDateToUTCISO(dataSelecionada, horaSelecionada);
       const dadosParaEnviar = {
         ...values,
-        dtagenda: dataComHorario.toISOString(),
+        dtagenda: dataComHorarioISO,
         prestador_id: prestador?.id,
         unidade_id: unidade?.id,
         especialidade_id: especialidade?.id,
         situacao: "AGENDADO",
       };
-      if (!agendamentoSelecionado) {
-        throw new Error("Agendamento não selecionado");
+      
+      console.log('📤 [MODAL EDIT] Dados enviados para API:', dadosParaEnviar);
+      console.log('🆔 [MODAL EDIT] ID do agendamento:', agendamentoSelecionado?.id);
+      console.log('🎯 [MODAL EDIT] Cenário detectado:', agendamentoSelecionado ? 'EDITAR' : 'CRIAR');
+      
+      let response;
+      if (agendamentoSelecionado) {
+        // CENÁRIO 2: Editar agendamento existente (PUT)
+        response = await fetch(`/api/agendas?id=${agendamentoSelecionado.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dadosParaEnviar),
+        });
+      } else {
+        // CENÁRIO 1: Criar novo agendamento (POST)
+        response = await fetch("/api/agendas", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dadosParaEnviar),
+        });
       }
-      const response = await fetch(`/api/agendas?id=${agendamentoSelecionado.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dadosParaEnviar),
-      });
+      
       if (response.ok) {
-        toast.success("Agendamento atualizado com sucesso!");
+        toast.success(agendamentoSelecionado ? "Agendamento atualizado com sucesso!" : "Agendamento criado com sucesso!");
+        
+        // Limpar campos e estados
+        form.reset({
+          cliente_id: 0,
+          convenio_id: 0,
+          procedimento_id: 0,
+          prestador_id: prestador?.id ?? 0,
+          unidade_id: unidade?.id ?? 0,
+          especialidade_id: especialidade?.id ?? 0,
+          dtagenda: "",
+          horario: "",
+          tipo: "PROCEDIMENTO",
+        });
+        setClienteSelecionado(null);
+        setConvenioSelecionado(null);
+        setProcedimentoSelecionado(null);
+        setConvenios([]);
+        setProcedimentos([]);
+        setAgendamentoSelecionado(null);
         setOpen(false);
         carregarAgendamentos();
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao atualizar agendamento");
+        console.error('🚨 [MODAL EDIT] Erro da API:', errorData);
+        
+        // Mostrar detalhes específicos do erro
+        let errorMessage = errorData.error || "Erro ao atualizar agendamento";
+        
+        if (errorData.details) {
+          console.error('🔍 [MODAL EDIT] Detalhes do erro:', errorData.details);
+          
+          // Se é erro de validação, mostrar campos específicos
+          if (errorData.type === 'validation_error' && errorData.details.fieldErrors) {
+            const fieldErrors = Object.entries(errorData.details.fieldErrors)
+              .map(([field, errors]) => `${field}: ${(errors as string[]).join(', ')}`)
+              .join(' | ');
+            errorMessage += ` - Campos inválidos: ${fieldErrors}`;
+          }
+          
+          // Se é erro SQL, mostrar código
+          if (errorData.details.sqlCode) {
+            errorMessage += ` - Código SQL: ${errorData.details.sqlCode}`;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Erro ao atualizar agendamento");
+      console.error('💥 [MODAL EDIT] Erro no catch:', error);
+      const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar agendamento";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -365,50 +568,19 @@ const ModalAgendamento = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            Editar Agendamento
+            {agendamentoSelecionado ? 'Editar Agendamento' : 'Criar Agendamento'}
           </DialogTitle>
           <p className="text-sm text-gray-600 mt-1">
-            Atualize as informações do agendamento selecionado
+            {agendamentoSelecionado 
+              ? 'Atualize as informações do agendamento selecionado'
+              : 'Preencha as informações para criar um novo agendamento'
+            }
           </p>
         </DialogHeader>
         <Form {...form}>
           <div className="flex flex-col">
             <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
               <div className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="tipo_cliente"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium text-gray-700">Tipo Cliente *</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          setTipoClienteSelecionado(value as TipoClienteValorProcedimento);
-                          setProcedimentoSelecionado(null);
-                          form.setValue("procedimento_id", 0);
-                          if (convenioSelecionado) {
-                            fetchProcedimentos(value as TipoClienteValorProcedimento, convenioSelecionado.id);
-                          }
-                        }}
-                        value={field.value || tipoClienteSelecionado || undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione o tipo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="SOCIO">SOCIO</SelectItem>
-                          <SelectItem value="NSOCIO">NSOCIO</SelectItem>
-                          <SelectItem value="PARCEIRO">PARCEIRO</SelectItem>
-                          <SelectItem value="FUNCIONARIO">FUNCIONARIO</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -424,15 +596,23 @@ const ModalAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
+                              disabled={loadingClientes}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
-                                !field.value && "text-muted-foreground"
+                                !field.value && "text-muted-foreground",
+                                loadingClientes && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {field.value
-                                ? clientes.find((cliente) => cliente.id === field.value)?.nome
-                                : "Selecione o cliente"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingClientes ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando clientes...
+                                </>
+                              ) : (() => {
+                                console.log('🔍 [MODAL EDIT] Renderizando botão cliente:', clienteSelecionado?.nome);
+                                return clienteSelecionado?.nome || "Selecione o cliente";
+                              })()}
+                              {!loadingClientes && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -451,17 +631,23 @@ const ModalAgendamento = ({
                                     value={`${cliente.id}-${cliente.nome}`}
                                     key={`cliente-${cliente.id}-${cliente.nome}`}
                                     onSelect={() => {
-                                      setClienteSelecionado(null);
+                                      console.log('👤 [MODAL EDIT] Cliente selecionado:', cliente);
+                                      // Limpar seleções dependentes (mas não o cliente)
                                       setConvenioSelecionado(null);
                                       setProcedimentoSelecionado(null);
                                       setConvenios([]);
                                       setProcedimentos([]);
+                                      
+                                      // Definir valores no form
                                       field.onChange(cliente.id);
                                       form.setValue("convenio_id", 0);
                                       form.setValue("procedimento_id", 0);
+                                      
+                                      // Definir cliente selecionado
                                       setClienteSelecionado(cliente);
-                                      setTipoClienteSelecionado((cliente.tipoCliente as unknown as TipoClienteValorProcedimento) || null);
-                                      form.setValue("tipo_cliente", cliente.tipoCliente || undefined);
+                                      console.log('✅ [MODAL EDIT] Cliente definido:', cliente.nome);
+                                      
+                                      // Carregar convênios
                                       fetchConvenios(cliente.id);
                                       setOpenSelectClientes(false);
                                       setSearchCliente("");
@@ -506,16 +692,24 @@ const ModalAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
-                              disabled={!clienteSelecionado}
+                              disabled={!clienteSelecionado || loadingConvenios}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
-                                !field.value && "text-muted-foreground"
+                                !field.value && "text-muted-foreground",
+                                (!clienteSelecionado || loadingConvenios) && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {field.value
-                                ? convenios.find((convenio) => convenio.id === field.value)?.nome
-                                : "Selecione o convênio"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingConvenios ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando convênios...
+                                </>
+                              ) : field.value ? (
+                                convenios.find((convenio) => convenio.id === field.value)?.nome
+                              ) : (
+                                "Selecione o convênio"
+                              )}
+                              {!loadingConvenios && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -579,20 +773,30 @@ const ModalAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
-                              disabled={!convenioSelecionado || !tipoClienteSelecionado}
+                              disabled={!convenioSelecionado || !clienteSelecionado || loadingProcedimentos}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
-                                !field.value && "text-muted-foreground"
+                                !field.value && "text-muted-foreground",
+                                (!convenioSelecionado || !clienteSelecionado || loadingProcedimentos) && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {field.value
-                                ? procedimentos.find((proc) => proc.procedimento.id === field.value)?.procedimento.nome
-                                : !convenioSelecionado 
-                                  ? "Selecione o convênio primeiro" 
-                                  : !tipoClienteSelecionado 
-                                    ? "Selecione o tipo de cliente primeiro"
-                                    : "Selecione o procedimento"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingProcedimentos ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando procedimentos...
+                                </>
+                              ) : (
+                                <>
+                                  {field.value
+                                    ? procedimentos.find((proc) => proc.procedimento.id === field.value)?.procedimento.nome
+                                    : !convenioSelecionado 
+                                      ? "Selecione o convênio primeiro" 
+                                      : !clienteSelecionado 
+                                        ? "Selecione o cliente primeiro"
+                                        : "Selecione o procedimento"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </>
+                              )}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -628,11 +832,17 @@ const ModalAgendamento = ({
                                           field.value === proc.procedimento.id ? "opacity-100" : "opacity-0"
                                         )}
                                       />
-                                      <div className="flex flex-col">
-                                        <span className="font-medium">{proc.procedimento.nome}</span>
-                                        <span className="text-xs text-gray-500">
-                                          {proc.procedimento.codigo ? `Código: ${proc.procedimento.codigo}` : ""}
-                                          {proc.valor ? ` | Valor: R$ ${Number(proc.valor).toFixed(2)}` : ""}
+                                      <div className="flex-1 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                          <span className="font-medium">{proc.procedimento.nome}</span>
+                                          {proc.procedimento.codigo && (
+                                            <span className="text-xs text-gray-500">
+                                              Código: {proc.procedimento.codigo}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="mx-4 font-semibold text-green-600">
+                                          R${Number(proc.valor).toFixed(2)}
                                         </span>
                                       </div>
                                     </CommandItem>
@@ -667,7 +877,7 @@ const ModalAgendamento = ({
                       <span>Salvando...</span>
                     </div>
                   ) : (
-                    "Salvar Alterações"
+                    agendamentoSelecionado ? "Salvar Alterações" : "Criar Agendamento"
                   )}
                 </Button>
               </DialogFooter>

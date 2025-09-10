@@ -43,6 +43,9 @@ export default function Agendas() {
     setCurrentMonth,
     onUnidadeChange,
     onEspecialidadeChange,
+    loadingUnidades,
+    loadingEspecialidades,
+    loadingPrestadores,
   } = useAgenda();
     useEffect(() => {
     if (unidade && prestador && especialidade) {
@@ -114,6 +117,7 @@ export default function Agendas() {
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Unidade *</FormLabel>
                           <Select
+                            disabled={loadingUnidades}
                             onValueChange={(value) => {
                               field.onChange(value);
                               const selectedUnidade = unidades.find((unidade) => unidade.id == +value) ?? null;
@@ -122,8 +126,15 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
-                                <SelectValue placeholder="Selecione uma unidade" />
+                              <SelectTrigger className={`h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors ${loadingUnidades ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {loadingUnidades ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Carregando unidades...
+                                  </>
+                                ) : (
+                                  <SelectValue placeholder="Selecione uma unidade" />
+                                )}
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -153,7 +164,7 @@ export default function Agendas() {
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Especialidade *</FormLabel>
                           <Select
-                            disabled={!unidade}
+                            disabled={!unidade || loadingEspecialidades}
                             onValueChange={(value) => {
                               field.onChange(Number(value));
                               const selectedEspecialidade = especialidades.find(
@@ -164,8 +175,15 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
-                                <SelectValue placeholder="Selecione uma especialidade" />
+                              <SelectTrigger className={`h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors ${(!unidade || loadingEspecialidades) ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {loadingEspecialidades ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Carregando especialidades...
+                                  </>
+                                ) : (
+                                  <SelectValue placeholder="Selecione uma especialidade" />
+                                )}
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -195,7 +213,7 @@ export default function Agendas() {
                         <FormItem>
                           <FormLabel className="text-sm font-medium text-gray-700">Prestador *</FormLabel>
                           <Select
-                            disabled={!especialidade}
+                            disabled={!especialidade || loadingPrestadores}
                             onValueChange={(value) => {
                               field.onChange(value);
                               setPrestador(
@@ -207,8 +225,15 @@ export default function Agendas() {
                             value={String(field.value)}
                           >
                             <FormControl>
-                              <SelectTrigger className="h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors">
-                                <SelectValue placeholder="Selecione um prestador" />
+                              <SelectTrigger className={`h-10 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors ${(!especialidade || loadingPrestadores) ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                {loadingPrestadores ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Carregando prestadores...
+                                  </>
+                                ) : (
+                                  <SelectValue placeholder="Selecione um prestador" />
+                                )}
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>

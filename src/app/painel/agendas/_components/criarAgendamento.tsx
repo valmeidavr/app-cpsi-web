@@ -74,18 +74,20 @@ const CriarAgendamento = ({
       especialidade_id: 0,
       dtagenda: "",
       tipo: "PROCEDIMENTO",
-      tipo_cliente: "NSOCIO", // Usar valor válido do enum
     },
   });
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [procedimentos, setProcedimentos] = useState<ValorProcedimento[]>([]);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingClientes, setLoadingClientes] = useState(false);
+  const [loadingConvenios, setLoadingConvenios] = useState(false);
+  const [clientesCarregados, setClientesCarregados] = useState(false);
+  const [loadingProcedimentos, setLoadingProcedimentos] = useState(false);
   const [clienteSelecionado, setClienteSelecionado] = useState<Cliente | null>(null);
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [openSelectClientes, setOpenSelectClientes] = useState(false);
   const [openSelectProcedimentos, setOpenSelectProcedimentos] = useState(false);
-  const [tipoClienteSelecionado, setTipoClienteSelecionada] = useState<TipoClienteValorProcedimento | null>(null); // Inicialmente null
   const [convenioSelecionado, setConvenioSelecionada] = useState<Convenio | undefined>(undefined);
   const [procedimentoSelecionado, setProcedimentoSelecionado] = useState<ValorProcedimento | null>(null);
   const [searchCliente, setSearchCliente] = useState("");
@@ -99,29 +101,73 @@ const CriarAgendamento = ({
       unidade_id: unidade?.id || 0,
       especialidade_id: especialidade?.id || 0,
       dtagenda: dataSelecionada
-        ? localDateToUTCISO(dataSelecionada)
+        ? localDateToUTCISO(dataSelecionada, "00:00")
         : "",
     });
   }, [prestador, unidade, especialidade, dataSelecionada]);
   useEffect(() => {
-    fetchClientes();
-  }, []);
+    if (!clientesCarregados) {
+      fetchClientes();
+    }
+  }, [clientesCarregados]);
+
+  // useEffect para limpar estados quando o modal abre
   useEffect(() => {
-    if (convenioSelecionado && tipoClienteSelecionado) {
-      fetchProcedimentos(tipoClienteSelecionado, convenioSelecionado.id);
+    if (isOpenModalCreate) {
+      console.log('🧹 [MODAL CREATE] Limpando estados ao abrir modal');
+      // Limpar seleções ao abrir o modal
+      setClienteSelecionado(null);
+      setConvenioSelecionada(undefined);
+      setProcedimentoSelecionado(null);
+      setHoraSelecionada(null);
+      setSearchCliente("");
+      setSearchProcedimento("");
+      setSearchConvenio("");
+      setConvenios([]);
+      setProcedimentos([]);
+      setOpenSelectClientes(false);
+      setOpenSelectConvenios(false);
+      setOpenSelectProcedimentos(false);
+      
+      // Reset form
+      form.reset({
+        cliente_id: 0,
+        convenio_id: 0,
+        procedimento_id: 0,
+        prestador_id: prestador?.id || 0,
+        unidade_id: unidade?.id || 0,
+        especialidade_id: especialidade?.id || 0,
+        dtagenda: dataSelecionada ? localDateToUTCISO(dataSelecionada, "00:00") : "",
+        horario: "",
+        tipo: "PROCEDIMENTO",
+      });
+    }
+  }, [isOpenModalCreate]);
+  useEffect(() => {
+    console.log('🎯 [MODAL CREATE] useEffect para procedimentos executado:', {
+      convenioSelecionado: convenioSelecionado?.nome,
+      convenioId: convenioSelecionado?.id,
+      clienteSelecionado: clienteSelecionado?.nome,
+      clienteTipoCliente: clienteSelecionado?.tipoCliente,
+      ambosPresentes: !!(convenioSelecionado && clienteSelecionado)
+    });
+    
+    if (convenioSelecionado && clienteSelecionado) {
+      const tipoCliente = clienteSelecionado.tipoCliente as TipoClienteValorProcedimento;
+      console.log('🚀 [MODAL CREATE] Chamando fetchProcedimentos com:', {
+        tipoCliente,
+        convenioId: convenioSelecionado.id
+      });
+      fetchProcedimentos(tipoCliente, convenioSelecionado.id);
     } else {
+      console.log('❌ [MODAL CREATE] Condições não atendidas para buscar procedimentos');
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
     }
-  }, [convenioSelecionado, tipoClienteSelecionado]);
-  useEffect(() => {
-  }, [clienteSelecionado]);
-  useEffect(() => {
-  }, [convenioSelecionado]);
-  useEffect(() => {
-  }, [tipoClienteSelecionado]);
+  }, [convenioSelecionado, clienteSelecionado]);
   const fetchClientes = async () => {
     try {
+      setLoadingClientes(true);
       const response = await fetch("/api/clientes");
       if (!response.ok) {
         const errorData = await response.json();
@@ -129,18 +175,27 @@ const CriarAgendamento = ({
       }
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
+        console.log('👥 [MODAL CREATE] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map(c => ({
+          nome: c.nome,
+          id: c.id,
+          tipoCliente: c.tipoCliente
+        })));
         setClientes(data.data);
+        setClientesCarregados(true);
       } else {
         setClientes([]);
       }
     } catch (error) {
       toast.error("Erro ao carregar clientes");
       setClientes([]);
+    } finally {
+      setLoadingClientes(false);
     }
   };
   const fetchConvenios = async (clienteId: number) => {
     if (!clienteId) return;
     try {
+      setLoadingConvenios(true);
       const response = await fetch(`/api/convenios-clientes?cliente_id=${clienteId}`);
       if (response.ok) {
         const data = await response.json();
@@ -184,19 +239,39 @@ const CriarAgendamento = ({
       form.setValue("convenio_id", 0);
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
+    } finally {
+      setLoadingConvenios(false);
     }
   };
   const fetchProcedimentos = async (tipoCliente: TipoClienteValorProcedimento, conveniosId: number) => {
     try {
+      setLoadingProcedimentos(true);
+      console.log('🔍 [MODAL CREATE] fetchProcedimentos chamado com:', {
+        tipoCliente,
+        conveniosId,
+        clienteSelecionado: clienteSelecionado?.nome,
+        convenioSelecionado: convenioSelecionado?.nome
+      });
+      
       if (!tipoCliente) {
+        console.log('⚠️ [MODAL CREATE] tipoCliente não informado, limpando procedimentos');
         setProcedimentos([]);
         return;
       }
-      const response = await fetch(`/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${String(tipoCliente)}`);
+      
+      const url = `/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${String(tipoCliente)}`;
+      console.log('🌐 [MODAL CREATE] URL da requisição:', url);
+      
+      const response = await fetch(url);
+      console.log('📡 [MODAL CREATE] Status da resposta:', response.status);
+      
       if (!response.ok) {
         throw new Error("Erro ao carregar procedimentos");
       }
       const data = await response.json();
+      console.log('📄 [MODAL CREATE] Dados recebidos:', data);
+      console.log('📊 [MODAL CREATE] Tipo dos dados:', Array.isArray(data) ? 'Array' : typeof data);
+      console.log('📈 [MODAL CREATE] Quantidade de itens:', Array.isArray(data) ? data.length : 'N/A');
       if (Array.isArray(data)) {
         const procedimentosMapeados = data.map((item: {
           id: number;
@@ -251,13 +326,23 @@ const CriarAgendamento = ({
             updated_at: new Date().toISOString()
           }
         }));
-        setProcedimentos(procedimentosMapeados);
+        
+        // Remover duplicados baseado no nome do procedimento, mantendo apenas o primeiro
+        const procedimentosUnicos = procedimentosMapeados.filter((procedimento, index) => {
+          return procedimentosMapeados.findIndex(p => 
+            p.procedimento.nome.toLowerCase() === procedimento.procedimento.nome.toLowerCase()
+          ) === index;
+        });
+        
+        setProcedimentos(procedimentosUnicos);
       } else {
         setProcedimentos([]);
       }
     } catch (e) {
       toast.error("Nenhum procedimento encontrado para este convênio/tipo de cliente.");
       setProcedimentos([]); 
+    } finally {
+      setLoadingProcedimentos(false);
     }
   };
   const onSubmit = async (values: z.infer<typeof createAgendaSchema>) => {
@@ -278,23 +363,14 @@ const CriarAgendamento = ({
         setLoading(false);
         return;
       }
-      if (!tipoClienteSelecionado) {
-        toast.error("Tipo de cliente é obrigatório.");
-        setLoading(false);
-        return;
-      }
-      const dataFormatada = localDateToUTCISO(dataSelecionada);
-      const dataComHorario = new Date(dataFormatada);
-      const [horas, minutos] = values.horario.split(':');
-      dataComHorario.setHours(parseInt(horas), parseInt(minutos), 0, 0);
-      const { horario, ...dadosParaEnviar } = values;
+      // Usar diretamente a função corrigida com data e hora
+      const dataComHorarioISO = localDateToUTCISO(dataSelecionada, values.horario);
       const dadosFinais = {
-        ...dadosParaEnviar,
-        dtagenda: dataComHorario.toISOString(),
+        ...values,
+        dtagenda: dataComHorarioISO,
         prestador_id: prestador?.id,
         unidade_id: unidade?.id,
         especialidade_id: especialidade?.id,
-        tipo_cliente: tipoClienteSelecionado,
         situacao: "AGENDADO", // Sempre será AGENDADO para novos agendamentos
       };
       const response = await fetch("/api/agendas", {
@@ -307,9 +383,32 @@ const CriarAgendamento = ({
       if (response.ok) {
         const result = await response.json();
         toast.success("Agendamento criado com sucesso!");
+        
+        // Limpar campos e estados
+        form.reset({
+          cliente_id: 0,
+          convenio_id: 0,
+          procedimento_id: 0,
+          prestador_id: prestador?.id ?? 0,
+          unidade_id: unidade?.id ?? 0,
+          especialidade_id: especialidade?.id ?? 0,
+          dtagenda: "",
+          horario: "",
+          tipo: "PROCEDIMENTO",
+        });
+        setClienteSelecionado(null);
+        setConvenioSelecionada(undefined);
+        setProcedimentoSelecionado(null);
+        setHoraSelecionada(null);
+        setSearchCliente("");
+        setSearchProcedimento("");
+        setConvenios([]);
+        setProcedimentos([]);
+        setOpenSelectClientes(false);
+        setOpenSelectConvenios(false);
+        setOpenSelectProcedimentos(false);
         setIsOpenModalCreate(false);
         carregarAgendamentos();
-        form.reset();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Erro ao criar agendamento");
@@ -342,10 +441,10 @@ const CriarAgendamento = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-gray-900">
-            Criar Novo Agendamento
+            Criar Novo Encaixe
           </DialogTitle>
           <p className="text-sm text-gray-600 mt-1">
-            Preencha as informações para criar um novo agendamento
+            Preencha as informações para criar um novo encaixe
           </p>
         </DialogHeader>
         <Form {...form}>
@@ -371,11 +470,22 @@ const CriarAgendamento = ({
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
                                 !field.value && "text-muted-foreground"
                               )}
+                              disabled={loadingClientes}
                             >
-                              {field.value
-                                ? clientes.find((item) => +item.id == field.value)?.nome
-                                : "Selecione o cliente"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingClientes ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando clientes...
+                                </>
+                              ) : (
+                                <>
+                                  {(() => {
+                                    console.log('🖱️ [BOTAO CLIENTE] Cliente atual:', clienteSelecionado?.nome);
+                                    return clienteSelecionado?.nome || "Selecione o cliente";
+                                  })()}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </>
+                              )}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -393,32 +503,30 @@ const CriarAgendamento = ({
                               <CommandGroup className="w-full p-0">
                                 {filteredClientes.map((item) => (
                                   <CommandItem
-                                    value={`${item.id}-${item.nome}`}
-                                    key={`cliente-${item.id}-${item.nome}`}
+                                    value={item.nome}
+                                    key={`cliente-${item.id}`}
                                     onSelect={() => {
-                                      // Limpar seleções dependentes
-                                      setClienteSelecionado(null);
+                                      console.log('🔍 [CLIENTE SELECT] Cliente selecionado:', item);
+                                      
+                                      // Limpar seleções dependentes (mas não o cliente)
                                       setConvenioSelecionada(undefined);
-                                      setTipoClienteSelecionada(null);
                                       setProcedimentoSelecionado(null);
                                       setConvenios([]);
                                       setProcedimentos([]);
                                       
-                                      // Definir valores no form
-                                      form.setValue("cliente_id", +item.id);
+                                      // Definir valores no form usando field.onChange
+                                      field.onChange(Number(item.id));
                                       form.setValue("convenio_id", 0);
                                       form.setValue("procedimento_id", 0);
                                       
-                                      // Capturar tipo do cliente automaticamente
-                                      const tipoClienteCapturado = item.tipoCliente as TipoClienteValorProcedimento;
-                                      form.setValue("tipo_cliente", tipoClienteCapturado);
+                                      console.log('📝 [CLIENTE SELECT] Form value definido:', Number(item.id));
                                       
                                       // Atualizar states
                                       setClienteSelecionado(item);
-                                      setTipoClienteSelecionada(tipoClienteCapturado);
+                                      console.log('✅ [CLIENTE SELECT] Estado atualizado');
                                       
                                       // Carregar convênios para este cliente
-                                      fetchConvenios(+item.id);
+                                      fetchConvenios(Number(item.id));
                                       
                                       setOpenSelectClientes(false);
                                       setSearchCliente("");
@@ -472,17 +580,26 @@ const CriarAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
-                              disabled={!clienteSelecionado}
+                              disabled={!clienteSelecionado || loadingConvenios}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
                                 !field.value && "text-muted-foreground",
-                                !clienteSelecionado && "opacity-50 cursor-not-allowed"
+                                (!clienteSelecionado || loadingConvenios) && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {field.value
-                                ? convenios.find((item) => +item.id == field.value)?.nome
-                                : clienteSelecionado ? "Selecione convênio" : "Selecione cliente primeiro"}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingConvenios ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando convênios...
+                                </>
+                              ) : (
+                                <>
+                                  {field.value
+                                    ? convenios.find((item) => +item.id == field.value)?.nome
+                                    : clienteSelecionado ? "Selecione convênio" : "Selecione cliente primeiro"}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </>
+                              )}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -549,32 +666,41 @@ const CriarAgendamento = ({
                             <Button
                               variant="outline"
                               role="combobox"
-                              disabled={!convenioSelecionado || !tipoClienteSelecionado}
+                              disabled={!convenioSelecionado || !clienteSelecionado || loadingProcedimentos}
                               className={cn(
                                 "w-full justify-between h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors",
                                 !field.value && "text-muted-foreground",
-                                (!convenioSelecionado || !tipoClienteSelecionado) && "opacity-50 cursor-not-allowed"
+                                (!convenioSelecionado || !clienteSelecionado || loadingProcedimentos) && "opacity-50 cursor-not-allowed"
                               )}
                             >
-                              {(() => {
-                                if (field.value) {
-                                  const selectedItem = procedimentos.find(
-                                    (p) => p.procedimento.id == field.value
-                                  );
-                                  if (selectedItem) {
-                                    return `${selectedItem.procedimento.nome} - R$${Number(selectedItem.valor).toFixed(2)}`;
-                                  }
-                                } else {
-                                  if (!convenioSelecionado) {
-                                    return "Selecione convênio primeiro";
-                                  } else if (!tipoClienteSelecionado) {
-                                    return "Selecione tipo de cliente primeiro";
-                                  } else {
-                                    return "Selecione procedimento";
-                                  }
-                                }
-                              })()}
-                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              {loadingProcedimentos ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Carregando procedimentos...
+                                </>
+                              ) : (
+                                <>
+                                  {(() => {
+                                    if (field.value) {
+                                      const selectedItem = procedimentos.find(
+                                        (p) => p.procedimento.id == field.value
+                                      );
+                                      if (selectedItem) {
+                                        return `${selectedItem.procedimento.nome} - R$${Number(selectedItem.valor).toFixed(2)}`;
+                                      }
+                                    } else {
+                                      if (!convenioSelecionado) {
+                                        return "Selecione convênio primeiro";
+                                      } else if (!clienteSelecionado) {
+                                        return "Selecione cliente primeiro";
+                                      } else {
+                                        return "Selecione procedimento";
+                                      }
+                                    }
+                                  })()}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </>
+                              )}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
@@ -592,8 +718,8 @@ const CriarAgendamento = ({
                               <CommandGroup className="w-full p-0">
                                 {filteredProcedimentos.map((item) => (
                                   <CommandItem
-                                    value={item.procedimento.nome}
-                                    key={`${item.id}-${item.procedimento.id}`}
+                                    value={`${item.procedimento.nome}-${item.id}-${item.valor}`}
+                                    key={`procedimento-${item.id}-${item.procedimento.id}`}
                                     className="flex items-center justify-between"
                                     onSelect={() => {
                                       form.setValue("procedimento_id", item.procedimento.id);
@@ -676,7 +802,7 @@ const CriarAgendamento = ({
                       <span>Criando...</span>
                     </div>
                   ) : (
-                    "Criar Agendamento"
+                    "Criar Encaixe"
                   )}
                 </Button>
               </DialogFooter>
