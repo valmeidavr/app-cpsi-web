@@ -3,7 +3,7 @@ import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 export type CreateUsuarioDTO = z.infer<typeof createUsuarioSchema>;
 export type UpdateUsuarioDTO = z.infer<typeof updateUsuarioSchema>;
 export async function GET(request: NextRequest) {

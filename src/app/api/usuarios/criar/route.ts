@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "../schema/formSchemaUsuarios";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 export type CreateUsuarioDTO = z.infer<typeof createUsuarioSchema>;
 export async function POST(request: NextRequest) {
   try {

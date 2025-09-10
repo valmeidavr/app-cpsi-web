@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { updateUsuarioSchema } from "../../schema/formShemaUpdateUsuario";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 export type UpdateUsuarioDTO = z.infer<typeof updateUsuarioSchema>;
 export async function GET(
   request: NextRequest,
