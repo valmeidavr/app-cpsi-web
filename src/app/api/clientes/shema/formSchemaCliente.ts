@@ -24,8 +24,8 @@ export const createClienteSchema = z.object({
           return false;
         }
         
-        let testDate;
-        let year;
+        let testDate: Date;
+        let year: number;
         
         if (dateRegexISO.test(value)) {
           // Formato ISO: yyyy-MM-dd
@@ -36,6 +36,9 @@ export const createClienteSchema = z.object({
           const [day, month, yearStr] = value.split('/');
           year = parseInt(yearStr);
           testDate = new Date(year, parseInt(month) - 1, parseInt(day));
+        } else {
+          // Fallback case to ensure testDate is always defined
+          return false;
         }
         
         const currentYear = new Date().getFullYear();

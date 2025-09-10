@@ -28,7 +28,9 @@
       "Bash(./start-database.ps1)",
       "Bash(./start-database.bat)",
       "Bash(npm run lint)",
-      "Bash(ping:*)"
+      "Bash(ping:*)",
+      "Bash(sed:*)",
+      "Bash(timeout 300s npm run build)"
     ],
     "deny": [],
     "ask": []

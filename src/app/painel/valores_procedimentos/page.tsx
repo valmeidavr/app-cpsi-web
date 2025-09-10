@@ -125,8 +125,9 @@ export default function ValorProcedimentos() {
         params.append('procedimento_id', procedimentoSelecionado.id.toString());
       }
       
-      if (form.getValues('valor') && form.getValues('valor') > 0) {
-        params.append('valor', form.getValues('valor').toString());
+      const valorFilter = form.getValues('valor');
+      if (valorFilter && valorFilter > 0) {
+        params.append('valor', valorFilter.toString());
       }
       
       console.log('URL da API:', `/api/valor-procedimento?${params}`);
@@ -214,7 +215,7 @@ export default function ValorProcedimentos() {
         setValorEditFormatado(formatValor(+valorProcedimentoSelecionado.valor));
         formUpdate.reset({
           convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
-          tipo: valorProcedimentoSelecionado.tipo,
+          tipo_cliente: valorProcedimentoSelecionado.tipo,
           tabela_faturamento_id:
             valorProcedimentoSelecionado.tabela_faturamento_id,
           procedimento_id: valorProcedimentoSelecionado.procedimento_id,
@@ -413,7 +414,7 @@ export default function ValorProcedimentos() {
                       const convenio = convenios.find((item) => item.id == +value);
                       setConvenioSelecionado(convenio || null);
                       setProcedimentoSelecionado(null);
-                      form.setValue("procedimento_id", undefined);
+                      form.setValue("procedimento_id", 0);
                     }}
                     value={field.value ? field.value.toString() : ""}
                   >
@@ -447,7 +448,7 @@ export default function ValorProcedimentos() {
                       field.onChange(value);
                       setTipoClienteSelecionado(value);
                       setProcedimentoSelecionado(null);
-                      form.setValue("procedimento_id", undefined);
+                      form.setValue("procedimento_id", 0);
                     }}
                     value={field.value || ""}
                   >

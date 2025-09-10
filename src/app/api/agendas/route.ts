@@ -280,11 +280,10 @@ export async function POST(request: NextRequest) {
         planoContaId = (planoContaRows as Array<{ id: number }>)[0].id;
       }
       // Buscar valor do procedimento
-      const valorProcedimento = await buscarValorProcedimento(
-        payload.procedimento_id, 
-        tipoCliente, 
-        payload.convenio_id
-      );
+      let valorProcedimento: number | null = null;
+      if (payload.procedimento_id && typeof payload.procedimento_id === 'number') {
+        valorProcedimento = await buscarValorProcedimento(payload.procedimento_id, tipoCliente, payload.convenio_id);
+      }
       
       console.log('💰 [AGENDA POST] Valor do procedimento encontrado:', valorProcedimento);
       
@@ -458,12 +457,12 @@ export async function PUT(request: NextRequest) {
         stack: error instanceof Error ? error.stack : null,
         name: error instanceof Error ? error.name : 'N/A',
         // Informações específicas de erro SQL se disponível
-        ...(error && typeof error === 'object' && 'code' in error && {
+        ...(error && typeof error === 'object' && 'code' in error ? {
           sqlCode: (error as any).code,
           sqlState: (error as any).sqlState,
           sqlMessage: (error as any).sqlMessage,
           errno: (error as any).errno
-        })
+        } : {})
       } : {
         message: 'Erro interno do servidor. Verifique os logs para mais detalhes.'
       }

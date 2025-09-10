@@ -82,7 +82,6 @@ const TabelaAgenda = () => {
       especialidade_id: especialidade?.id ?? 0,
       dtagenda: "",
       tipo: "PROCEDIMENTO",
-      tipo_cliente: "NSOCIO",
     },
   });
   const abrirModalAgendamento = async (hora: string, data: Date) => {
@@ -103,7 +102,6 @@ const TabelaAgenda = () => {
           cliente_id: dadosAgendamento.cliente_id,
           procedimento_id: dadosAgendamento.procedimento_id,
           situacao: "AGENDADO",
-          tipo_cliente: dadosAgendamento.tipo_cliente || "NSOCIO",
         });
       } else {
         // Se NÃO há agendamento selecionado, estamos CRIANDO um novo
@@ -113,7 +111,6 @@ const TabelaAgenda = () => {
           cliente_id: 0,
           procedimento_id: 0,
           situacao: "AGENDADO",
-          tipo_cliente: "NSOCIO",
         });
       }
     } catch (error) {

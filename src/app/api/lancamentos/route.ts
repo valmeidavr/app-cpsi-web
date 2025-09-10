@@ -135,11 +135,11 @@ export async function POST(request: NextRequest) {
     }
     const { ...payload } = validatedData.data;
     let usuarioId = payload.usuario_id;
-    if (usuarioId && usuarioId !== "0") {
+    if (usuarioId && usuarioId !== 0) {
       try {
         const [userRows] = await accessPool.execute(
           'SELECT id, nome FROM usuarios WHERE id = ? AND status = "Ativo"',
-          [parseInt(usuarioId)]
+          [usuarioId]
         );
         if ((userRows as Array<{ id: number; nome: string }>).length === 0) {
           return NextResponse.json(
@@ -147,7 +147,6 @@ export async function POST(request: NextRequest) {
             { status: 400 }
           );
         }
-        usuarioId = parseInt(usuarioId);
       } catch (error) {
         return NextResponse.json(
           { error: 'Erro ao verificar usuário' },
@@ -217,17 +216,81 @@ export async function PUT(request: NextRequest) {
       );
     }
     const { ...payload } = validatedData.data;
+    
+    // Get plano conta type if plano_conta_id is provided
+    let tipoPlano: string | undefined;
+    if (payload.plano_conta_id) {
+      const [planoContaRows] = await accessPool.execute(
+        'SELECT tipo FROM plano_contas WHERE id = ?',
+        [payload.plano_conta_id]
+      );
+      const planoConta = (planoContaRows as Array<{ tipo: string }>)[0];
+      if (!planoConta) {
+        return NextResponse.json(
+          { error: 'Plano de conta não encontrado' },
+          { status: 400 }
+        );
+      }
+      tipoPlano = planoConta.tipo;
+    }
+    
+    // Build dynamic query based on available fields
+    const updateFields: string[] = [];
+    const values: any[] = [];
+    
+    if (payload.valor !== undefined) {
+      updateFields.push('valor = ?');
+      values.push(payload.valor);
+    }
+    if (payload.descricao !== undefined) {
+      updateFields.push('descricao = ?');
+      values.push(payload.descricao);
+    }
+    if (tipoPlano) {
+      updateFields.push('tipo = ?');
+      values.push(tipoPlano);
+    }
+    if (payload.data_lancamento !== undefined) {
+      updateFields.push('data_lancamento = ?');
+      values.push(payload.data_lancamento);
+    }
+    if (payload.forma_pagamento !== undefined) {
+      updateFields.push('forma_pagamento = ?');
+      values.push(payload.forma_pagamento);
+    }
+    if (payload.status_pagamento !== undefined) {
+      updateFields.push('status_pagamento = ?');
+      values.push(payload.status_pagamento);
+    }
+    if (payload.cliente_id !== undefined) {
+      updateFields.push('cliente_id = ?');
+      values.push(payload.cliente_id);
+    }
+    if (payload.plano_conta_id !== undefined) {
+      updateFields.push('plano_conta_id = ?');
+      values.push(payload.plano_conta_id);
+    }
+    if (payload.caixa_id !== undefined) {
+      updateFields.push('caixa_id = ?');
+      values.push(payload.caixa_id);
+    }
+    if (payload.usuario_id !== undefined) {
+      updateFields.push('usuario_id = ?');
+      values.push(payload.usuario_id);
+    }
+    
+    if (updateFields.length === 0) {
+      return NextResponse.json(
+        { error: 'Nenhum campo para atualizar' },
+        { status: 400 }
+      );
+    }
+    
+    values.push(id); // Add ID for WHERE clause
+    
     await executeWithRetry(accessPool,
-      `UPDATE lancamentos SET 
-        valor = ?, descricao = ?, tipo = ?, data_lancamento = ?,
-        forma_pagamento = ?, status_pagamento = ?, cliente_id = ?,
-        plano_conta_id = ?, caixa_id = ?, usuario_id = ?
-       WHERE id = ?`,
-      [
-        payload.valor, payload.descricao, payload.tipo, payload.data_lancamento,
-        payload.forma_pagamento, payload.status_pagamento, payload.cliente_id,
-        payload.plano_conta_id, payload.caixa_id, payload.usuario_id, id
-      ]
+      `UPDATE lancamentos SET ${updateFields.join(', ')} WHERE id = ?`,
+      values
     );
     return NextResponse.json({ success: true });
   } catch (error) {

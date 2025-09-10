@@ -63,8 +63,7 @@ export default function EditarLancamento() {
       valor: "" as unknown as number,
       descricao: "",
       data_lancamento: "",
-      tipo: tipo,
-              cliente_id: undefined,
+      cliente_id: undefined,
       plano_conta_id: 0,
       caixa_id: 0,
       lancamento_original_id: null,
@@ -139,7 +138,6 @@ export default function EditarLancamento() {
             valor: data.valor,
             descricao: data.descricao,
             data_lancamento: data.data_lancamento ? new Date(data.data_lancamento).toISOString().split('T')[0] : "",
-            tipo: data.tipo,
             cliente_id: data.clientes_id,
                     plano_conta_id: data.plano_conta_id,
         caixa_id: data.caixa_id,
@@ -255,37 +253,6 @@ export default function EditarLancamento() {
                         }
                       />
                     </FormControl>
-                    <FormMessage className="text-red-500 text-sm mt-1" />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tipo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || ""}
-                    >
-                      <FormControl
-                        className={
-                          form.formState.errors.tipo
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="ENTRADA">Entrada</SelectItem>
-                        <SelectItem value="SAIDA">Saída</SelectItem>
-                        <SelectItem value="TRANSFERENCIA">Transferência</SelectItem>
-                      </SelectContent>
-                    </Select>
                     <FormMessage className="text-red-500 text-sm mt-1" />
                   </FormItem>
                 )}

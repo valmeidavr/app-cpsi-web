@@ -27,32 +27,42 @@ export default function GruposPage() {
   const carregarGrupos = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/usuarios/sistemas')
-      if (response.ok) {
-        const gruposData = await response.json()
-        const gruposComContagem = await Promise.all(
-          gruposData.map(async (grupo: Grupo) => {
-            try {
-              const countResponse = await fetch('/api/usuarios/sistemas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ grupoId: grupo.id })
-              })
-              if (countResponse.ok) {
-                const countData = await countResponse.json()
-                return { ...grupo, usuariosCount: countData.usuariosCount || 0 }
-              }
-            } catch (error) {
-              console.error(`Erro ao carregar contagem para grupo ${grupo.id}:`, error)
-            }
-            return { ...grupo, usuariosCount: 0 }
-          })
-        )
-        setGrupos(gruposComContagem)
+      console.log('🔄 [GRUPOS] Carregando grupos...')
+      
+      const response = await fetch('/api/grupos')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Erro ${response.status}: ${errorData.error || 'Erro desconhecido'}`)
       }
+      
+      const gruposData = await response.json()
+      console.log('✅ [GRUPOS] Grupos carregados:', gruposData.length)
+      
+      // Calcular contagem de usuários para cada grupo
+      const gruposComContagem = await Promise.all(
+        gruposData.map(async (grupo: Grupo) => {
+          try {
+            // Buscar usuários associados ao grupo na tabela usuario_grupo
+            const countResponse = await fetch(`/api/grupos/${grupo.id}/usuarios`)
+            let usuariosCount = 0
+            
+            if (countResponse.ok) {
+              const countData = await countResponse.json()
+              usuariosCount = countData.total || 0
+            }
+            
+            return { ...grupo, usuariosCount }
+          } catch (error) {
+            console.error(`Erro ao carregar contagem para grupo ${grupo.id}:`, error)
+            return { ...grupo, usuariosCount: 0 }
+          }
+        })
+      )
+      
+      setGrupos(gruposComContagem)
     } catch (error) {
-      console.error('Erro ao carregar grupos:', error)
-      toast.error('Erro ao carregar grupos')
+      console.error('❌ [GRUPOS] Erro ao carregar grupos:', error)
+      toast.error(`Erro ao carregar grupos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setLoading(false)
     }
@@ -84,25 +94,89 @@ export default function GruposPage() {
       toast.error('Nome do grupo é obrigatório')
       return
     }
+    
     try {
+      console.log('💾 [GRUPOS] Salvando grupo:', editingGrupo ? 'EDITAR' : 'CRIAR')
+      
+      let response
+      if (editingGrupo) {
+        // Atualizar grupo existente
+        response = await fetch(`/api/grupos/${editingGrupo.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nome: formData.nome.trim(),
+            descricao: formData.descricao.trim() || null
+          })
+        })
+      } else {
+        // Criar novo grupo
+        response = await fetch('/api/grupos', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nome: formData.nome.trim(),
+            descricao: formData.descricao.trim() || null
+          })
+        })
+      }
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro desconhecido')
+      }
+      
+      const resultado = await response.json()
+      console.log('✅ [GRUPOS] Grupo salvo:', resultado.nome)
+      
       toast.success(editingGrupo ? 'Grupo atualizado com sucesso!' : 'Grupo criado com sucesso!')
       setIsDialogOpen(false)
+      
+      // Limpar formulário
+      setFormData({ nome: '', descricao: '' })
+      setEditingGrupo(null)
+      
+      // Recarregar lista
       carregarGrupos()
     } catch (error) {
-      console.error('Erro ao salvar grupo:', error)
-      toast.error('Erro ao salvar grupo')
+      console.error('❌ [GRUPOS] Erro ao salvar grupo:', error)
+      toast.error(`Erro ao salvar grupo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
   const deletarGrupo = async (grupo: Grupo) => {
-    if (!confirm(`Tem certeza que deseja deletar o grupo "${grupo.nome}"?`)) {
+    const confirmacao = confirm(
+      `Tem certeza que deseja deletar o grupo "${grupo.nome}"?\n\n` +
+      `Esta ação não pode ser desfeita e removerá o grupo permanentemente do sistema.`
+    )
+    
+    if (!confirmacao) {
       return
     }
+    
     try {
+      console.log('🗑️ [GRUPOS] Deletando grupo:', grupo.nome)
+      
+      const response = await fetch(`/api/grupos/${grupo.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro desconhecido')
+      }
+      
+      const resultado = await response.json()
+      console.log('✅ [GRUPOS] Grupo deletado:', resultado.message)
+      
       toast.success('Grupo deletado com sucesso!')
-      carregarGrupos()
+      carregarGrupos() // Recarregar lista
     } catch (error) {
-      console.error('Erro ao deletar grupo:', error)
-      toast.error('Erro ao deletar grupo')
+      console.error('❌ [GRUPOS] Erro ao deletar grupo:', error)
+      toast.error(`Erro ao deletar grupo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
   return (

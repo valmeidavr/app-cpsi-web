@@ -43,7 +43,7 @@ async function buscarValorProcedimento(procedimentoId: number, tipoCliente: stri
 }
 
 // Função auxiliar para criar lançamento
-async function criarLancamento(agendaId: number, clienteId: number, procedimentoId: number, tipoCliente: string, convenioId: number, usuarioId: string) {
+async function criarLancamento(agendaId: number, clienteId: number, procedimentoId: number | null, tipoCliente: string, convenioId: number, usuarioId: string) {
   try {
     // Buscar nome do cliente
     let clienteNome = 'Cliente não informado';
@@ -70,7 +70,9 @@ async function criarLancamento(agendaId: number, clienteId: number, procedimento
     }
 
     // Buscar valor do procedimento
-    const valorProcedimento = await buscarValorProcedimento(procedimentoId, tipoCliente, convenioId);
+    const valorProcedimento = procedimentoId 
+      ? await buscarValorProcedimento(procedimentoId, tipoCliente, convenioId)
+      : null;
 
     // Buscar caixa ativa
     const [caixaRows] = await accessPool.execute(

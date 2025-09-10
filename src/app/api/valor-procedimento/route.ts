@@ -211,13 +211,23 @@ export async function GET(request: NextRequest) {
 }
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateValorProcedimentoDTO = await request.json();
+    const rawBody = await request.json();
+    const validatedData = createValorProcedimentoSchema.safeParse(rawBody);
+    
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const body = validatedData.data;
     const [result] = await accessPool.execute(
       `INSERT INTO valor_procedimentos (
         valor, tipo, tabela_faturamento_id, procedimento_id
       ) VALUES (?, ?, ?, ?)`,
       [
-        body.valor, body.tipo, body.tabela_faturamento_id, body.procedimento_id
+        body.valor, body.tipo_cliente, body.tabela_faturamento_id, body.procedimento_id
       ]
     );
     return NextResponse.json({ 

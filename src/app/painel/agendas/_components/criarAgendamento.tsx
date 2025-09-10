@@ -175,7 +175,7 @@ const CriarAgendamento = ({
       }
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
-        console.log('👥 [MODAL CREATE] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map(c => ({
+        console.log('👥 [MODAL CREATE] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map((c: Cliente) => ({
           nome: c.nome,
           id: c.id,
           tipoCliente: c.tipoCliente

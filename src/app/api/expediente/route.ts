@@ -336,6 +336,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const semanaIndex = diasDaSemana[payload.semana];
+    
+    if (!payload.dtinicio || !payload.dtfinal) {
+      return NextResponse.json(
+        { error: "Data de início e data final são obrigatórias" },
+        { status: 400 }
+      );
+    }
+    
+    if (!payload.hinicio || !payload.hfinal || !payload.intervalo) {
+      return NextResponse.json(
+        { error: "Hora de início, hora final e intervalo são obrigatórios" },
+        { status: 400 }
+      );
+    }
+    
     const dataInicial = new Date(payload.dtinicio);
     const dataFinal = new Date(payload.dtfinal);
 

@@ -137,7 +137,20 @@ export default function EditarPrestador() {
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formattedCEP = formatCEP(e.target.value);
     form.setValue("cep", formattedCEP);
-    handleCEPChange(e, form);
+    
+    const formAdapter = {
+      setValue: (field: string, value: string) => {
+        form.setValue(field as any, value);
+      },
+      setError: (field: string, error: { type: string; message: string }) => {
+        form.setError(field as any, error);
+      },
+      clearErrors: (field: string) => {
+        form.clearErrors(field as any);
+      }
+    };
+    
+    handleCEPChange(e, formAdapter);
   };
   return (
     <div>

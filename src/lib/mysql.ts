@@ -21,16 +21,9 @@ export const pool = mysql.createPool({
   connectionLimit: 15,
   queueLimit: 30,
   waitForConnections: true,
-  acquireTimeout: 45000,  // Increased from 30s to 45s
-  timeout: 90000,         // Increased from 60s to 90s
-  idleTimeout: 60000,     // Increased from 30s to 60s
-  reconnect: true,
-  maxReconnects: 5,       // Increased from 3 to 5
-  keepAliveInitialDelay: 10000,  // 10s delay before first keepalive
+  idleTimeout: 60000,
+  keepAliveInitialDelay: 10000,
   enableKeepAlive: true,
-  // Additional connection options for better stability
-  connectTimeout: 30000,  // 30s connection timeout
-  pingInterval: 60000,    // Ping every 60s to keep connections alive
 })
 export const accessPool = pool
 setInterval(() => {
@@ -56,18 +49,16 @@ export const healthCheck = async () => {
   try {
     console.log('🏥 [MySQL] Iniciando health check...')
     
-    const [result] = await executeWithRetry(pool, 'SELECT 1 as health_check, NOW() as server_time')
+    const result = await executeWithRetry(pool, 'SELECT 1 as health_check, NOW() as server_time') as any[]
     const responseTime = Date.now() - startTime
     
     const status = {
       status: 'healthy',
       responseTime: `${responseTime}ms`,
-      serverTime: (result as any)[0]?.server_time,
+      serverTime: result[0]?.server_time,
       poolInfo: {
         connectionLimit: pool.config.connectionLimit,
         queueLimit: pool.config.queueLimit,
-        acquireTimeout: pool.config.acquireTimeout,
-        timeout: pool.config.timeout,
       }
     }
     
@@ -95,8 +86,6 @@ export const getPoolStats = () => {
       config: {
         connectionLimit: pool.config.connectionLimit,
         queueLimit: pool.config.queueLimit,
-        acquireTimeout: pool.config.acquireTimeout,
-        timeout: pool.config.timeout,
         idleTimeout: pool.config.idleTimeout,
       },
       // As estatísticas de runtime podem não estar disponíveis
