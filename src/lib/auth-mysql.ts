@@ -1,5 +1,6 @@
 import { accessPool, testConnection, listTables } from './mysql'
-import bcrypt from 'bcrypt'
+import bcrypt from "bcryptjs";
+
 export interface AuthUser {
   login: string
   senha: string
