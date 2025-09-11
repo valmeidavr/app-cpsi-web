@@ -27,7 +27,6 @@ import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import {
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogHeader,
   DialogTitle,

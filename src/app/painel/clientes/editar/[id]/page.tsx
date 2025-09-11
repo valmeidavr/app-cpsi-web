@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { redirect, useParams } from "next/navigation";
+import { useParams } from "next/navigation";
 //Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2, Plus } from "lucide-react";
@@ -215,7 +215,10 @@ export default function EditarCliente() {
     async function fetchData() {
       try {
         await fetchConvenios();
-        if (!clienteId) redirect("painel/clientes");
+        if (!clienteId) {
+          router.push("/painel/clientes");
+          return;
+        }
         const response = await fetch(`/api/clientes/${clienteId}`);
         const data = await response.json();
         

@@ -5,7 +5,7 @@ import {
   createClienteSchema,
   updateClienteSchema,
 } from "./shema/formSchemaCliente";
-import { getCurrentUTCISO, getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
 import { limparCEP, limparCPF, limparTelefone } from "@/util/clearData";
 
 export type CreateClienteDTO = z.infer<typeof createClienteSchema>;

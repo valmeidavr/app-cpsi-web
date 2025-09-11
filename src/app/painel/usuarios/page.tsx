@@ -27,8 +27,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-//API
-import { http } from "@/util/http";
 //Types
 import { Usuario } from "@/app/types/Usuario";
 
