@@ -120,12 +120,6 @@
         "label": "Gerenciar Usuários",
         "href": "/painel/usuarios",
         "requiredGroups": ["ADMIN", "GESTOR"]
-      },
-      {
-        "icon": "Users",
-        "label": "Gerenciar Grupos",
-        "href": "/painel/grupos",
-        "requiredGroups": ["ADMIN"]
       }
     ]
   }
