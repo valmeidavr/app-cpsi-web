@@ -21,8 +21,6 @@ export async function GET(request: NextRequest) {
         e.intervalo,
         e.semana,
         e.alocacao_id,
-        e.created_at,
-        e.updated_at,
         a.unidade_id,
         a.especialidade_id,
         a.prestador_id,
