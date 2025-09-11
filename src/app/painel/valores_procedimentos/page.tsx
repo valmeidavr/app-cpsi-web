@@ -132,13 +132,6 @@ export default function ValorProcedimentos() {
         params.append('valor', valorFilter.toString());
       }
       
-        convenio_id: convenioSelecionado.id,
-        tipoCliente: tipoClienteSelecionado || 'TODOS',
-        tabela_faturamento_id: tabelaSelecionado?.id || 'TODAS',
-        procedimento_id: procedimentoSelecionado?.id || 'TODOS',
-        valor: form.getValues('valor') || 'QUALQUER'
-      });
-      
       const response = await fetch(`/api/valor-procedimento?${params}`);
       const data = await response.json();
       
@@ -175,6 +168,8 @@ export default function ValorProcedimentos() {
         setTotalValorProcedimentos(0);
       }
     } catch (error) {
+      console.error('Erro ao buscar valores procedimentos:', error);
+      toast.error('Erro ao carregar valores procedimentos');
     } finally {
       setCarregando(false);
     }

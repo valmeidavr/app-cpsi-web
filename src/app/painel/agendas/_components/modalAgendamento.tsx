@@ -1,11 +1,7 @@
 "use client";
-import {
-  createAgendaSchema,
-  updateAgendaSchema,
-} from "@/app/api/agendas/schema/formSchemaAgendas";
+import { updateAgendaSchema } from "@/app/api/agendas/schema/formSchemaAgendas";
 import { Cliente } from "@/app/types/Cliente";
 import { TipoCliente as TipoClienteValorProcedimento } from "@/app/types/ValorProcedimento";
-import { Procedimento } from "@/app/types/Procedimento";
 import {
   Command,
   CommandEmpty,
@@ -27,13 +23,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -47,14 +36,13 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { localDateToUTCISO } from "@/app/helpers/dateUtils";
 import { cn } from "@/lib/utils";
 import { useAgenda } from "../AgendaContext";
 import { Convenio } from "@/app/types/Convenios";
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
-import { Loader2 } from "lucide-react";
 interface ModalAgendamentoProps {
   open: boolean;
   setOpen: (open: boolean) => void;
