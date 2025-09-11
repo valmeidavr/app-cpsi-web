@@ -51,12 +51,10 @@ export default function PainelLayout({
         isMobile={isMobile}
       />
       
-      {/* Main Content */}
-      <div className={`flex flex-col flex-1 transition-all duration-300 overflow-x-hidden ${
-        isMobile ? 'ml-0' : collapsed ? 'ml-12 md:ml-16' : 'ml-56 md:ml-64'
-      }`}>
-        {/* Header */}
-        <div className="sticky top-0 bg-white shadow-md z-30">
+      {/* Main Content Area */}
+      <div className="flex flex-col flex-1 overflow-x-hidden">
+        {/* Header - Full Width */}
+        <div className="sticky top-0 bg-white shadow-md z-30 w-full">
           <Header />
         </div>
         
