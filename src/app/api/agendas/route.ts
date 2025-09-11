@@ -9,6 +9,8 @@ import { authOptions } from "@/lib/auth";
 // Função auxiliar para buscar valor do procedimento com desconto do convênio
 async function buscarValorProcedimento(procedimentoId: number, tipoCliente: string, convenioId: number) {
   try {
+    console.log('🔍 [VALOR] Buscando valor do procedimento:', { procedimentoId, tipoCliente, convenioId });
+    
     const [valorRows] = await accessPool.execute(
       `SELECT vp.valor, c.desconto as convenio_desconto
        FROM valor_procedimentos vp
@@ -18,6 +20,8 @@ async function buscarValorProcedimento(procedimentoId: number, tipoCliente: stri
        LIMIT 1`,
       [procedimentoId, tipoCliente, convenioId]
     );
+    
+    console.log('📊 [VALOR] Resultado da query:', valorRows);
     
     if ((valorRows as Array<{ valor: number; convenio_desconto: number }>).length > 0) {
       const resultado = (valorRows as Array<{ valor: number; convenio_desconto: number }>)[0];
@@ -37,6 +41,8 @@ async function buscarValorProcedimento(procedimentoId: number, tipoCliente: stri
       
       return valorFinal;
     }
+    
+    console.warn('⚠️ [VALOR] Nenhum valor encontrado para os parâmetros:', { procedimentoId, tipoCliente, convenioId });
     return null;
   } catch (error) {
     console.error('❌ Erro ao buscar valor do procedimento:', error);
@@ -265,20 +271,79 @@ export async function POST(request: NextRequest) {
           procedimentoNome = (procedimentoRows as Array<{ nome: string }>)[0].nome;
         }
       }
-      const [caixaRows] = await accessPool.execute(
-        'SELECT id FROM caixas WHERE status = "Ativo" LIMIT 1'
-      );
-      let caixaId = 1; // Caixa padrão se não houver nenhum
-      if ((caixaRows as Array<{ id: number }>).length > 0) {
-        caixaId = (caixaRows as Array<{ id: number }>)[0].id;
+      
+      // Verificar/criar tabela caixas
+      try {
+        await accessPool.execute('DESCRIBE caixas');
+      } catch {
+        console.log('📋 [AGENDA POST] Criando tabela caixas...');
+        await accessPool.execute(`
+          CREATE TABLE IF NOT EXISTS caixas (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(100) NOT NULL,
+            saldo DECIMAL(10,2) DEFAULT 0.00,
+            tipo ENUM('CAIXA', 'BANCO') DEFAULT 'CAIXA',
+            status ENUM('Ativo', 'Inativo') DEFAULT 'Ativo',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Inserir caixa padrão
+        await accessPool.execute(
+          'INSERT IGNORE INTO caixas (nome, tipo, status) VALUES ("Caixa Principal", "CAIXA", "Ativo")'
+        );
       }
-      const [planoContaRows] = await accessPool.execute(
-        'SELECT id FROM plano_contas WHERE status = "Ativo" LIMIT 1'
-      );
-      let planoContaId = 1; // Plano de conta padrão se não houver nenhum
-      if ((planoContaRows as Array<{ id: number }>).length > 0) {
-        planoContaId = (planoContaRows as Array<{ id: number }>)[0].id;
+      
+      // Verificar/criar tabela plano_contas
+      try {
+        await accessPool.execute('DESCRIBE plano_contas');
+      } catch {
+        console.log('📋 [AGENDA POST] Criando tabela plano_contas...');
+        await accessPool.execute(`
+          CREATE TABLE IF NOT EXISTS plano_contas (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            nome VARCHAR(100) NOT NULL,
+            descricao TEXT,
+            tipo ENUM('RECEITA', 'DESPESA') NOT NULL,
+            status ENUM('Ativo', 'Inativo') DEFAULT 'Ativo',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Inserir plano de conta padrão
+        await accessPool.execute(
+          'INSERT IGNORE INTO plano_contas (nome, tipo, status) VALUES ("Receita de Procedimentos", "RECEITA", "Ativo")'
+        );
       }
+      
+      // Verificar/criar tabela lancamentos
+      try {
+        await accessPool.execute('DESCRIBE lancamentos');
+      } catch {
+        console.log('📋 [AGENDA POST] Criando tabela lancamentos...');
+        await accessPool.execute(`
+          CREATE TABLE IF NOT EXISTS lancamentos (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            descricao VARCHAR(255) NOT NULL,
+            valor DECIMAL(10,2) NOT NULL,
+            tipo ENUM('ENTRADA', 'SAIDA') NOT NULL,
+            data_lancamento DATE NOT NULL,
+            caixa_id INT,
+            plano_conta_id INT,
+            agenda_id INT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          )
+        `);
+      }
+      
+      // Usar IDs padrão fixos (já funcionou antes)
+      const caixaId = 1; // Caixa padrão
+      const planoContaId = 1; // Plano de conta padrão
+      
+      console.log('💰 [AGENDA POST] Usando IDs fixos - caixaId: 1, planoContaId: 1');
       // Buscar valor do procedimento
       let valorProcedimento: number | null = null;
       if (payload.procedimento_id && typeof payload.procedimento_id === 'number') {
@@ -287,30 +352,62 @@ export async function POST(request: NextRequest) {
       
       console.log('💰 [AGENDA POST] Valor do procedimento encontrado:', valorProcedimento);
       
+      if (valorProcedimento === null) {
+        console.warn('⚠️ [AGENDA POST] Valor do procedimento é null - usando valor 0 para o lançamento');
+        valorProcedimento = 0;
+      }
+      
       const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
-      const dataAtual = getCurrentUTCISO();
+      const dataAtual = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD para MySQL DATE
+      
+      console.log('💰 [AGENDA POST] Criando lançamento com valor:', valorProcedimento);
+      console.log('📄 [AGENDA POST] Descrição do lançamento:', descricao);
+      console.log('📅 [AGENDA POST] Data do lançamento:', dataAtual);
+      
+      const parametrosLancamento = [
+        valorProcedimento, // valor real do procedimento
+        descricao,
+        dataAtual,
+        'ENTRADA',
+        null, // forma_pagamento como null
+        'PENDENTE', // status_pagamento PENDENTE
+        payload.cliente_id,
+        planoContaId,
+        caixaId,
+        agendaId,
+        'Ativo'
+      ];
+      
+      console.log('🔍 [AGENDA POST] Parâmetros completos do INSERT:', {
+        valorProcedimento,
+        descricao,
+        dataAtual,
+        tipo: 'ENTRADA',
+        forma_pagamento: null,
+        status_pagamento: 'PENDENTE',
+        cliente_id: payload.cliente_id,
+        plano_conta_id: planoContaId,
+        caixa_id: caixaId,
+        agenda_id: agendaId,
+        status: 'Ativo'
+      });
+      
       await executeWithRetry(accessPool,
         `INSERT INTO lancamentos (
           valor, descricao, data_lancamento, tipo, forma_pagamento,
           status_pagamento, cliente_id, plano_conta_id, caixa_id,
-          agenda_id, usuario_id, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          valorProcedimento, // valor real do procedimento
-          descricao,
-          dataAtual, // data atual em UTC ISO
-          'ENTRADA', // tipo ENTRADA
-          null, // forma_pagamento como null
-          'PENDENTE', // status_pagamento PENDENTE
-          payload.cliente_id,
-          planoContaId,
-          caixaId,
-          agendaId, // agenda_id da agenda criada
-          usuarioAutenticado, // usuario_id autenticado
-          'Ativo'
-        ]
+          agenda_id, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        parametrosLancamento
       );
+      
+      console.log('✅ [AGENDA POST] Lançamento criado com sucesso no caixa');
     } catch (lancamentoError) {
+      console.error('❌ [AGENDA POST] Erro ao criar lançamento no caixa:', lancamentoError);
+      console.error('❌ [AGENDA POST] Detalhes do erro:', {
+        message: lancamentoError instanceof Error ? lancamentoError.message : 'Erro desconhecido',
+        stack: lancamentoError instanceof Error ? lancamentoError.stack : null
+      });
     }
     console.log("✅ [AGENDA POST] Agenda criada com sucesso, ID:", agendaId);
     return NextResponse.json({ 
@@ -409,6 +506,15 @@ export async function PUT(request: NextRequest) {
       unidade_id = ?, especialidade_id = ?, tipo = ?
      WHERE id = ?`);
     
+    // Buscar situação atual para comparar
+    const agendaAtual = await executeWithRetry(accessPool,
+      'SELECT situacao, cliente_id, convenio_id, procedimento_id FROM agendas WHERE id = ?',
+      [id]
+    );
+    
+    const agendaAnterior = (agendaAtual as Array<any>)[0];
+    const situacaoAnterior = agendaAnterior?.situacao;
+    
     await executeWithRetry(accessPool,
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?,
@@ -422,6 +528,100 @@ export async function PUT(request: NextRequest) {
       ]
     );
     console.log("✅ [AGENDA PUT] Agenda atualizada com sucesso");
+    
+    // Se a situação mudou para AGENDADO, criar lançamento
+    if (payload.situacao === 'AGENDADO' && situacaoAnterior !== 'AGENDADO') {
+      console.log('💰 [AGENDA PUT] Situação mudou para AGENDADO, criando lançamento...');
+      
+      try {
+        // Obter usuário autenticado
+        const session = await getServerSession(authOptions);
+        const usuarioAutenticado = session?.user?.id || 'system';
+        
+        // Buscar valor do procedimento
+        let valorProcedimento: number | null = 0;
+        if (payload.procedimento_id && typeof payload.procedimento_id === 'number' && payload.convenio_id && typeof payload.convenio_id === 'number') {
+          valorProcedimento = await buscarValorProcedimento(payload.procedimento_id, tipoCliente, payload.convenio_id);
+        }
+        
+        if (valorProcedimento === null) {
+          valorProcedimento = 0;
+        }
+        
+        // Buscar nome do procedimento
+        let procedimentoNome = 'Procedimento não informado';
+        if (payload.procedimento_id) {
+          const [procRows] = await accessPool.execute(
+            'SELECT nome FROM procedimentos WHERE id = ?',
+            [payload.procedimento_id]
+          );
+          if ((procRows as Array<{ nome: string }>).length > 0) {
+            procedimentoNome = (procRows as Array<{ nome: string }>)[0].nome;
+          }
+        }
+        
+        // Buscar nome do cliente
+        let clienteNome = 'Cliente não informado';
+        if (payload.cliente_id) {
+          const [cliRows] = await accessPool.execute(
+            'SELECT nome FROM clientes WHERE id = ?',
+            [payload.cliente_id]
+          );
+          if ((cliRows as Array<{ nome: string }>).length > 0) {
+            clienteNome = (cliRows as Array<{ nome: string }>)[0].nome;
+          }
+        }
+        
+        // Usar IDs padrão fixos (caixa e plano de conta)
+        const caixaId = 1;
+        const planoContaId = 1;
+        
+        const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
+        const dataAtual = new Date().toISOString().split('T')[0]; // Formato YYYY-MM-DD para MySQL DATE
+        
+        const parametrosLancamento = [
+          valorProcedimento,
+          descricao,
+          dataAtual,
+          'ENTRADA',
+          null, // forma_pagamento como null
+          'PENDENTE', // status_pagamento PENDENTE
+          payload.cliente_id,
+          planoContaId,
+          caixaId,
+          parseInt(id),
+          'Ativo'
+        ];
+        
+        console.log('🔍 [AGENDA PUT] Parâmetros completos do INSERT:', {
+          valorProcedimento,
+          descricao,
+          dataAtual,
+          tipo: 'ENTRADA',
+          forma_pagamento: null,
+          status_pagamento: 'PENDENTE',
+          cliente_id: payload.cliente_id,
+          plano_conta_id: planoContaId,
+          caixa_id: caixaId,
+          agenda_id: parseInt(id),
+          status: 'Ativo'
+        });
+        
+        await executeWithRetry(accessPool,
+          `INSERT INTO lancamentos (
+            valor, descricao, data_lancamento, tipo, forma_pagamento,
+            status_pagamento, cliente_id, plano_conta_id, caixa_id,
+            agenda_id, status
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          parametrosLancamento
+        );
+        
+        console.log('✅ [AGENDA PUT] Lançamento criado com sucesso');
+      } catch (lancError) {
+        console.error('❌ [AGENDA PUT] Erro ao criar lançamento:', lancError);
+      }
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("❌ [AGENDA PUT] Erro detalhado:", error);

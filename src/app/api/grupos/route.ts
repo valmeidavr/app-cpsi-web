@@ -25,20 +25,36 @@ export async function GET() {
         )
       `);
       
-      // Inserir grupos padrão
+      // Inserir grupos padrão (apenas os corretos)
       await executeWithRetry(accessPool, `
         INSERT IGNORE INTO grupos (nome, descricao) VALUES 
         ('ADMIN', 'Administradores do sistema'),
-        ('GESTOR', 'Gestores do sistema'),
-        ('USUARIO', 'Usuários comuns')
+        ('prevSaúde', 'Sistema de Gestão da AAPVR')
       `);
       
       console.log('✅ [GRUPOS GET] Tabela grupos criada com dados padrão');
     }
 
-    // Buscar todos os grupos ativos
+    // Limpar grupos inválidos (manter apenas ADMIN e prevSaúde)
+    try {
+      const gruposInvalidos = await executeWithRetry(accessPool,
+        'SELECT id, nome FROM grupos WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "prevSaúde")'
+      );
+      
+      if ((gruposInvalidos as Array<any>).length > 0) {
+        console.log('🧹 [GRUPOS GET] Removendo grupos inválidos:', (gruposInvalidos as Array<any>).map(g => g.nome));
+        
+        await executeWithRetry(accessPool,
+          'UPDATE grupos SET status = "Inativo", updated_at = CURRENT_TIMESTAMP WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "prevSaúde")'
+        );
+      }
+    } catch (cleanupError) {
+      console.error('⚠️ [GRUPOS GET] Erro ao limpar grupos inválidos:', cleanupError);
+    }
+
+    // Buscar apenas os grupos corretos (ADMIN e prevSaúde)
     const grupos = await executeWithRetry(accessPool,
-      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE status = "Ativo" ORDER BY nome'
+      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE status = "Ativo" AND nome IN ("ADMIN", "prevSaúde") ORDER BY nome'
     );
 
     console.log(`📊 [GRUPOS GET] Encontrados ${(grupos as Array<any>).length} grupos`);
@@ -74,6 +90,15 @@ export async function POST(request: NextRequest) {
     if (!body.nome || !body.nome.trim()) {
       return NextResponse.json(
         { error: 'Nome do grupo é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Validar se é um grupo válido
+    const gruposValidos = ['ADMIN', 'prevSaúde'];
+    if (!gruposValidos.includes(body.nome.trim())) {
+      return NextResponse.json(
+        { error: 'Apenas grupos ADMIN e prevSaúde são permitidos' },
         { status: 400 }
       );
     }

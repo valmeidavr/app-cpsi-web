@@ -144,23 +144,10 @@ const CriarAgendamento = ({
     }
   }, [isOpenModalCreate]);
   useEffect(() => {
-    console.log('🎯 [MODAL CREATE] useEffect para procedimentos executado:', {
-      convenioSelecionado: convenioSelecionado?.nome,
-      convenioId: convenioSelecionado?.id,
-      clienteSelecionado: clienteSelecionado?.nome,
-      clienteTipoCliente: clienteSelecionado?.tipoCliente,
-      ambosPresentes: !!(convenioSelecionado && clienteSelecionado)
-    });
-    
     if (convenioSelecionado && clienteSelecionado) {
       const tipoCliente = clienteSelecionado.tipoCliente as TipoClienteValorProcedimento;
-      console.log('🚀 [MODAL CREATE] Chamando fetchProcedimentos com:', {
-        tipoCliente,
-        convenioId: convenioSelecionado.id
-      });
       fetchProcedimentos(tipoCliente, convenioSelecionado.id);
     } else {
-      console.log('❌ [MODAL CREATE] Condições não atendidas para buscar procedimentos');
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
     }
@@ -175,11 +162,6 @@ const CriarAgendamento = ({
       }
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
-        console.log('👥 [MODAL CREATE] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map((c: Cliente) => ({
-          nome: c.nome,
-          id: c.id,
-          tipoCliente: c.tipoCliente
-        })));
         setClientes(data.data);
         setClientesCarregados(true);
       } else {
@@ -246,32 +228,19 @@ const CriarAgendamento = ({
   const fetchProcedimentos = async (tipoCliente: TipoClienteValorProcedimento, conveniosId: number) => {
     try {
       setLoadingProcedimentos(true);
-      console.log('🔍 [MODAL CREATE] fetchProcedimentos chamado com:', {
-        tipoCliente,
-        conveniosId,
-        clienteSelecionado: clienteSelecionado?.nome,
-        convenioSelecionado: convenioSelecionado?.nome
-      });
       
       if (!tipoCliente) {
-        console.log('⚠️ [MODAL CREATE] tipoCliente não informado, limpando procedimentos');
         setProcedimentos([]);
         return;
       }
       
       const url = `/api/valor-procedimento?convenio_id=${conveniosId}&tipoCliente=${String(tipoCliente)}`;
-      console.log('🌐 [MODAL CREATE] URL da requisição:', url);
-      
       const response = await fetch(url);
-      console.log('📡 [MODAL CREATE] Status da resposta:', response.status);
       
       if (!response.ok) {
         throw new Error("Erro ao carregar procedimentos");
       }
       const data = await response.json();
-      console.log('📄 [MODAL CREATE] Dados recebidos:', data);
-      console.log('📊 [MODAL CREATE] Tipo dos dados:', Array.isArray(data) ? 'Array' : typeof data);
-      console.log('📈 [MODAL CREATE] Quantidade de itens:', Array.isArray(data) ? data.length : 'N/A');
       if (Array.isArray(data)) {
         const procedimentosMapeados = data.map((item: {
           id: number;
@@ -373,11 +342,13 @@ const CriarAgendamento = ({
         especialidade_id: especialidade?.id,
         situacao: "AGENDADO", // Sempre será AGENDADO para novos agendamentos
       };
+      
       const response = await fetch("/api/agendas", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: 'include', // Incluir cookies de sessão
         body: JSON.stringify(dadosFinais),
       });
       if (response.ok) {
@@ -480,7 +451,6 @@ const CriarAgendamento = ({
                               ) : (
                                 <>
                                   {(() => {
-                                    console.log('🖱️ [BOTAO CLIENTE] Cliente atual:', clienteSelecionado?.nome);
                                     return clienteSelecionado?.nome || "Selecione o cliente";
                                   })()}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

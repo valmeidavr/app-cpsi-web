@@ -20,7 +20,7 @@ export async function GET(
     }
 
     const grupo = await executeWithRetry(accessPool,
-      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE id = ? AND status = "Ativo"',
+      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE id = ? AND status = "Ativo" AND nome IN ("ADMIN", "prevSaúde")',
       [id]
     );
 
@@ -74,6 +74,15 @@ export async function PUT(
     if (!body.nome || !body.nome.trim()) {
       return NextResponse.json(
         { error: 'Nome do grupo é obrigatório' },
+        { status: 400 }
+      );
+    }
+
+    // Validar se é um grupo válido
+    const gruposValidos = ['ADMIN', 'prevSaúde'];
+    if (!gruposValidos.includes(body.nome.trim())) {
+      return NextResponse.json(
+        { error: 'Apenas grupos ADMIN e prevSaúde são permitidos' },
         { status: 400 }
       );
     }

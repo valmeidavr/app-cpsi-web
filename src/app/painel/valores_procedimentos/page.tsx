@@ -72,12 +72,14 @@ export default function ValorProcedimentos() {
     useState<Procedimento | null>();
   const [tabelaSelecionado, setTabelaSelecionado] =
     useState<TabelaFaturamento | null>();
-  const [convenios, setConvenios] = useState<{ id: number; nome: string }[]>([]);
-  const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string } | null>(null);
+  const [convenios, setConvenios] = useState<{ id: number; nome: string; tabela_faturamento_id: number }[]>([]);
+  const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string; tabela_faturamento_id: number } | null>(null);
   const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("");
   const [valorFormatado, setValorFormatado] = useState("R$ 0,00");
   const [valorEditFormatado, setValorEditFormatado] = useState("R$ 0,00");
   const [isFilterMode, setIsFilterMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   useEffect(() => {
     if (convenioSelecionado) {
       carregarValorProcedimentos();
@@ -213,8 +215,13 @@ export default function ValorProcedimentos() {
       try {
         if (!valorProcedimentoSelecionado) return;
         setValorEditFormatado(formatValor(+valorProcedimentoSelecionado.valor));
+        // Encontrar o convênio baseado na tabela de faturamento do item selecionado
+        const convenioDoItem = convenios.find(conv => 
+          conv.tabela_faturamento_id === valorProcedimentoSelecionado.tabela_faturamento_id
+        );
+        
         formUpdate.reset({
-          convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
+          convenio_id: convenioDoItem?.id || 0,
           tipo_cliente: valorProcedimentoSelecionado.tipo,
           tabela_faturamento_id:
             valorProcedimentoSelecionado.tabela_faturamento_id,
@@ -327,12 +334,16 @@ export default function ValorProcedimentos() {
     }
   };
   const handleDeleteValor = async (valorId: number) => {
-    if (!confirm("Tem certeza que deseja excluir este valor de procedimento?")) {
-      return;
-    }
+    setItemToDelete(valorId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    
     setCarregando(true);
     try {
-      const response = await fetch(`/api/valor-procedimento/${valorId}`, {
+      const response = await fetch(`/api/valor-procedimento/${itemToDelete}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -349,6 +360,8 @@ export default function ValorProcedimentos() {
       toast.error("Erro ao excluir valor de procedimento");
     } finally {
       setCarregando(false);
+      setShowDeleteModal(false);
+      setItemToDelete(null);
     }
   };
   const onSubmitUpdate = async (
@@ -967,6 +980,49 @@ export default function ValorProcedimentos() {
             </form>
           </DialogContent>
         </FormProvider>
+      </Dialog>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Tem certeza que deseja excluir este valor de procedimento?
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setItemToDelete(null);
+              }}
+              disabled={carregando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={carregando}
+            >
+              {carregando ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

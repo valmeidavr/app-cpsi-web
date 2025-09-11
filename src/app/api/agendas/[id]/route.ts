@@ -94,7 +94,7 @@ async function criarLancamento(agendaId: number, clienteId: number, procedimento
 
     const descricao = `Agendamento - ${clienteNome} - ${procedimentoNome}`;
     const dataAtual = getCurrentUTCISO();
-
+    console.log('Chegou')
     // Criar lançamento
     await executeWithRetry(accessPool,
       `INSERT INTO lancamentos (
@@ -302,6 +302,26 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    
+    console.log('📝 [AGENDA PUT] Iniciando atualização de agenda');
+    console.log('✅ [AGENDA PUT] Dados validados:', { agendaId: id, situacao: body.situacao });
+    
+    // Buscar situação atual para comparar
+    const agendaAtual = await executeWithRetry(accessPool,
+      'SELECT situacao, cliente_id, convenio_id, procedimento_id FROM agendas WHERE id = ?',
+      [id]
+    );
+    
+    const agendaAnterior = (agendaAtual as Array<any>)[0];
+    const situacaoAnterior = agendaAnterior?.situacao;
+    
+    // Atualizar a agenda
+    console.log('📝 [AGENDA PUT] Parâmetros da query UPDATE:', [
+      body.dtagenda, body.situacao, body.cliente_id, body.convenio_id,
+      body.procedimento_id, body.expediente_id, body.prestador_id,
+      body.unidade_id, body.especialidade_id, body.tipo, id
+    ]);
+    
     await executeWithRetry(accessPool,
       `UPDATE agendas SET 
         dtagenda = ?, situacao = ?, cliente_id = ?, convenio_id = ?, 
@@ -314,8 +334,79 @@ export async function PUT(
         body.unidade_id, body.especialidade_id, body.tipo, id
       ]
     );
+    
+    console.log('✅ [AGENDA PUT] Agenda atualizada com sucesso');
+    
+    // Se a situação mudou para AGENDADO, criar lançamento
+    if (body.situacao === 'AGENDADO' && situacaoAnterior !== 'AGENDADO') {
+      console.log('💰 [AGENDA PUT] Situação mudou para AGENDADO, criando lançamento...');
+      
+      try {
+        // Buscar tipo do cliente
+        let tipoCliente = 'SOCIO';
+        if (body.cliente_id) {
+          const [clienteRows] = await accessPool.execute(
+            'SELECT tipoCliente FROM clientes WHERE id = ?',
+            [body.cliente_id]
+          );
+          if ((clienteRows as Array<{ tipoCliente: string }>).length > 0) {
+            tipoCliente = (clienteRows as Array<{ tipoCliente: string }>)[0].tipoCliente;
+          }
+        }
+        
+        // Buscar valor do procedimento
+        let valorProcedimento: number | null = 0;
+        if (body.procedimento_id && body.convenio_id) {
+          valorProcedimento = await buscarValorProcedimento(body.procedimento_id, tipoCliente, body.convenio_id);
+        }
+        
+        if (valorProcedimento === null) {
+          valorProcedimento = 0;
+        }
+        
+        // Buscar nome do procedimento
+        let procedimentoNome = 'Procedimento não informado';
+        if (body.procedimento_id) {
+          const [procRows] = await accessPool.execute(
+            'SELECT nome FROM procedimentos WHERE id = ?',
+            [body.procedimento_id]
+          );
+          if ((procRows as Array<{ nome: string }>).length > 0) {
+            procedimentoNome = (procRows as Array<{ nome: string }>)[0].nome;
+          }
+        }
+        
+        // Buscar nome do cliente
+        let clienteNome = 'Cliente não informado';
+        if (body.cliente_id) {
+          const [cliRows] = await accessPool.execute(
+            'SELECT nome FROM clientes WHERE id = ?',
+            [body.cliente_id]
+          );
+          if ((cliRows as Array<{ nome: string }>).length > 0) {
+            clienteNome = (cliRows as Array<{ nome: string }>)[0].nome;
+          }
+        }
+        
+        // Criar lançamento
+        const descricaoLancamento = `${procedimentoNome} - ${clienteNome}`;
+        const dataLancamento = new Date(body.dtagenda).toISOString().split('T')[0];
+        
+        await executeWithRetry(accessPool,
+          `INSERT INTO lancamentos (descricao, valor, tipo, data_lancamento, caixa_id, plano_conta_id, agenda_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [descricaoLancamento, valorProcedimento, 'ENTRADA', dataLancamento, 1, 1, id]
+        );
+        
+        console.log('✅ [AGENDA PUT] Lançamento criado com sucesso');
+      } catch (lancError) {
+        console.error('❌ [AGENDA PUT] Erro ao criar lançamento:', lancError);
+      }
+    }
+    
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error('❌ [AGENDA PUT] Erro:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

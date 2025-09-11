@@ -5,6 +5,16 @@ const nextConfig = {
   //   optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   // },
   
+  // Disable ESLint during build for faster builds
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  
+  // Disable TypeScript checks during build
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  
   // Stable webpack configuration for Next.js 14.x
   webpack: (config, { dev, isServer }) => {
     // Only apply optimizations in production

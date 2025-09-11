@@ -608,16 +608,22 @@ const ModalAgendamento = ({
                                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                   Carregando clientes...
                                 </>
-                              ) : (() => {
-                                console.log('🔍 [MODAL EDIT] Renderizando botão cliente:', clienteSelecionado?.nome);
-                                return clienteSelecionado?.nome || "Selecione o cliente";
-                              })()}
+                              ) : (
+                                clienteSelecionado?.nome || "Selecione o cliente"
+                              )}
                               {!loadingClientes && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
+                        <PopoverContent 
+                          className="p-0" 
+                          align="start"
+                          style={{ 
+                            width: '100%', 
+                            minWidth: '100%'
+                          }}
+                        >
+                          <Command className="w-full">
                             <CommandInput
                               placeholder="Busque por nome, CPF ou email..."
                               value={searchCliente}
@@ -713,8 +719,15 @@ const ModalAgendamento = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
+                        <PopoverContent 
+                          className="p-0" 
+                          align="start"
+                          style={{ 
+                            width: '100%', 
+                            minWidth: '100%'
+                          }}
+                        >
+                          <Command className="w-full">
                             <CommandInput
                               placeholder="Busque por nome do convênio..."
                               value={searchConvenio}
@@ -800,8 +813,15 @@ const ModalAgendamento = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-full p-0" align="start">
-                          <Command>
+                        <PopoverContent 
+                          className="p-0" 
+                          align="start"
+                          style={{ 
+                            width: '100%', 
+                            minWidth: '100%'
+                          }}
+                        >
+                          <Command className="w-full">
                             <CommandInput
                               placeholder="Busque por nome ou código do procedimento..."
                               value={searchProcedimento}
@@ -888,4 +908,4 @@ const ModalAgendamento = ({
     </Dialog>
   );
 };
-export default ModalAgendamento;
+export default ModalAgendamento;

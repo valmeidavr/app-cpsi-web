@@ -120,11 +120,11 @@ export async function POST(request: NextRequest) {
     const expedienteResult = await executeWithRetry(accessPool,
       `INSERT INTO expedientes (
         dtinicio, dtfinal, hinicio, hfinal, intervalo, 
-        semana, alocacao_id, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        semana, alocacao_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         payload.dtinicio, payload.dtfinal, payload.hinicio, payload.hfinal,
-        payload.intervalo, payload.semana, payload.alocacao_id, now, now
+        payload.intervalo, payload.semana, payload.alocacao_id
       ]
     );
     const expedienteId = (expedienteResult as { insertId: number }).insertId;
