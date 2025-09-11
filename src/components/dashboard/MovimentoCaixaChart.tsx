@@ -130,7 +130,7 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
   }
 
   return (
-    <Card className="h-full">
+    <Card className="h-full pb-4">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -191,10 +191,10 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="h-[400px] w-full">
+      <CardContent className="!pt-0 !pb-2">
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <LineChart data={data} margin={{ top: 5, right: 15, left: 15, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis 
                 dataKey="data" 
@@ -202,6 +202,9 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
                 className="text-xs"
                 stroke="#64748b"
                 fontSize={12}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <YAxis 
                 tickFormatter={formatCurrency}
@@ -209,6 +212,9 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
                 stroke="#64748b"
                 fontSize={12}
                 width={80}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <Tooltip 
                 labelFormatter={(label) => `Data: ${formatDate(label)}`}

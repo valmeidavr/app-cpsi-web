@@ -185,10 +185,10 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="h-[350px] w-full">
+      <CardContent className="!pt-0 !pb-2">
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={data} margin={{ top: 5, right: 15, left: 15, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis 
                 dataKey="data" 
@@ -196,12 +196,18 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
                 className="text-xs"
                 stroke="#64748b"
                 fontSize={12}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <YAxis 
                 className="text-xs"
                 stroke="#64748b"
                 fontSize={12}
                 width={50}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <Tooltip 
                 labelFormatter={(label) => `Data: ${formatDate(label)}`}

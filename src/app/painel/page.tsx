@@ -48,7 +48,7 @@ export default function PainelHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 relative overflow-x-hidden">
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/30 relative">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-[0.02]">
         <svg className="w-full h-full" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -137,25 +137,25 @@ export default function PainelHome() {
       {/* Cards de Resumo */}
       <ResumoCards startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
 
-        {/* Charts Section */}
-        <div className="space-y-4 md:space-y-6 lg:space-y-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-            {/* Movimento de Caixa */}
-            <div className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px]">
-              <MovimentoCaixaChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
-            </div>
-
-            {/* Agendamentos */}
-            <div className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px]">
-              <AgendamentosChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
-            </div>
+      {/* Charts Section */}
+      <div className="space-y-3 md:space-y-4 lg:space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 md:gap-4">
+          {/* Movimento de Caixa */}
+          <div className="h-[350px] sm:h-[380px] md:h-[420px] lg:h-[450px] xl:h-[480px]">
+            <MovimentoCaixaChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
           </div>
-          
-          {/* Novos Clientes - largura total */}
-          <div className="h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px] xl:h-[500px]">
-            <NovosClientesChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+
+          {/* Agendamentos */}
+          <div className="h-[350px] sm:h-[380px] md:h-[420px] lg:h-[450px] xl:h-[480px]">
+            <AgendamentosChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
           </div>
         </div>
+        
+        {/* Novos Clientes - largura total */}
+        <div className="h-[350px] sm:h-[380px] md:h-[420px] lg:h-[450px] xl:h-[480px]">
+          <NovosClientesChart startDate={dateFilter.startDate} endDate={dateFilter.endDate} />
+        </div>
+      </div>
       </div>
       
       {/* Floating Action Elements */}

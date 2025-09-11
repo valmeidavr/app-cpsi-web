@@ -52,15 +52,15 @@ export default function PainelLayout({
       />
       
       {/* Main Content Area */}
-      <div className="flex flex-col flex-1 overflow-x-hidden">
+      <div className="flex flex-col flex-1">
         {/* Header - Full Width */}
         <div className="sticky top-0 bg-white shadow-md z-30 w-full">
           <Header />
         </div>
         
         {/* Content */}
-        <div className="flex-1 p-2 sm:p-3 md:p-6 overflow-x-hidden">
-          <div className="bg-white shadow-lg rounded-lg p-2 sm:p-3 md:p-6 lg:p-8 w-full mx-auto border border-gray-300 overflow-x-hidden">
+        <div className="flex-1 p-2 sm:p-3 md:p-6">
+          <div className="bg-white shadow-lg rounded-lg p-2 sm:p-3 md:p-6 lg:p-8 w-full mx-auto border border-gray-300">
             {children}
           </div>
         </div>

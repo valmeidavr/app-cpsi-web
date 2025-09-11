@@ -221,10 +221,10 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="h-[350px] w-full">
+      <CardContent className="!pt-0 !pb-2">
+        <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <AreaChart data={data} margin={{ top: 5, right: 15, left: 15, bottom: 20 }}>
               <defs>
                 <linearGradient id="clientesGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
@@ -238,6 +238,9 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
                 className="text-xs"
                 stroke="#64748b"
                 fontSize={12}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <YAxis 
                 className="text-xs"
@@ -245,6 +248,9 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
                 fontSize={12}
                 width={40}
                 domain={[0, 'dataMax + 1']}
+                tick={{ fontSize: 12 }}
+                axisLine={{ stroke: '#64748b' }}
+                tickLine={{ stroke: '#64748b' }}
               />
               <Tooltip 
                 labelFormatter={(label) => `Data: ${formatDate(label)}`}
