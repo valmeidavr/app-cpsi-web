@@ -88,7 +88,7 @@ export default function ForgotPassword() {
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <Image
-              src="/logotipo.svg?height=100&width=200"
+              src="/logotipo.svg"
               alt="GRUPO AAP-VR"
               width={200}
               height={100}
@@ -110,7 +110,7 @@ export default function ForgotPassword() {
                 <Input
                   type="email"
                   placeholder="Email"
-                  className="pl-10"
+                  className="!pl-10"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -157,4 +157,4 @@ export default function ForgotPassword() {
       </Card>
     </main>
   );
-}
+}
