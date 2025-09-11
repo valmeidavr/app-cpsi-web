@@ -60,7 +60,6 @@ export default function UsuarioRegistrationForm() {
           setSistemas(sistemasData.sistemas || [])
         }
       } catch (error) {
-        console.error('Erro ao carregar sistemas:', error)
         toast.error('Erro ao carregar sistemas')
       } finally {
         setLoadingSistemas(false)
@@ -109,14 +108,12 @@ export default function UsuarioRegistrationForm() {
 
       if (!sistemasResponse.ok) {
         const errorData = await sistemasResponse.json()
-        console.warn('Erro ao configurar grupos de acesso:', errorData.error)
         // Não falha aqui, apenas avisa
       }
 
       toast.success('Usuário criado com sucesso!')
       router.push('/painel/usuarios?type=success&message=Usuário criado com sucesso!')
     } catch (error) {
-      console.error('Erro ao criar usuário:', error)
       toast.error(error instanceof Error ? error.message : 'Erro ao criar usuário')
     } finally {
       setLoading(false)

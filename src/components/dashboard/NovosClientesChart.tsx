@@ -185,7 +185,7 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
               <Users className="h-4 w-4 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">Total</span>
             </div>
-            <p className="text-2xl font-bold text-blue-600 mt-2">{totalNovosClientes}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-blue-600 mt-2">{totalNovosClientes}</p>
           </div>
           
           <div className="rounded-xl border bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4">
@@ -193,7 +193,7 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
               <BarChart3 className="h-4 w-4 text-emerald-600" />
               <span className="text-sm font-medium text-emerald-800">Média/Dia</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-600 mt-2">{mediaDiaria}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-emerald-600 mt-2">{mediaDiaria}</p>
           </div>
           
           <div className="rounded-xl border bg-gradient-to-br from-violet-50 to-violet-100/50 p-4">
@@ -201,7 +201,7 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
               <TrendingUp className="h-4 w-4 text-violet-600" />
               <span className="text-sm font-medium text-violet-800">Crescimento</span>
             </div>
-            <p className={`text-2xl font-bold mt-2 ${
+            <p className={`text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight mt-2 ${
               parseFloat(crescimento) >= 0 ? 'text-emerald-600' : 'text-red-600'
             }`}>
               {parseFloat(crescimento) >= 0 ? '+' : ''}{crescimento}%
@@ -213,7 +213,7 @@ export default function NovosClientesChart({ startDate, endDate }: NovosClientes
               <UserPlus className="h-4 w-4 text-orange-600" />
               <span className="text-sm font-medium text-orange-800">Melhor Dia</span>
             </div>
-            <p className="text-2xl font-bold text-orange-600 mt-2">{maiorCadastro.total}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-orange-600 mt-2">{maiorCadastro.total}</p>
             {maiorCadastro.data && (
               <p className="text-xs text-orange-600 mt-1 font-medium">{formatDate(maiorCadastro.data)}</p>
             )}

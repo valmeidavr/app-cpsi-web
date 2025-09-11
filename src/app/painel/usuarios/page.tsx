@@ -58,7 +58,6 @@ export default function UsuariosPage() {
         throw new Error('Erro ao carregar usuários')
       }
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error)
       toast.error('Erro ao carregar usuários')
     } finally {
       setLoading(false)
@@ -101,7 +100,6 @@ export default function UsuariosPage() {
         toast.error(errorData.error || "Erro ao deletar usuário");
       }
     } catch (error) {
-      console.error("Erro ao deletar usuário:", error);
       toast.error("Erro ao deletar usuário");
     } finally {
       setLoadingInativar(false);

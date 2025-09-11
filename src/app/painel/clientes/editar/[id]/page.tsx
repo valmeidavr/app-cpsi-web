@@ -71,19 +71,14 @@ export default function EditarCliente() {
   useEffect(() => {
     const fetchConvenios = async () => {
       try {
-        console.log('🔍 Carregando convênios...');
         const response = await fetch("/api/convenios");
         const data = await response.json();
-        console.log('📊 Resposta da API:', data);
         if (data?.data) {
           setConvenios(data.data);
-          console.log('✅ Convênios carregados:', data.data);
         } else {
-          console.warn('⚠️ Estrutura de resposta inesperada:', data);
           toast.error("Erro ao carregar convênios: estrutura de dados inválida");
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar convênios:', error);
         toast.error("Erro ao carregar convênios");
       }
     };
@@ -169,7 +164,6 @@ export default function EditarCliente() {
       queryParams.set("message", "Cliente atualizado com sucesso!");
       router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error: any) {
-      console.error('🔴 Erro ao atualizar cliente:', error);
       
       // Verifica se é um erro de validação com detalhes específicos
       if (error.response?.data?.details?.fieldErrors) {
@@ -229,7 +223,6 @@ export default function EditarCliente() {
                 dataFormatada = format(dataISO, "dd/MM/yyyy");
               }
             } catch (error) {
-              console.error("Erro ao formatar data:", error);
             }
           }
 

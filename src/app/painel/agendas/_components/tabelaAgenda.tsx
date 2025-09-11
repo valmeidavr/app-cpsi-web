@@ -91,7 +91,6 @@ const TabelaAgenda = () => {
     try {
       // Se há um agendamento selecionado, estamos EDITANDO
       if (agendamentoSelecionado) {
-        console.log('✏️ [TABELA] Modo EDIÇÃO - carregando dados do agendamento:', agendamentoSelecionado.dadosAgendamento.id);
         const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
         if (!response.ok) {
           throw new Error("Erro ao carregar dados do agendamento");
@@ -105,7 +104,6 @@ const TabelaAgenda = () => {
         });
       } else {
         // Se NÃO há agendamento selecionado, estamos CRIANDO um novo
-        console.log('➕ [TABELA] Modo CRIAÇÃO - slot vazio para novo agendamento');
         form.reset({
           convenio_id: 0,
           cliente_id: 0,
@@ -114,7 +112,6 @@ const TabelaAgenda = () => {
         });
       }
     } catch (error) {
-      console.error('❌ [TABELA] Erro ao preparar modal:', error);
       toast.error("Erro ao carregar dados do agendamento");
     } finally {
       setModalAgendamentoOpen(true);

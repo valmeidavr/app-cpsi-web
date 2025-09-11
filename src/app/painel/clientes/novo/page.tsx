@@ -73,18 +73,13 @@ export default function CustomerRegistrationForm() {
   useEffect(() => {
     const fetchConvenios = async () => {
       try {
-        console.log('🔍 Carregando convênios...');
         const { data } = await http.get("/api/convenios");
-        console.log('📊 Resposta da API:', data);
         if (data?.data) {
           setConvenios(data.data);
-          console.log('✅ Convênios carregados:', data.data);
         } else {
-          console.warn('⚠️ Estrutura de resposta inesperada:', data);
           toast.error("Erro ao carregar convênios: estrutura de dados inválida");
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar convênios:', error);
         toast.error("Erro ao carregar convênios");
       }
     };
@@ -154,7 +149,6 @@ export default function CustomerRegistrationForm() {
       queryParams.set("message", "Cliente salvo com sucesso!");
       router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error: any) {
-      console.error('🔴 Erro ao salvar cliente:', error);
       
       // Verifica se é um erro de validação com detalhes específicos
       if (error.response?.data?.details?.fieldErrors) {

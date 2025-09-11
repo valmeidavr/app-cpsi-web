@@ -42,10 +42,6 @@ export default function ForgotPassword() {
       if (result.success) {
         setMessage(result.message);
         setSubmitted(true);
-        // Em desenvolvimento, mostrar o link de debug
-        if (result.debug?.resetLink) {
-          console.log('🔗 Link de reset (desenvolvimento):', result.debug.resetLink);
-        }
       } else {
         setError(result.error);
       }

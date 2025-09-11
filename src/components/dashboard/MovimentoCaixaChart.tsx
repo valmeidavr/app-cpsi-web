@@ -154,7 +154,7 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
               <ArrowUpRight className="h-4 w-4 text-emerald-600" />
               <span className="text-sm font-medium text-emerald-800">Entradas</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-600 mt-2">{formatCurrency(totalEntradas)}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-emerald-600 mt-2">{formatCurrency(totalEntradas)}</p>
           </div>
           
           <div className="rounded-xl border bg-gradient-to-br from-red-50 to-red-100/50 p-4">
@@ -162,7 +162,7 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
               <ArrowDownRight className="h-4 w-4 text-red-600" />
               <span className="text-sm font-medium text-red-800">Saídas</span>
             </div>
-            <p className="text-2xl font-bold text-red-600 mt-2">{formatCurrency(totalSaidas)}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-red-600 mt-2">{formatCurrency(totalSaidas)}</p>
           </div>
           
           <div className={`rounded-xl border p-4 ${
@@ -182,7 +182,7 @@ export default function MovimentoCaixaChart({ startDate, endDate }: MovimentoCai
                 Saldo
               </span>
             </div>
-            <p className={`text-2xl font-bold mt-2 ${
+            <p className={`text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight mt-2 ${
               saldoTotal >= 0 ? 'text-blue-600' : 'text-orange-600'
             }`}>
               {formatCurrency(saldoTotal)}

@@ -100,7 +100,6 @@ export default function GerenciarAlunosTurma() {
       toast.success("Todos os alunos foram removidos da turma");
     } catch (error) {
       toast.error("Erro ao remover alunos");
-      console.error("Erro ao remover todos os alunos:", error);
     } finally {
       setLoadingDeleteAll(false);
     }

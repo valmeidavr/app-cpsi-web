@@ -100,7 +100,6 @@ export default function EditarUsuario() {
           setSistemas(sistemasData.sistemas || [])
         }
       } catch (error) {
-        console.error('Erro ao carregar dados:', error)
         toast.error('Erro ao carregar dados')
         router.push('/painel/usuarios')
       } finally {
@@ -155,7 +154,6 @@ export default function EditarUsuario() {
       toast.success('Usuário atualizado com sucesso!')
       router.push('/painel/usuarios?type=success&message=Usuário atualizado com sucesso!')
     } catch (error) {
-      console.error('Erro ao atualizar usuário:', error)
       toast.error(error instanceof Error ? error.message : 'Erro ao atualizar usuário')
     } finally {
       setLoading(false)

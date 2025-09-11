@@ -150,7 +150,7 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
               <Users className="h-4 w-4 text-slate-600" />
               <span className="text-sm font-medium text-slate-800">Total</span>
             </div>
-            <p className="text-2xl font-bold text-slate-600 mt-2">{totalAgendamentos}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-slate-600 mt-2">{totalAgendamentos}</p>
           </div>
           
           <div className="rounded-xl border bg-gradient-to-br from-amber-50 to-amber-100/50 p-4">
@@ -158,7 +158,7 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
               <Clock className="h-4 w-4 text-amber-600" />
               <span className="text-sm font-medium text-amber-800">Agendados</span>
             </div>
-            <p className="text-2xl font-bold text-amber-600 mt-2">{totalAgendados}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-amber-600 mt-2">{totalAgendados}</p>
           </div>
           
           <div className="rounded-xl border bg-gradient-to-br from-emerald-50 to-emerald-100/50 p-4">
@@ -166,7 +166,7 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
               <CheckCircle className="h-4 w-4 text-emerald-600" />
               <span className="text-sm font-medium text-emerald-800">Finalizados</span>
             </div>
-            <p className="text-2xl font-bold text-emerald-600 mt-2">{totalFinalizados}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-emerald-600 mt-2">{totalFinalizados}</p>
             {totalAgendamentos > 0 && (
               <p className="text-xs text-emerald-600 mt-1 font-medium">{taxaEfetivacao}%</p>
             )}
@@ -177,7 +177,7 @@ export default function AgendamentosChart({ startDate, endDate }: AgendamentosCh
               <XCircle className="h-4 w-4 text-red-600" />
               <span className="text-sm font-medium text-red-800">Faltas</span>
             </div>
-            <p className="text-2xl font-bold text-red-600 mt-2">{totalFaltas}</p>
+            <p className="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold break-words overflow-hidden leading-tight text-red-600 mt-2">{totalFaltas}</p>
             {totalAgendamentos > 0 && (
               <p className="text-xs text-red-600 mt-1 font-medium">{taxaFalta}%</p>
             )}

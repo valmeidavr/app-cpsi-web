@@ -29,32 +29,32 @@ export async function GET() {
       await executeWithRetry(accessPool, `
         INSERT IGNORE INTO grupos (nome, descricao) VALUES 
         ('ADMIN', 'Administradores do sistema'),
-        ('prevSaúde', 'Sistema de Gestão da AAPVR')
+        ('Prev-Saúde', 'Sistema de Gestão da AAPVR')
       `);
       
       console.log('✅ [GRUPOS GET] Tabela grupos criada com dados padrão');
     }
 
-    // Limpar grupos inválidos (manter apenas ADMIN e prevSaúde)
+    // Limpar grupos inválidos (manter apenas ADMIN e Prev-Saúde)
     try {
       const gruposInvalidos = await executeWithRetry(accessPool,
-        'SELECT id, nome FROM grupos WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "prevSaúde")'
+        'SELECT id, nome FROM grupos WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "Prev-Saúde")'
       );
       
       if ((gruposInvalidos as Array<any>).length > 0) {
         console.log('🧹 [GRUPOS GET] Removendo grupos inválidos:', (gruposInvalidos as Array<any>).map(g => g.nome));
         
         await executeWithRetry(accessPool,
-          'UPDATE grupos SET status = "Inativo", updated_at = CURRENT_TIMESTAMP WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "prevSaúde")'
+          'UPDATE grupos SET status = "Inativo", updated_at = CURRENT_TIMESTAMP WHERE status = "Ativo" AND nome NOT IN ("ADMIN", "Prev-Saúde")'
         );
       }
     } catch (cleanupError) {
       console.error('⚠️ [GRUPOS GET] Erro ao limpar grupos inválidos:', cleanupError);
     }
 
-    // Buscar apenas os grupos corretos (ADMIN e prevSaúde)
+    // Buscar apenas os grupos corretos (ADMIN e Prev-Saúde)
     const grupos = await executeWithRetry(accessPool,
-      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE status = "Ativo" AND nome IN ("ADMIN", "prevSaúde") ORDER BY nome'
+      'SELECT id, nome, descricao, status, created_at, updated_at FROM grupos WHERE status = "Ativo" AND nome IN ("ADMIN", "Prev-Saúde") ORDER BY nome'
     );
 
     console.log(`📊 [GRUPOS GET] Encontrados ${(grupos as Array<any>).length} grupos`);
@@ -95,10 +95,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Validar se é um grupo válido
-    const gruposValidos = ['ADMIN', 'prevSaúde'];
+    const gruposValidos = ['ADMIN', 'Prev-Saúde'];
     if (!gruposValidos.includes(body.nome.trim())) {
       return NextResponse.json(
-        { error: 'Apenas grupos ADMIN e prevSaúde são permitidos' },
+        { error: 'Apenas grupos ADMIN e Prev-Saúde são permitidos' },
         { status: 400 }
       );
     }

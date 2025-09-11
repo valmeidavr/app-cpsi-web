@@ -95,13 +95,10 @@ export default function Lancamentos() {
         params.append('data_inicio', filters.data_inicio);
         params.append('data_fim', filters.data_fim);
       }
-      console.log('🔍 [FRONTEND] Carregando lançamentos com URL:', `/api/lancamentos?${params}`);
       const response = await fetch(`/api/lancamentos?${params}`);
       const data = await response.json();
       
       if (response.ok) {
-        console.log('📊 [FRONTEND] Lançamentos carregados:', data.data.length, 'itens');
-        console.log('📊 [FRONTEND] Primeiro lançamento status:', data.data[0]?.status);
         setLancamentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalLancamentos(data.pagination.total);
@@ -150,9 +147,6 @@ export default function Lancamentos() {
       const novoStatus =
         lancamentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
         
-      console.log('🔄 [FRONTEND] Alterando status do lançamento:', lancamentoSelecionado.id);
-      console.log('🔄 [FRONTEND] Status atual:', lancamentoSelecionado.status);
-      console.log('🔄 [FRONTEND] Novo status:', novoStatus);
       
       const response = await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
         method: "PATCH",
@@ -163,7 +157,6 @@ export default function Lancamentos() {
       });
       
       const responseData = await response.json();
-      console.log('📊 [FRONTEND] Resposta da API:', responseData);
       
       if (!response.ok) {
         throw new Error(responseData.error || 'Erro ao atualizar status');
@@ -180,7 +173,6 @@ export default function Lancamentos() {
       await carregarLancamentos(form.getValues());
       
     } catch (error) {
-      console.error('❌ [FRONTEND] Erro ao alterar status:', error);
       toast.error("Erro ao tentar alterar o status do lançamento.");
     } finally {
       setLoadingAction(false);

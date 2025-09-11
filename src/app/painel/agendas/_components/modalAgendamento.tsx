@@ -46,6 +46,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { localDateToUTCISO } from "@/app/helpers/dateUtils";
@@ -136,11 +137,9 @@ const ModalAgendamento = ({
   // useEffect para gerenciar abertura do modal - funciona para os 2 cenários
   useEffect(() => {
     if (open) {
-      console.log('🚀 [MODAL EDIT] Modal aberto - Cenário:', agendamentoSelecionado ? 'EDITAR' : 'CRIAR');
       
       if (agendamentoSelecionado && clientes.length > 0) {
         // CENÁRIO 2: Editar agendamento existente (AGENDADO)
-        console.log('📝 [MODAL EDIT] Preenchendo dados do agendamento existente:', agendamentoSelecionado);
         
         // Setar valores no formulário
         form.setValue("cliente_id", agendamentoSelecionado.cliente_id);
@@ -151,17 +150,14 @@ const ModalAgendamento = ({
         // Buscar e definir cliente
         const clienteEncontrado = clientes.find(c => c.id === agendamentoSelecionado.cliente_id);
         if (clienteEncontrado) {
-          console.log('👤 [MODAL EDIT] Cliente encontrado:', clienteEncontrado.nome);
           setClienteSelecionado(clienteEncontrado);
           
           // Carregar convênios para este cliente
           fetchConvenios(clienteEncontrado.id);
         } else {
-          console.log('❌ [MODAL EDIT] Cliente não encontrado com ID:', agendamentoSelecionado.cliente_id);
         }
       } else {
         // CENÁRIO 1: Criar novo agendamento (LIVRE → AGENDADO)
-        console.log('🆕 [MODAL EDIT] Limpando campos para novo agendamento');
         
         // Limpar todos os estados
         setClienteSelecionado(null);
@@ -192,7 +188,6 @@ const ModalAgendamento = ({
       // Buscar dados do convênio
       const convenioEncontrado = convenios.find(c => c.id === agendamentoSelecionado.convenio_id);
       if (convenioEncontrado) {
-        console.log('🏥 [MODAL EDIT] Convênio encontrado:', convenioEncontrado.nome);
         setConvenioSelecionado(convenioEncontrado);
       }
     }
@@ -204,30 +199,16 @@ const ModalAgendamento = ({
       // Buscar dados do procedimento
       const procedimentoEncontrado = procedimentos.find(p => p.procedimento.id === agendamentoSelecionado.procedimento_id);
       if (procedimentoEncontrado) {
-        console.log('💊 [MODAL EDIT] Procedimento encontrado:', procedimentoEncontrado.procedimento.nome);
         setProcedimentoSelecionado(procedimentoEncontrado);
       }
     }
   }, [open, agendamentoSelecionado, procedimentos]);
 
   useEffect(() => {
-    console.log('🎯 [MODAL EDIT] useEffect para procedimentos executado:', {
-      convenioSelecionado: convenioSelecionado?.nome,
-      convenioId: convenioSelecionado?.id,
-      clienteSelecionado: clienteSelecionado?.nome,
-      clienteTipoCliente: clienteSelecionado?.tipoCliente,
-      ambosPresentes: !!(convenioSelecionado && clienteSelecionado)
-    });
-    
     if (convenioSelecionado && clienteSelecionado) {
       const tipoCliente = clienteSelecionado.tipoCliente as TipoClienteValorProcedimento;
-      console.log('🚀 [MODAL EDIT] Chamando fetchProcedimentos com:', {
-        tipoCliente,
-        convenioId: convenioSelecionado.id
-      });
       fetchProcedimentos(tipoCliente, convenioSelecionado.id);
     } else {
-      console.log('❌ [MODAL EDIT] Condições não atendidas para buscar procedimentos');
       setProcedimentos([]);
       form.setValue("procedimento_id", 0);
     }
@@ -242,11 +223,6 @@ const ModalAgendamento = ({
       }
       const data = await response.json();
       if (data.data && Array.isArray(data.data)) {
-        console.log('👥 [MODAL EDIT] Clientes carregados (primeiros 3):', data.data.slice(0, 3).map((c: Cliente) => ({
-          nome: c.nome,
-          id: c.id,
-          tipoCliente: c.tipoCliente
-        })));
         setClientes(data.data);
         setClientesCarregados(true);
       } else {
@@ -316,30 +292,18 @@ const ModalAgendamento = ({
   ) => {
     try {
       setLoadingProcedimentos(true);
-      console.log('🔍 [MODAL EDIT] fetchProcedimentos chamado com:', {
-        tipoCliente,
-        convenio_id,
-        clienteSelecionado: clienteSelecionado?.nome,
-        convenioSelecionado: convenioSelecionado?.nome
-      });
       
       if (!tipoCliente) {
-        console.log('⚠️ [MODAL EDIT] tipoCliente não informado, limpando procedimentos');
         setProcedimentos([]);
         return;
       }
       
       const url = `/api/valor-procedimento?convenio_id=${convenio_id}&tipoCliente=${String(tipoCliente)}`;
-      console.log('🌐 [MODAL EDIT] URL da requisição:', url);
       
       const response = await fetch(url);
-      console.log('📡 [MODAL EDIT] Status da resposta:', response.status);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('📄 [MODAL EDIT] Dados recebidos:', data);
-        console.log('📊 [MODAL EDIT] Tipo dos dados:', Array.isArray(data) ? 'Array' : typeof data);
-        console.log('📈 [MODAL EDIT] Quantidade de itens:', Array.isArray(data) ? data.length : 'N/A');
         
         if (Array.isArray(data)) {
           const procedimentosMapeados = data.map((item: {
@@ -396,13 +360,6 @@ const ModalAgendamento = ({
             }
           }));
           
-          console.log('🔄 [MODAL EDIT] Procedimentos mapeados (antes dedup):', procedimentosMapeados.length);
-          console.log('📝 [MODAL EDIT] Primeiros 3 procedimentos:', procedimentosMapeados.slice(0, 3).map(p => ({
-            nome: p.procedimento.nome,
-            valor: p.valor,
-            id: p.id
-          })));
-          
           // Remover duplicados baseado no nome do procedimento, mantendo apenas o primeiro
           const procedimentosUnicos = procedimentosMapeados.filter((procedimento, index) => {
             return procedimentosMapeados.findIndex(p => 
@@ -410,22 +367,16 @@ const ModalAgendamento = ({
             ) === index;
           });
           
-          console.log('✅ [MODAL EDIT] Procedimentos únicos (após dedup):', procedimentosUnicos.length);
-          console.log('📋 [MODAL EDIT] Lista final:', procedimentosUnicos.map(p => p.procedimento.nome));
           
           setProcedimentos(procedimentosUnicos);
         } else {
-          console.log('⚠️ [MODAL EDIT] Dados não são array, setando procedimentos vazios');
           setProcedimentos([]);
         }
       } else {
-        console.error('❌ [MODAL EDIT] Resposta não OK:', response.status, response.statusText);
         const errorText = await response.text();
-        console.error('❌ [MODAL EDIT] Conteúdo do erro:', errorText);
         throw new Error("Erro ao carregar procedimentos");
       }
     } catch (e) {
-      console.error('💥 [MODAL EDIT] Exceção ao buscar procedimentos:', e);
       toast.error("Nenhum procedimento encontrado");
       setProcedimentos([]);
     } finally {
@@ -471,9 +422,6 @@ const ModalAgendamento = ({
         situacao: "AGENDADO",
       };
       
-      console.log('📤 [MODAL EDIT] Dados enviados para API:', dadosParaEnviar);
-      console.log('🆔 [MODAL EDIT] ID do agendamento:', agendamentoSelecionado?.id);
-      console.log('🎯 [MODAL EDIT] Cenário detectado:', agendamentoSelecionado ? 'EDITAR' : 'CRIAR');
       
       let response;
       if (agendamentoSelecionado) {
@@ -521,13 +469,11 @@ const ModalAgendamento = ({
         carregarAgendamentos();
       } else {
         const errorData = await response.json();
-        console.error('🚨 [MODAL EDIT] Erro da API:', errorData);
         
         // Mostrar detalhes específicos do erro
         let errorMessage = errorData.error || "Erro ao atualizar agendamento";
         
         if (errorData.details) {
-          console.error('🔍 [MODAL EDIT] Detalhes do erro:', errorData.details);
           
           // Se é erro de validação, mostrar campos específicos
           if (errorData.type === 'validation_error' && errorData.details.fieldErrors) {
@@ -546,7 +492,6 @@ const ModalAgendamento = ({
         throw new Error(errorMessage);
       }
     } catch (error) {
-      console.error('💥 [MODAL EDIT] Erro no catch:', error);
       const errorMessage = error instanceof Error ? error.message : "Erro ao atualizar agendamento";
       toast.error(errorMessage);
     } finally {
@@ -580,7 +525,7 @@ const ModalAgendamento = ({
         <Form {...form}>
           <div className="flex flex-col">
             <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-6">
                 <FormField
                   control={form.control}
                   name="cliente_id"
@@ -616,14 +561,14 @@ const ModalAgendamento = ({
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent 
-                          className="p-0" 
+                          className="w-full p-0" 
                           align="start"
                           style={{ 
                             width: '100%', 
                             minWidth: '100%'
                           }}
                         >
-                          <Command className="w-full">
+                          <Command className="w-[480px] p-0">
                             <CommandInput
                               placeholder="Busque por nome, CPF ou email..."
                               value={searchCliente}
@@ -631,13 +576,12 @@ const ModalAgendamento = ({
                             />
                             <CommandList>
                               <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
-                              <CommandGroup>
+                              <CommandGroup className="w-full p-0">
                                 {filteredClientes.map((cliente) => (
                                   <CommandItem
                                     value={`${cliente.id}-${cliente.nome}`}
                                     key={`cliente-${cliente.id}-${cliente.nome}`}
                                     onSelect={() => {
-                                      console.log('👤 [MODAL EDIT] Cliente selecionado:', cliente);
                                       // Limpar seleções dependentes (mas não o cliente)
                                       setConvenioSelecionado(null);
                                       setProcedimentoSelecionado(null);
@@ -651,7 +595,6 @@ const ModalAgendamento = ({
                                       
                                       // Definir cliente selecionado
                                       setClienteSelecionado(cliente);
-                                      console.log('✅ [MODAL EDIT] Cliente definido:', cliente.nome);
                                       
                                       // Carregar convênios
                                       fetchConvenios(cliente.id);
@@ -659,21 +602,24 @@ const ModalAgendamento = ({
                                       setSearchCliente("");
                                     }}
                                   >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === cliente.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
-                                      <div className="flex flex-col">
+                                    <div className="flex flex-col">
+                                      <div className="flex items-center gap-2">
                                         <span className="font-medium">{cliente.nome}</span>
-                                        <span className="text-xs text-gray-500">
-                                          {cliente.cpf ? `CPF: ${cliente.cpf}` : ""}
-                                          {cliente.email ? ` | Email: ${cliente.email}` : ""}
+                                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                                          {cliente.tipoCliente}
                                         </span>
                                       </div>
-                                    </CommandItem>
-                                  ))}
+                                      {cliente.cpf && <span className="text-sm text-gray-500">CPF: {cliente.cpf}</span>}
+                                      {cliente.email && <span className="text-sm text-gray-500">Email: {cliente.email}</span>}
+                                    </div>
+                                    <Check
+                                      className={cn(
+                                        "ml-auto",
+                                        field.value === cliente.id ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                  </CommandItem>
+                                ))}
                               </CommandGroup>
                             </CommandList>
                           </Command>
@@ -683,6 +629,8 @@ const ModalAgendamento = ({
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <FormField
                   control={form.control}
                   name="convenio_id"
@@ -713,29 +661,29 @@ const ModalAgendamento = ({
                               ) : field.value ? (
                                 convenios.find((convenio) => convenio.id === field.value)?.nome
                               ) : (
-                                "Selecione o convênio"
+                                clienteSelecionado ? "Selecione convênio" : "Selecione cliente primeiro"
                               )}
                               {!loadingConvenios && <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />}
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent 
-                          className="p-0" 
+                          className="w-full p-0" 
                           align="start"
                           style={{ 
                             width: '100%', 
                             minWidth: '100%'
                           }}
                         >
-                          <Command className="w-full">
+                          <Command className="w-[480px] p-0">
                             <CommandInput
-                              placeholder="Busque por nome do convênio..."
+                              placeholder="Busque convênio..."
                               value={searchConvenio}
                               onValueChange={setSearchConvenio}
                             />
                             <CommandList>
                               <CommandEmpty>Nenhum convênio encontrado.</CommandEmpty>
-                              <CommandGroup>
+                              <CommandGroup className="w-full p-0">
                                 {convenios
                                   .filter((convenio) =>
                                     convenio.nome.toLowerCase().includes(searchConvenio.toLowerCase())
@@ -751,13 +699,16 @@ const ModalAgendamento = ({
                                         setSearchConvenio("");
                                       }}
                                     >
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{convenio.nome}</span>
+                                        {convenio.regras && <span className="text-sm text-gray-500">{convenio.regras}</span>}
+                                      </div>
                                       <Check
                                         className={cn(
-                                          "mr-2 h-4 w-4",
+                                          "ml-auto",
                                           field.value === convenio.id ? "opacity-100" : "opacity-0"
                                         )}
                                       />
-                                      <span>{convenio.nome}</span>
                                     </CommandItem>
                                   ))}
                               </CommandGroup>
@@ -769,8 +720,6 @@ const ModalAgendamento = ({
                     </FormItem>
                   )}
                 />
-              </div>
-              <div className="space-y-6">
                 <FormField
                   control={form.control}
                   name="procedimento_id"
@@ -803,10 +752,10 @@ const ModalAgendamento = ({
                                   {field.value
                                     ? procedimentos.find((proc) => proc.procedimento.id === field.value)?.procedimento.nome
                                     : !convenioSelecionado 
-                                      ? "Selecione o convênio primeiro" 
+                                      ? "Selecione convênio primeiro" 
                                       : !clienteSelecionado 
-                                        ? "Selecione o cliente primeiro"
-                                        : "Selecione o procedimento"}
+                                        ? "Selecione cliente primeiro"
+                                        : "Selecione procedimento"}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </>
                               )}
@@ -814,22 +763,22 @@ const ModalAgendamento = ({
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent 
-                          className="p-0" 
+                          className="w-full p-0" 
                           align="start"
                           style={{ 
                             width: '100%', 
                             minWidth: '100%'
                           }}
                         >
-                          <Command className="w-full">
+                          <Command className="w-[480px] p-0">
                             <CommandInput
-                              placeholder="Busque por nome ou código do procedimento..."
+                              placeholder="Busque procedimento..."
                               value={searchProcedimento}
                               onValueChange={setSearchProcedimento}
                             />
                             <CommandList>
                               <CommandEmpty>Nenhum procedimento encontrado.</CommandEmpty>
-                              <CommandGroup>
+                              <CommandGroup className="w-full p-0">
                                 {procedimentos
                                   .filter((proc) =>
                                     proc.procedimento.nome.toLowerCase().includes(searchProcedimento.toLowerCase()) ||
@@ -846,12 +795,6 @@ const ModalAgendamento = ({
                                         setSearchProcedimento("");
                                       }}
                                     >
-                                      <Check
-                                        className={cn(
-                                          "mr-2 h-4 w-4",
-                                          field.value === proc.procedimento.id ? "opacity-100" : "opacity-0"
-                                        )}
-                                      />
                                       <div className="flex-1 flex justify-between items-center">
                                         <div className="flex flex-col">
                                           <span className="font-medium">{proc.procedimento.nome}</span>
@@ -865,6 +808,12 @@ const ModalAgendamento = ({
                                           R${Number(proc.valor).toFixed(2)}
                                         </span>
                                       </div>
+                                      <Check
+                                        className={cn(
+                                          "ml-auto h-4 w-4",
+                                          field.value === proc.procedimento.id ? "opacity-100" : "opacity-0"
+                                        )}
+                                      />
                                     </CommandItem>
                                   ))}
                               </CommandGroup>
@@ -872,6 +821,28 @@ const ModalAgendamento = ({
                           </Command>
                         </PopoverContent>
                       </Popover>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-6">
+                <FormField
+                  control={form.control}
+                  name="horario"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium text-gray-700">Horário *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="time"
+                          className="h-11 bg-gray-50 border-gray-200 hover:bg-gray-100 transition-colors"
+                          value={field.value || ""}
+                          onChange={field.onChange}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

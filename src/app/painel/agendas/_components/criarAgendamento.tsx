@@ -114,7 +114,6 @@ const CriarAgendamento = ({
   // useEffect para limpar estados quando o modal abre
   useEffect(() => {
     if (isOpenModalCreate) {
-      console.log('🧹 [MODAL CREATE] Limpando estados ao abrir modal');
       // Limpar seleções ao abrir o modal
       setClienteSelecionado(null);
       setConvenioSelecionada(undefined);
@@ -476,7 +475,6 @@ const CriarAgendamento = ({
                                     value={item.nome}
                                     key={`cliente-${item.id}`}
                                     onSelect={() => {
-                                      console.log('🔍 [CLIENTE SELECT] Cliente selecionado:', item);
                                       
                                       // Limpar seleções dependentes (mas não o cliente)
                                       setConvenioSelecionada(undefined);
@@ -489,11 +487,9 @@ const CriarAgendamento = ({
                                       form.setValue("convenio_id", 0);
                                       form.setValue("procedimento_id", 0);
                                       
-                                      console.log('📝 [CLIENTE SELECT] Form value definido:', Number(item.id));
                                       
                                       // Atualizar states
                                       setClienteSelecionado(item);
-                                      console.log('✅ [CLIENTE SELECT] Estado atualizado');
                                       
                                       // Carregar convênios para este cliente
                                       fetchConvenios(Number(item.id));
@@ -650,24 +646,13 @@ const CriarAgendamento = ({
                                 </>
                               ) : (
                                 <>
-                                  {(() => {
-                                    if (field.value) {
-                                      const selectedItem = procedimentos.find(
-                                        (p) => p.procedimento.id == field.value
-                                      );
-                                      if (selectedItem) {
-                                        return `${selectedItem.procedimento.nome} - R$${Number(selectedItem.valor).toFixed(2)}`;
-                                      }
-                                    } else {
-                                      if (!convenioSelecionado) {
-                                        return "Selecione convênio primeiro";
-                                      } else if (!clienteSelecionado) {
-                                        return "Selecione cliente primeiro";
-                                      } else {
-                                        return "Selecione procedimento";
-                                      }
-                                    }
-                                  })()}
+                                  {field.value
+                                    ? procedimentos.find((proc) => proc.procedimento.id === field.value)?.procedimento.nome
+                                    : !convenioSelecionado 
+                                      ? "Selecione convênio primeiro" 
+                                      : !clienteSelecionado 
+                                        ? "Selecione cliente primeiro"
+                                        : "Selecione procedimento"}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                                 </>
                               )}
@@ -698,15 +683,17 @@ const CriarAgendamento = ({
                                       setSearchProcedimento("");
                                     }}
                                   >
-                                    <div className="flex flex-col">
-                                      <span className="font-medium">{item.procedimento.nome}</span>
-                                      {item.procedimento.codigo && (
-                                        <span className="text-sm text-gray-500">Código: {item.procedimento.codigo}</span>
-                                      )}
+                                    <div className="flex-1 flex justify-between items-center">
+                                      <div className="flex flex-col">
+                                        <span className="font-medium">{item.procedimento.nome}</span>
+                                        {item.procedimento.codigo && (
+                                          <span className="text-xs text-gray-500">Código: {item.procedimento.codigo}</span>
+                                        )}
+                                      </div>
+                                      <span className="mx-4 font-semibold text-green-600">
+                                        R${Number(item.valor).toFixed(2)}
+                                      </span>
                                     </div>
-                                    <span className="mx-4 font-semibold text-green-600">
-                                      R${Number(item.valor).toFixed(2)}
-                                    </span>
                                     <Check
                                       className={cn(
                                         "ml-auto h-4 w-4",
@@ -728,6 +715,8 @@ const CriarAgendamento = ({
                     </FormItem>
                   )}
                 />
+              </div>
+              <div className="grid grid-cols-1 gap-6">
                 <FormField
                   control={form.control}
                   name="horario"

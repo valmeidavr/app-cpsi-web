@@ -132,8 +132,6 @@ export default function ValorProcedimentos() {
         params.append('valor', valorFilter.toString());
       }
       
-      console.log('URL da API:', `/api/valor-procedimento?${params}`);
-      console.log('Filtros aplicados:', {
         convenio_id: convenioSelecionado.id,
         tipoCliente: tipoClienteSelecionado || 'TODOS',
         tabela_faturamento_id: tabelaSelecionado?.id || 'TODAS',
@@ -144,21 +142,16 @@ export default function ValorProcedimentos() {
       const response = await fetch(`/api/valor-procedimento?${params}`);
       const data = await response.json();
       
-      console.log('Resposta da API:', data);
-      console.log('Status:', response.ok);
-      console.log('É array?', Array.isArray(data));
       
       if (response.ok) {
         // Detectar se a resposta é array direto ou objeto com data
         const dataArray = Array.isArray(data) ? data : (data.data || []);
-        console.log('Dados extraídos:', dataArray);
         
         if (Array.isArray(dataArray)) {
           const dadosValidos = dataArray.filter((item: { id: number; procedimento: { nome: string } }) => 
             item && item.id && item.procedimento && item.procedimento.nome
           );
           
-          console.log('Dados válidos:', dadosValidos);
           
           setValorProcedimentos(dadosValidos);
           
@@ -293,8 +286,6 @@ export default function ValorProcedimentos() {
   const onSubmit = async (
     values: z.infer<typeof createValorProcedimentoSchema>
   ) => {
-    console.log('onSubmit chamado!', values);
-    console.log('Form errors:', form.formState.errors);
     
     setCarregando(true);
     try {
@@ -306,7 +297,6 @@ export default function ValorProcedimentos() {
         procedimento_id: values.procedimento_id
       };
       
-      console.log('Dados sendo enviados:', dadosParaEnviar);
       
       const response = await fetch("/api/valor-procedimento", {
         method: 'POST',
@@ -327,7 +317,6 @@ export default function ValorProcedimentos() {
         toast.error(data.error || "Erro ao criar valor de procedimento");
       }
     } catch (error) {
-      console.error('Erro no cadastro:', error);
       toast.error("Erro ao criar valor de procedimento");
     } finally {
       setCarregando(false);
@@ -586,11 +575,6 @@ export default function ValorProcedimentos() {
               variant={"default"} 
               type="submit"
               onClick={(e) => {
-                console.log('Button clicked!');
-                console.log('Form state:', form.formState);
-                console.log('Form values:', form.getValues());
-                console.log('Form errors:', form.formState.errors);
-                console.log('Is form valid?', form.formState.isValid);
               }}
             >
               Cadastrar

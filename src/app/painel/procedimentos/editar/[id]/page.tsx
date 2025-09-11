@@ -68,8 +68,6 @@ export default function EditarProcedimento() {
         const response = await fetch(`/api/procedimentos/${procedimentoId}`);
         const data = await response.json();
         if (response.ok) {
-          console.log("Dados recebidos da API:", data);
-          console.log("Tipo do procedimento:", data.tipo);
           setProcedimento(data);
           form.reset({
             nome: data.nome,
@@ -79,7 +77,6 @@ export default function EditarProcedimento() {
           });
           // Garantir que o campo tipo seja definido corretamente
           form.setValue("tipo", data.tipo);
-          console.log("Valor do form após setValue:", form.getValues("tipo"));
         } else {
           toast.error("Erro ao carregar dados do procedimento");
         }
@@ -94,7 +91,6 @@ export default function EditarProcedimento() {
   // UseEffect separado para sincronizar o campo tipo
   useEffect(() => {
     if (procedimento?.tipo) {
-      console.log("Sincronizando tipo:", procedimento.tipo);
       form.setValue("tipo", procedimento.tipo);
     }
   }, [procedimento?.tipo, form]);

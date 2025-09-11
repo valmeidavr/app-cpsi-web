@@ -1,32 +1,68 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/app/painel/components/Header";
-import Sidebar from "@/app/painel/components/SiderBar"; // Certifique-se do nome correto!
+import Sidebar from "@/app/painel/components/SiderBar";
+
 export default function PainelLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false); // Estado do Sidebar
+  const [collapsed, setCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      const mobile = window.innerWidth < 768;
+      
+      setIsMobile(mobile);
+      
+      // Sempre colapsa em mobile, sempre expande em desktop
+      if (mobile) {
+        setCollapsed(true);
+      } else {
+        setCollapsed(false);
+      }
+    };
+
+    // Verificação inicial
+    if (typeof window !== 'undefined') {
+      checkScreenSize();
+    }
+    
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {}
-      <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-      {}
-      <div className="flex flex-col flex-1">
-        {}
-        <div
-          className={`fixed top-0 transition-all duration-300 ${
-            collapsed
-              ? "left-16 w-[calc(100%-4rem)]"
-              : "left-64 w-[calc(100%-16rem)]"
-          } bg-white shadow-md z-50`}
-        >
+      {/* Mobile Overlay */}
+      {isMobile && !collapsed && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setCollapsed(true)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <Sidebar 
+        collapsed={collapsed} 
+        setCollapsed={setCollapsed}
+        isMobile={isMobile}
+      />
+      
+      {/* Main Content */}
+      <div className={`flex flex-col flex-1 transition-all duration-300 overflow-x-hidden ${
+        isMobile ? 'ml-0' : collapsed ? 'ml-12 md:ml-16' : 'ml-56 md:ml-64'
+      }`}>
+        {/* Header */}
+        <div className="sticky top-0 bg-white shadow-md z-30">
           <Header />
         </div>
-        {}
-        <div className="mt-16 flex-1 p-6">
-          <div className="bg-white shadow-lg rounded-lg p-4 sm:p-6 md:p-8 max-w-6xl mx-auto border border-gray-300">
+        
+        {/* Content */}
+        <div className="flex-1 p-2 sm:p-3 md:p-6 overflow-x-hidden">
+          <div className="bg-white shadow-lg rounded-lg p-2 sm:p-3 md:p-6 lg:p-8 w-full mx-auto border border-gray-300 overflow-x-hidden">
             {children}
           </div>
         </div>

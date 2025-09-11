@@ -27,7 +27,6 @@ export default function GruposPage() {
   const carregarGrupos = async () => {
     try {
       setLoading(true)
-      console.log('🔄 [GRUPOS] Carregando grupos...')
       
       const response = await fetch('/api/grupos')
       if (!response.ok) {
@@ -36,7 +35,6 @@ export default function GruposPage() {
       }
       
       const gruposData = await response.json()
-      console.log('✅ [GRUPOS] Grupos carregados:', gruposData.length)
       
       // Calcular contagem de usuários para cada grupo
       const gruposComContagem = await Promise.all(
@@ -53,7 +51,6 @@ export default function GruposPage() {
             
             return { ...grupo, usuariosCount }
           } catch (error) {
-            console.error(`Erro ao carregar contagem para grupo ${grupo.id}:`, error)
             return { ...grupo, usuariosCount: 0 }
           }
         })
@@ -61,7 +58,6 @@ export default function GruposPage() {
       
       setGrupos(gruposComContagem)
     } catch (error) {
-      console.error('❌ [GRUPOS] Erro ao carregar grupos:', error)
       toast.error(`Erro ao carregar grupos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setLoading(false)
@@ -96,7 +92,6 @@ export default function GruposPage() {
     }
     
     try {
-      console.log('💾 [GRUPOS] Salvando grupo:', editingGrupo ? 'EDITAR' : 'CRIAR')
       
       let response
       if (editingGrupo) {
@@ -131,7 +126,6 @@ export default function GruposPage() {
       }
       
       const resultado = await response.json()
-      console.log('✅ [GRUPOS] Grupo salvo:', resultado.nome)
       
       toast.success(editingGrupo ? 'Grupo atualizado com sucesso!' : 'Grupo criado com sucesso!')
       setIsDialogOpen(false)
@@ -143,7 +137,6 @@ export default function GruposPage() {
       // Recarregar lista
       carregarGrupos()
     } catch (error) {
-      console.error('❌ [GRUPOS] Erro ao salvar grupo:', error)
       toast.error(`Erro ao salvar grupo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
@@ -158,7 +151,6 @@ export default function GruposPage() {
     }
     
     try {
-      console.log('🗑️ [GRUPOS] Deletando grupo:', grupo.nome)
       
       const response = await fetch(`/api/grupos/${grupo.id}`, {
         method: 'DELETE'
@@ -170,12 +162,10 @@ export default function GruposPage() {
       }
       
       const resultado = await response.json()
-      console.log('✅ [GRUPOS] Grupo deletado:', resultado.message)
       
       toast.success('Grupo deletado com sucesso!')
       carregarGrupos() // Recarregar lista
     } catch (error) {
-      console.error('❌ [GRUPOS] Erro ao deletar grupo:', error)
       toast.error(`Erro ao deletar grupo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     }
   }
