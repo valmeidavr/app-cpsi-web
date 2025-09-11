@@ -12,15 +12,17 @@ body {
   padding-right: 0 !important;
   height: 100%;
   min-height: 100vh;
-  overflow-y: hidden; /* Scroll apenas quando necessário */
+  overflow-x: hidden; /* Previne scroll horizontal */
   font-family: Arial, Helvetica, sans-serif;
+  /* Touch optimizations para mobile */
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
 }
 body[data-scroll-locked="1"] {
   pointer-events: auto !important;
 }
 /* 🔹 Garante que o conteúdo principal cresça corretamente */
-#__next,
-main {
+#__next {
   display: flex;
   flex-direction: column;
   min-height: 100vh; /* Mantém o conteúdo pelo menos na altura da tela */
@@ -124,4 +126,131 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   width: 100%;
   border: none;
   display: block;
+}
+
+/* Enhanced Dashboard Styles */
+.dashboard-gradient {
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(139, 92, 246, 0.1) 25%, 
+    rgba(236, 72, 153, 0.1) 50%, 
+    rgba(248, 113, 113, 0.1) 75%, 
+    rgba(34, 197, 94, 0.1) 100%);
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Professional card styles */
+.professional-card {
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.7));
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+}
+
+.professional-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(31, 38, 135, 0.5);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2563eb, #1e40af);
+}
+
+/* Mobile Responsiveness Optimizations */
+@media (max-width: 768px) {
+  /* Better touch targets */
+  button, [role="button"], [role="combobox"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent zoom on inputs */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+  
+  /* Better select dropdown positioning */
+  [data-radix-popper-content-wrapper] {
+    z-index: 9999 !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
+  
+  /* Prevent horizontal scroll */
+  * {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  
+  /* Better spacing for mobile */
+  .container {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Select dropdown specific fixes */
+[data-radix-select-content] {
+  max-width: calc(100vw - 2rem) !important;
+  margin-left: 1rem;
+  margin-right: 1rem;
+}
+
+/* Prevent body scroll when modals are open */
+.modal-open {
+  overflow: hidden;
+}
+
+/* Touch optimization for all interactive elements */
+@media (hover: none) and (pointer: coarse) {
+  /* This targets touch devices */
+  button:hover {
+    transform: none;
+  }
+  
+  .hover-lift:hover {
+    transform: none;
+  }
 }

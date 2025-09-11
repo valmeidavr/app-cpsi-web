@@ -1,39 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
-
-// GET - Buscar expediente por ID
+import { accessPool } from "@/lib/mysql";
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
-    const [rows] = await gestorPool.execute(
+    const [rows] = await accessPool.execute(
       'SELECT * FROM expediente WHERE id = ?',
       [id]
     );
-
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      dt_inicio: string;
+      dt_final: string;
+      h_inicio: string;
+      h_final: string;
+      intervalo: number;
+      semana: string;
+      alocacoes_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Expediente não encontrado' },
         { status: 404 }
       );
     }
-
-    const expediente = (rows as any[])[0];
-
+    const expediente = (rows as Array<{
+      id: number;
+      dt_inicio: string;
+      dt_final: string;
+      h_inicio: string;
+      h_final: string;
+      intervalo: number;
+      semana: string;
+      alocacoes_id: number;
+      createdAt: Date;
+      updatedAt: Date;
+    }>)[0];
     return NextResponse.json(expediente);
   } catch (error) {
-    console.error('Erro ao buscar expediente:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PUT - Atualizar expediente
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -41,9 +54,7 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    // Atualizar expediente
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE expediente SET 
         dt_inicio = ?, dt_final = ?, h_inicio = ?, h_final = ?, 
         intervalo = ?, semana = ?, alocacoes_id = ?
@@ -53,10 +64,8 @@ export async function PUT(
         body.intervalo, body.semana, body.alocacoes_id, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar expediente:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

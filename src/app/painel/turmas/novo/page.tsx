@@ -1,15 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -30,23 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
 import { http } from "@/util/http";
 import { createTurmaSchema } from "@/app/api/turmas/schema/formSchemaTurmas";
-
-//Types
 import { Prestador } from "@/app/types/Prestador";
 import { Procedimento } from "@/app/types/Procedimento";
-
-
 export default function NovoTurma() {
   const [loading, setLoading] = useState(false);
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [procedimentos, setProcedimentos] = useState<Procedimento[]>([]);
-
   const router = useRouter();
-
   const form = useForm({
     resolver: zodResolver(createTurmaSchema),
     mode: "onChange",
@@ -60,21 +46,19 @@ export default function NovoTurma() {
       procedimento_id: 0,
     },
   });
-
   const fetchPrestadores = async () => {
     try {
-      const response = await fetch("/api/prestadores?limit=1000");
+      const response = await fetch("/api/prestadores?all=true");
       const data = await response.json();
       if (response.ok) {
         setPrestadores(data.data);
       } else {
         toast.error("Erro ao carregar prestadores");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos prestadores");
     }
   };
-
   const fetchProcedimentos = async () => {
     try {
       const response = await fetch("/api/procedimentos?limit=1000");
@@ -84,16 +68,14 @@ export default function NovoTurma() {
       } else {
         toast.error("Erro ao carregar procedimentos");
       }
-    } catch (error: any) {
+    } catch (error) {
       toast.error("Erro ao carregar dados dos procedimentos");
     }
   };
-
   useEffect(() => {
     fetchPrestadores();
     fetchProcedimentos();
   }, []);
-
   const onSubmit = async (values: z.infer<typeof createTurmaSchema>) => {
     setLoading(true);
     try {
@@ -105,7 +87,6 @@ export default function NovoTurma() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -144,7 +125,6 @@ export default function NovoTurma() {
                 </FormItem>
               )}
             />
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -232,7 +212,6 @@ export default function NovoTurma() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
                                 name="procedimento_id"

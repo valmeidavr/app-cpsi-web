@@ -1,11 +1,7 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import ReactPaginate from "react-paginate";
-
-//Components
 import * as Tooltip from "@radix-ui/react-tooltip";
 import {
   Table,
@@ -17,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2, Search, Edit, Power, Plus, X } from "lucide-react";
+import { Loader2, Search, Edit, Plus, X } from "lucide-react";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -32,18 +28,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { toast } from "sonner";
-
-//Zod
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-//API
 import { createUnidadeSchema } from "@/app/api/unidades/schema/formSchemaUnidades";
 import { http } from "@/util/http";
-//Helpers
-// Removido import http - usando fetch direto
-//Types
 import { Unidade } from "@/app/types/Unidades";
-
 export default function Unidades() {
   const [unidades, setUnidades] = useState<Unidade[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -52,40 +42,32 @@ export default function Unidades() {
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
   const [isFormVisible, setIsFormVisible] = useState(false);
-
   const carregarUnidades = async () => {
     setCarregando(true);
     try {
       const params = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/unidades?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setUnidades(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalUnidades(data.pagination.total);
       } else {
-        console.error("Erro ao buscar unidades:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar unidades:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarUnidades();
   };
-
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
   const form = useForm({
     resolver: zodResolver(createUnidadeSchema),
@@ -94,7 +76,6 @@ export default function Unidades() {
       nome: "",
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createUnidadeSchema>) => {
     setLoading(true);
     try {
@@ -102,28 +83,23 @@ export default function Unidades() {
       carregarUnidades();
       toast.success("Unidade criada com sucesso!");
       form.reset();
-    } catch (error: any) {
+    } catch (error) {
       const errorMessage =
-        error.response?.data?.message || "Erro ao salvar unidade!";
-
-      // Exibindo toast de erro
+        error instanceof Error ? error.message : "Erro ao salvar unidade!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
     setLoading(false);
   };
-
   const toggleForm = () => {
     setIsFormVisible(!isFormVisible);
   };
-
   useEffect(() => {
     carregarUnidades();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -132,7 +108,6 @@ export default function Unidades() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -141,8 +116,7 @@ export default function Unidades() {
           { label: "Lista de Unidades" },
         ]}
       />
-
-      {/* Formulário condicional */}
+      {}
       {isFormVisible && (
         <div className="space-y-4 animate-fade-in mb-8">
           <div className="border-b">
@@ -173,7 +147,6 @@ export default function Unidades() {
                       </FormItem>
                     )}
                   />
-
                   <Button
                     type="submit"
                     disabled={loading}
@@ -195,10 +168,8 @@ export default function Unidades() {
           </div>
         </div>
       )}
-
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Unidades</h1>
-
-      {/* Barra de Pesquisa e Botão Nova Unidade */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -213,7 +184,6 @@ export default function Unidades() {
             Buscar
           </Button>
         </div>
-
         <div className="flex justify-start w-fit">
           <Button onClick={toggleForm} className="flex items-center gap-2">
             {isFormVisible ? (
@@ -230,8 +200,7 @@ export default function Unidades() {
           </Button>
         </div>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -239,7 +208,7 @@ export default function Unidades() {
         </div>
       ) : (
         <>
-          {/* Tabela de Unidades */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -252,17 +221,19 @@ export default function Unidades() {
               {unidades.map((unidade) => (
                 <TableRow
                   key={unidade.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className="odd:bg-gray-100 even:bg-white"
                 >
                   <TableCell>{unidade.id}</TableCell>
                   <TableCell>
-                    <Badge className=" text-[13px]" variant="outline">
+                    <Badge 
+                      className="text-[13px]"
+                      variant="outline"
+                    >
                       {unidade.nome}
                     </Badge>
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
-
+                    {}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -287,16 +258,15 @@ export default function Unidades() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Unidades */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalUnidades)} de{" "}
               {totalUnidades} unidades
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -339,4 +309,4 @@ export default function Unidades() {
       )}
     </div>
   );
-}
+}

@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createEspecialidadeSchema, updateEspecialidadeSchema } from "./schema/formSchemaEspecialidade";
-
 export type CreateEspecialidadeDTO = z.infer<typeof createEspecialidadeSchema>;
 export type UpdateEspecialidadeDTO = z.infer<typeof updateEspecialidadeSchema>;
-
-// GET - Listar especialidades com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,97 +11,169 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
-
-    // Se for para retornar todas as especialidades (sem paginação)
+    const comExpediente = searchParams.get('com_expediente') || '';
+    const unidadeId = searchParams.get('unidade_id') || '';
     if (all === 'true' || limit === '1000') {
-      console.log('🔍 Debug - Buscando todas as especialidades ativas');
-      
       try {
-        // Primeiro, tentar buscar com filtro de status
-        const [rows] = await gestorPool.execute(
-          'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
-        );
-        console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as any[]).length);
+        let query = 'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC';
         
-        if ((rows as any[]).length > 0) {
+        if (comExpediente === 'true') {
+          let whereClause = '';
+          let queryParams: any[] = [];
+          
+          if (unidadeId) {
+            whereClause = ' AND a.unidade_id = ?';
+            queryParams.push(parseInt(unidadeId));
+          }
+          
+          query = `
+            SELECT DISTINCT e.* FROM especialidades e
+            INNER JOIN alocacoes a ON e.id = a.especialidade_id
+            INNER JOIN expedientes exp ON a.id = exp.alocacao_id
+            WHERE e.status = "Ativo" ${whereClause}
+            ORDER BY e.nome ASC
+          `;
+          
+          const [rows] = await accessPool.execute(query, queryParams);
+          console.log('🔍 Debug - Especialidades filtradas encontradas:', (rows as Array<any>).length);
           return NextResponse.json({
             data: rows,
             pagination: {
               page: 1,
-              limit: (rows as any[]).length,
-              total: (rows as any[]).length,
+              limit: (rows as Array<any>).length,
+              total: (rows as Array<any>).length,
               totalPages: 1
             }
           });
         }
         
-        // Se não encontrar especialidades ativas, buscar todas
-        console.log('🔍 Debug - Nenhuma especialidade ativa encontrada, buscando todas...');
-        const [allRows] = await gestorPool.execute(
-          'SELECT * FROM especialidades ORDER BY nome ASC'
+        const [rows] = await accessPool.execute(query);
+        console.log('🔍 Debug - Especialidades ativas encontradas:', (rows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length);
+        if ((rows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length > 0) {
+          return NextResponse.json({
+            data: rows,
+            pagination: {
+              page: 1,
+              limit: (rows as Array<{
+                id: number;
+                nome: string;
+                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+              }>).length,
+              total: (rows as Array<{
+                id: number;
+                nome: string;
+                status: string;
+                createdAt: Date;
+                updatedAt: Date;
+              }>).length,
+              totalPages: 1
+            }
+          });
+        }
+        const [allRows] = await accessPool.execute(
+          'SELECT * FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
         );
-        console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as any[]).length);
-        
+        console.log('🔍 Debug - Total de especialidades (sem filtro):', (allRows as Array<{
+          id: number;
+          nome: string;
+          status: string;
+          createdAt: Date;
+          updatedAt: Date;
+        }>).length);
         return NextResponse.json({
           data: allRows,
           pagination: {
             page: 1,
-            limit: (allRows as any[]).length,
-            total: (allRows as any[]).length,
+            limit: (allRows as Array<{
+              id: number;
+              nome: string;
+              status: string;
+              createdAt: Date;
+              updatedAt: Date;
+            }>).length,
+            total: (allRows as Array<{
+              id: number;
+              nome: string;
+              status: string;
+              createdAt: Date;
+              updatedAt: Date;
+            }>).length,
             totalPages: 1
           }
         });
-        
       } catch (queryError) {
-        console.error('🔍 Debug - Erro na query de especialidades:', queryError);
-        
-        // Tentar query mais simples como fallback
         try {
-          const [simpleRows] = await gestorPool.execute(
-            'SELECT id, nome FROM especialidades ORDER BY nome ASC'
+          const [simpleRows] = await accessPool.execute(
+            'SELECT id, nome FROM especialidades WHERE status = "Ativo" ORDER BY nome ASC'
           );
-          console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as any[]).length);
-          
+          console.log('🔍 Debug - Especialidades via query simples:', (simpleRows as Array<{
+            id: number;
+            nome: string;
+          }>).length);
           return NextResponse.json({
             data: simpleRows,
             pagination: {
               page: 1,
-              limit: (simpleRows as any[]).length,
-              total: (simpleRows as any[]).length,
+              limit: (simpleRows as Array<{
+                id: number;
+                nome: string;
+              }>).length,
+              total: (simpleRows as Array<{
+                id: number;
+                nome: string;
+              }>).length,
               totalPages: 1
             }
           });
         } catch (fallbackError) {
-          console.error('🔍 Debug - Erro no fallback:', fallbackError);
           throw queryError; // Re-throw o erro original
         }
       }
     }
-
-    // 1. Construir a cláusula WHERE dinamicamente
-    let whereClause = ' WHERE status = "Ativo"';
+    let baseQuery = 'especialidades e';
+    let selectQuery = 'e.*';
+    let whereClause = ' WHERE e.status = "Ativo"';
     const queryParams: (string | number)[] = [];
-
+    
+    if (comExpediente === 'true') {
+      baseQuery = 'especialidades e INNER JOIN alocacoes a ON e.id = a.especialidade_id INNER JOIN expedientes exp ON a.id = exp.alocacao_id';
+      selectQuery = 'DISTINCT e.*';
+    }
+    
+    if (unidadeId) {
+      whereClause += ' AND a.unidade_id = ?';
+      queryParams.push(parseInt(unidadeId));
+    }
+    
     if (search) {
-      whereClause += ' AND nome LIKE ?';
+      whereClause += ' AND e.nome LIKE ?';
       queryParams.push(`%${search}%`);
     }
-
-    // 2. Query para contar o total de registros
-    const countQuery = `SELECT COUNT(*) as total FROM especialidades${whereClause}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
-    const total = (countRows as any[])[0]?.total || 0;
-
-    // 3. Query para buscar os dados com paginação
+    
+    const countQuery = `SELECT COUNT(${comExpediente === 'true' ? 'DISTINCT e.id' : '*'}) as total FROM ${baseQuery}${whereClause}`;
+    const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
-      SELECT * FROM especialidades${whereClause}
-      ORDER BY nome ASC
-      LIMIT ? OFFSET ?
+      SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
+      ORDER BY e.status ASC, e.nome ASC
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
-    const dataParams = [...queryParams, parseInt(limit), offset];
-    const especialidadeRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
-
+    const especialidadeRows = await executeWithRetry(accessPool, dataQuery, queryParams);
     return NextResponse.json({
       data: especialidadeRows,
       pagination: {
@@ -115,102 +184,120 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar especialidades:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar especialidade
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateEspecialidadeDTO = await request.json();
-
-    // Inserir especialidade
-    const [result] = await gestorPool.execute(
+    const body = await request.json();
+    console.log('🔍 POST especialidades - body recebido:', body);
+    
+    const validatedData = createEspecialidadeSchema.safeParse(body);
+    if (!validatedData.success) {
+      console.log('❌ POST especialidades - dados inválidos:', validatedData.error.flatten());
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const { ...payload } = validatedData.data;
+    console.log('✅ POST especialidades - dados validados:', payload);
+    
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO especialidades (
-        nome, codigo, status
-      ) VALUES (?, ?, ?)`,
+        nome, codigo, status, createdAt, updatedAt
+      ) VALUES (?, ?, ?, NOW(), NOW())`,
       [
-        body.nome, body.codigo, 'Ativo'
+        payload.nome, payload.codigo, 'Ativo'
       ]
     );
-
+    
+    console.log('✅ POST especialidades - inserção bem sucedida:', result);
+    
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar especialidade:', error);
+    console.error('❌ POST especialidades - erro:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
-} 
-
-// PUT - Atualizar especialidade
+}
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da especialidade é obrigatório' },
         { status: 400 }
       );
     }
-
-    const body: UpdateEspecialidadeDTO = await request.json();
-
-    // Atualizar especialidade
-    await gestorPool.execute(
+    const body = await request.json();
+    const validatedData = updateEspecialidadeSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    await executeWithRetry(accessPool,
       `UPDATE especialidades SET 
-        nome = ?, codigo = ?
+        nome = ?, codigo = ?, updatedAt = NOW()
        WHERE id = ?`,
       [
-        body.nome, body.codigo, id
+        payload.nome, payload.codigo, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar especialidade:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// DELETE - Deletar especialidade
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID da especialidade é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await executeWithRetry(accessPool,
       'UPDATE especialidades SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar especialidade:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}

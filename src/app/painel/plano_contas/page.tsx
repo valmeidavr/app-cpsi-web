@@ -1,12 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
-
-//Components
 import {
   Table,
   TableBody,
@@ -19,16 +15,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
-
-//Helpers
-// Removido import http - usando fetch direto
-
-//Types
 import { PlanoConta } from "@/app/types/PlanoConta";
-
-// ✅ Definir o tipo Plano de conta
 export default function PlanoContas() {
   const [planoContas, setPlanoContas] = useState<PlanoConta[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -36,39 +26,32 @@ export default function PlanoContas() {
   const [totalplano, setTotalplano] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-
   const carregarPlanoContas = async () => {
     setCarregando(true);
     try {
       const params = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/plano_contas?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setPlanoContas(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalplano(data.pagination.total);
       } else {
-        console.error("Erro ao buscar plano de contas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar Plano de conta:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   useEffect(() => {
     carregarPlanoContas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -77,12 +60,10 @@ export default function PlanoContas() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarPlanoContas();
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -92,8 +73,7 @@ export default function PlanoContas() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Planos de Conta</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Plano de conta */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -108,8 +88,7 @@ export default function PlanoContas() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Plano */}
+        {}
         <Button asChild>
           <Link href="/painel/plano_contas/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -117,8 +96,7 @@ export default function PlanoContas() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -126,7 +104,7 @@ export default function PlanoContas() {
         </div>
       ) : (
         <>
-          {/* Tabela de plano_contas */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,23 +119,31 @@ export default function PlanoContas() {
               {planoContas.map((plano_conta) => (
                 <TableRow
                   key={plano_conta.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (plano_conta as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{plano_conta.id}</TableCell>
                   <TableCell>{plano_conta.nome}</TableCell>
                   <TableCell>
                     <Badge
-                      className={`${
-                        plano_conta.tipo === "ENTRADA"
-                          ? "bg-green-500"
-                          : "bg-destructive"
-                      }`}
+                      className={cn(
+                        plano_conta.tipo === "ENTRADA" ? "bg-green-500" : "bg-destructive",
+                        (plano_conta as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
                     >
                       {plano_conta.tipo}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className="text-[13px]" variant="default">
+                    <Badge 
+                      className={cn(
+                        "text-[13px]",
+                        (plano_conta as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )} 
+                      variant="default"
+                    >
                       {plano_conta.categoria}
                     </Badge>
                   </TableCell>
@@ -188,16 +174,15 @@ export default function PlanoContas() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Planos de conta */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalplano)} de{" "}
               {totalplano} planos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -240,4 +225,4 @@ export default function PlanoContas() {
       )}
     </div>
   );
-}
+}

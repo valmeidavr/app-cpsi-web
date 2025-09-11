@@ -1,16 +1,10 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { redirect, useParams } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -31,14 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
 import { updateProcedimentoSchema } from "@/app/api/procedimentos/schema/formSchemaProcedimentos";
-
-//Types
 import { Especialidade } from "@/app/types/Especialidade";
 import { Procedimento } from "@/app/types/Procedimento";
-
 export default function EditarProcedimento() {
   const [loading, setLoading] = useState(false);
   const [procedimento, setProcedimento] = useState<Procedimento | null>(null);
@@ -48,7 +37,6 @@ export default function EditarProcedimento() {
   >([]);
   const params = useParams();
   const procedimentoId = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const form = useForm({
     resolver: zodResolver(updateProcedimentoSchema),
     mode: "onChange",
@@ -59,24 +47,18 @@ export default function EditarProcedimento() {
       especialidade_id: 0,
     },
   });
-
   const router = useRouter();
-
   const fetchEspecialidade = async () => {
     try {
       const response = await fetch("/api/especialidades");
       const data = await response.json();
-      
       if (response.ok) {
         setEspecialidadeOptions(data.data);
       } else {
-        console.error("Erro ao buscar especialidades:", data.error);
       }
     } catch (error) {
-      console.error("Error ao buscar especialidades:", error);
     }
   };
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -85,7 +67,6 @@ export default function EditarProcedimento() {
         await fetchEspecialidade();
         const response = await fetch(`/api/procedimentos/${procedimentoId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setProcedimento(data);
           form.reset({
@@ -94,12 +75,12 @@ export default function EditarProcedimento() {
             tipo: data.tipo,
             especialidade_id: data.especialidade_id || 0,
           });
+          // Garantir que o campo tipo seja definido corretamente
+          form.setValue("tipo", data.tipo);
         } else {
-          console.error("Erro ao carregar procedimento:", data.error);
           toast.error("Erro ao carregar dados do procedimento");
         }
       } catch (error) {
-        console.error("Erro ao carregar procedimento:", error);
       } finally {
         setCarregando(false);
       }
@@ -107,11 +88,16 @@ export default function EditarProcedimento() {
     fetchData();
   }, []);
 
+  // UseEffect separado para sincronizar o campo tipo
+  useEffect(() => {
+    if (procedimento?.tipo) {
+      form.setValue("tipo", procedimento.tipo);
+    }
+  }, [procedimento?.tipo, form]);
   const onSubmit = async (values: z.infer<typeof updateProcedimentoSchema>) => {
     setLoading(true);
     try {
       if (!procedimentoId) redirect("/painel/procedimentos");
-
       const response = await fetch(`/api/procedimentos/${procedimentoId}`, {
         method: 'PUT',
         headers: {
@@ -124,31 +110,24 @@ export default function EditarProcedimento() {
           especialidade_id: values.especialidade_id ? parseInt(values.especialidade_id.toString()) : null
         }),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar procedimento.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Procedimento atualizado com sucesso!");
-
       router.push(`/painel/procedimentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar procedimento");
     } finally {
       setLoading(false);
     }
   };
-
-  // Mockup de opçoes de Tipo
   const tipoOptions = [
     { value: "SESSÃO", label: "SESSÃO" },
     { value: "MENSAL", label: "MENSAL" },
   ];
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -158,8 +137,7 @@ export default function EditarProcedimento() {
           { label: "Editar Procedimento" },
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -190,7 +168,6 @@ export default function EditarProcedimento() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="codigo"
@@ -211,7 +188,6 @@ export default function EditarProcedimento() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="tipo"
@@ -220,7 +196,8 @@ export default function EditarProcedimento() {
                     <FormLabel>Tipo *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      value={field.value || ""}
+                      value={field.value || procedimento?.tipo || ""}
+                      key={`select-tipo-${procedimento?.id || "new"}`}
                     >
                       <FormControl
                         className={
@@ -245,7 +222,6 @@ export default function EditarProcedimento() {
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                                   name="especialidade_id"
@@ -285,7 +261,7 @@ export default function EditarProcedimento() {
                 )}
               />
             </div>
-            {/* Botão de Envio */}
+            {}
             <Button
               type="submit"
               disabled={loading}
@@ -306,4 +282,4 @@ export default function EditarProcedimento() {
       )}
     </div>
   );
-}
+}

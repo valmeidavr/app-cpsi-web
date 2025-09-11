@@ -1,5 +1,4 @@
 "use client";
-
 import {
   createAgendaSchema,
   updateAgendaSchema,
@@ -8,7 +7,6 @@ import { Especialidade } from "@/app/types/Especialidade";
 import { Prestador } from "@/app/types/Prestador";
 import { Unidade } from "@/app/types/Unidades";
 import { Button } from "@/components/ui/button";
-
 import {
   Dialog,
   DialogContent,
@@ -24,7 +22,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
   Table,
   TableBody,
@@ -47,7 +44,7 @@ import ModalAgendamento from "./modalAgendamento";
 import CriarAgendamento from "./criarAgendamento";
 import { Badge } from "@/components/ui/badge";
 import { localDateToUTCISO } from "@/app/helpers/dateUtils";
-
+import { Agenda } from "@/app/types/Agenda";
 const TabelaAgenda = () => {
   const {
     prestador,
@@ -58,19 +55,20 @@ const TabelaAgenda = () => {
     carregarAgendamentos,
     carregandoDadosAgenda,
   } = useAgenda();
-  console.log("agendamentos", horariosDia);
   const [modalAgendamentoOpen, setModalAgendamentoOpen] =
     useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
-
   const [horaSelecionada, setHoraSelecionada] = useState<string | null>(null);
   const [dataSelecionada, setDataSelecionada] = useState<Date | null>(null);
-  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<
-    any | null
-  >(null);
+  const [agendamentoSelecionado, setAgendamentoSelecionado] = useState<{
+    hora: string;
+    situacao: string;
+    paciente: string | null;
+    tipo: string;
+    dadosAgendamento: Agenda;
+  } | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [isOpenModalCreate, setIsOpenModalCreate] = useState<boolean>(false);
-
   const form = useForm<z.infer<typeof createAgendaSchema>>({
     resolver: zodResolver(createAgendaSchema),
     mode: "onChange",
@@ -84,55 +82,47 @@ const TabelaAgenda = () => {
       especialidade_id: especialidade?.id ?? 0,
       dtagenda: "",
       tipo: "PROCEDIMENTO",
-      tipo_cliente: "NSOCIO",
     },
   });
-
   const abrirModalAgendamento = async (hora: string, data: Date) => {
     setHoraSelecionada(hora);
     setDataSelecionada(data);
     
     try {
-      if (!agendamentoSelecionado) {
-        console.error("Agendamento não selecionado");
-        toast.error("Agendamento não selecionado");
-        return;
+      // Se há um agendamento selecionado, estamos EDITANDO
+      if (agendamentoSelecionado) {
+        const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
+        if (!response.ok) {
+          throw new Error("Erro ao carregar dados do agendamento");
+        }
+        const dadosAgendamento = await response.json();
+        form.reset({
+          convenio_id: dadosAgendamento.convenio_id,
+          cliente_id: dadosAgendamento.cliente_id,
+          procedimento_id: dadosAgendamento.procedimento_id,
+          situacao: "AGENDADO",
+        });
+      } else {
+        // Se NÃO há agendamento selecionado, estamos CRIANDO um novo
+        form.reset({
+          convenio_id: 0,
+          cliente_id: 0,
+          procedimento_id: 0,
+          situacao: "AGENDADO",
+        });
       }
-      
-      console.log("Carregando dados do agendamento:", agendamentoSelecionado.dadosAgendamento.id);
-      
-      const response = await fetch(`/api/agendas/${agendamentoSelecionado.dadosAgendamento.id}`);
-      if (!response.ok) {
-        throw new Error("Erro ao carregar dados do agendamento");
-      }
-      const data = await response.json();
-      console.log("Dados do agendamento carregados:", data);
-      
-      form.reset({
-        convenio_id: data.convenio_id,
-        cliente_id: data.cliente_id,
-        procedimento_id: data.procedimento_id,
-        situacao: "AGENDADO",
-        tipo_cliente: data.tipo_cliente || "NSOCIO",
-      });
     } catch (error) {
-      console.error("Erro ao carregar dados do agendamento:", error);
       toast.error("Erro ao carregar dados do agendamento");
     } finally {
       setModalAgendamentoOpen(true);
     }
   };
-
-  //Definindo dtagenda do form pela data selecionada e hora selecionada
   useEffect(() => {
     if (modalAgendamentoOpen && horaSelecionada && dataSelecionada) {
-      // Usar a função utilitária para criar a data UTC ISO
       const dtagenda = localDateToUTCISO(dataSelecionada, horaSelecionada);
       form.setValue("dtagenda", dtagenda);
     }
   }, [modalAgendamentoOpen, horaSelecionada, dataSelecionada]);
-
-  //Setando valores de prestadores, unidades e especialidades no form, pelos dados selecionados dentro do useState
   useEffect(() => {
     if (prestador) {
       form.setValue("prestador_id", prestador.id);
@@ -144,45 +134,35 @@ const TabelaAgenda = () => {
       form.setValue("especialidade_id", especialidade.id);
     }
   }, [prestador, unidade, especialidade]);
-
-  //Função de excluir agendamento
   const excluirAgendamento = async (agendaId: number) => {
     try {
       setLoading(true);
-      console.log("Excluindo agendamento:", agendaId);
-      
       const response = await fetch(`/api/agendas/${agendaId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ situacao: "CANCELADO" }),
+        body: JSON.stringify({ situacao: "INATIVO" }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Erro ao cancelar agendamento: ${response.status} - ${errorData.error || 'Erro desconhecido'}`);
       }
-
       toast.success(
         `Agendamento do dia ${
           dataSelecionada && format(dataSelecionada, "dd/MM/yyyy")
         } às ${horaSelecionada} foi cancelado com sucesso!`
       );
       await carregarAgendamentos();
-    } catch (error: any) {
-      toast.error(`Não foi possível cancelar o agendamento: ${error.message || 'Erro desconhecido'}`);
-      console.error("Erro ao cancelar agendamento:", error);
+    } catch (error) {
+      toast.error(`Não foi possível cancelar o agendamento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoading(false);
       setIsDeleteModalOpen(false);
     }
   };
-
   const handleStatusAgenda = async (agendaId: number, situacao: string) => {
     try {
-      console.log(`Alterando situação do agendamento ${agendaId} para: ${situacao}`);
-      
       const response = await fetch(`/api/agendas/${agendaId}`, {
         method: "PATCH",
         headers: {
@@ -190,32 +170,24 @@ const TabelaAgenda = () => {
         },
         body: JSON.stringify({ situacao }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Erro ao alterar situação: ${response.status} - ${errorData.error || 'Erro desconhecido'}`);
       }
-
       const result = await response.json();
-      console.log("Resposta da API:", result);
-
       toast.success(
         `Situação do agendamento foi alterada para ${situacao} com sucesso!`
       );
       await carregarAgendamentos();
     } catch (error) {
-      console.error("Não foi possível alterar situação do agendamento:", error);
       toast.error(`Erro ao alterar situação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     }
   };
-  //Lista de
-
   const getStatusClass = (situacao: string) => {
     const item = statusItems.find((i) => i.label === situacao);
     if (!item) return "bg-gray-200 text-gray-800";
     return `${item.color} bg-opacity-10 border border-current px-2 py-1 text-xs rounded-full font-medium`;
   };
-
   return (
     <>
       {date && (
@@ -231,7 +203,6 @@ const TabelaAgenda = () => {
           </div>
         </div>
       )}
-
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <Table>
           <TableHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -243,7 +214,6 @@ const TabelaAgenda = () => {
               <TableHead className="text-center font-semibold text-gray-700 py-4">Ações</TableHead>
             </TableRow>
           </TableHeader>
-          
           {carregandoDadosAgenda ? (
             <TableBody>
               <TableRow>
@@ -319,7 +289,6 @@ const TabelaAgenda = () => {
                               Ações do Agendamento
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            
                             {agenda.situacao === "LIVRE" ? (
                               <>
                                 <DropdownMenuLabel className="text-xs font-medium text-gray-500">
@@ -333,12 +302,9 @@ const TabelaAgenda = () => {
                                       className={`flex items-center cursor-pointer ${color}`}
                                       onSelect={() => {
                                         if (label === "AGENDADO") {
-                                          // Para agendar, abrir o modal
                                           setAgendamentoSelecionado(agenda);
                                           abrirModalAgendamento(agenda.hora, date);
                                         } else {
-                                          // Para outras situações, alterar diretamente
-                                          console.log(`Alterando situação para: ${label}`, agenda);
                                           handleStatusAgenda(
                                             agenda.dadosAgendamento.id,
                                             label
@@ -350,23 +316,7 @@ const TabelaAgenda = () => {
                                       {label}
                                     </DropdownMenuItem>
                                   ))}
-                                
-                                <DropdownMenuSeparator />
-                                <DropdownMenuLabel className="text-xs font-medium text-gray-500">
-                                  Outras Ações
-                                </DropdownMenuLabel>
-                                
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setAgendamentoSelecionado(agenda);
-                                    console.log("Abrindo modal de edição para:", agenda);
-                                    abrirModalAgendamento(agenda.hora, date);
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <PencilIcon className="w-4 h-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
+                                {/* Para horários LIVRE, não há opção de editar */}
                               </>
                             ) : (
                               <>
@@ -381,12 +331,9 @@ const TabelaAgenda = () => {
                                       className={`flex items-center cursor-pointer ${color}`}
                                       onSelect={() => {
                                         if (label === "AGENDADO") {
-                                          // Para agendar, abrir o modal
                                           setAgendamentoSelecionado(agenda);
                                           abrirModalAgendamento(agenda.hora, date);
                                         } else {
-                                          // Para outras situações, alterar diretamente
-                                          console.log(`Alterando situação para: ${label}`, agenda);
                                           handleStatusAgenda(
                                             agenda.dadosAgendamento.id,
                                             label
@@ -398,29 +345,28 @@ const TabelaAgenda = () => {
                                       {label}
                                     </DropdownMenuItem>
                                   ))}
-                                
                                 <DropdownMenuSeparator />
                                 <DropdownMenuLabel className="text-xs font-medium text-gray-500">
                                   Outras Ações
                                 </DropdownMenuLabel>
-                                
-                                <DropdownMenuItem
-                                  onSelect={() => {
-                                    setAgendamentoSelecionado(agenda);
-                                    abrirModalAgendamento(agenda.hora, date);
-                                  }}
-                                  className="cursor-pointer"
-                                >
-                                  <PencilIcon className="w-4 h-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-
+                                {/* Editar só aparece para agendamentos AGENDADOS */}
+                                {agenda.situacao === "AGENDADO" && (
+                                  <DropdownMenuItem
+                                    onSelect={() => {
+                                      setAgendamentoSelecionado(agenda);
+                                      abrirModalAgendamento(agenda.hora, date);
+                                    }}
+                                    className="cursor-pointer"
+                                  >
+                                    <PencilIcon className="w-4 h-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                )}
                                 <DropdownMenuItem
                                   onSelect={() => {
                                     setHoraSelecionada(agenda.hora);
                                     setDataSelecionada(date);
                                     setAgendamentoSelecionado(agenda);
-                                    console.log("Abrindo modal de exclusão para:", agenda);
                                     setIsDeleteModalOpen(true);
                                   }}
                                   className="text-red-600 flex items-center cursor-pointer"
@@ -483,10 +429,9 @@ const TabelaAgenda = () => {
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                Criar Agendamento
+                Encaixe
               </Button>
             </div>
-            
             <div className="flex items-center space-x-2 text-sm text-gray-500">
               <div className="flex items-center space-x-1">
                 <div className="w-3 h-3 bg-green-100 rounded-full border border-green-300"></div>
@@ -502,17 +447,23 @@ const TabelaAgenda = () => {
       <ModalAgendamento
         open={modalAgendamentoOpen}
         setOpen={setModalAgendamentoOpen}
-        agendamentoSelecionado={agendamentoSelecionado}
+        agendamentoSelecionado={agendamentoSelecionado ? {
+          id: agendamentoSelecionado.dadosAgendamento.id,
+          cliente_id: agendamentoSelecionado.dadosAgendamento.cliente_id || 0,
+          convenio_id: agendamentoSelecionado.dadosAgendamento.convenio_id || 0,
+          procedimento_id: agendamentoSelecionado.dadosAgendamento.procedimento_id || 0,
+          dtagenda: agendamentoSelecionado.dadosAgendamento.dtagenda,
+          situacao: agendamentoSelecionado.dadosAgendamento.situacao
+        } : null}
+        setAgendamentoSelecionado={setAgendamentoSelecionado}
         horaSelecionada={horaSelecionada}
         dataSelecionada={dataSelecionada}
       />
-
       <CriarAgendamento
         isOpenModalCreate={isOpenModalCreate}
         setIsOpenModalCreate={setIsOpenModalCreate}
         dataSelecionada={dataSelecionada}
       />
-
       <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -545,5 +496,4 @@ const TabelaAgenda = () => {
     </>
   );
 };
-
-export default TabelaAgenda;
+export default TabelaAgenda;

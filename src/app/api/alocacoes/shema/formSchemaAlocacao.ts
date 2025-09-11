@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 export const createAlocacaoSchema = z.object({
   especialidade_id: z.preprocess(
     (val) => Number(val),
@@ -11,5 +10,4 @@ export const createAlocacaoSchema = z.object({
   ),
   prestador_id: z.preprocess((val) => Number(val), z.number()).nullable(),
 });
-
-export const updateAlocacaoSchema = createAlocacaoSchema.partial();
+export const updateAlocacaoSchema = createAlocacaoSchema.partial();

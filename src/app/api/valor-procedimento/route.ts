@@ -1,12 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createValorProcedimentoSchema, updateValorProcedimentoSchema } from "./schema/formSchemaValorProcedimento";
-
 export type CreateValorProcedimentoDTO = z.infer<typeof createValorProcedimentoSchema>;
 export type UpdateValorProcedimentoDTO = z.infer<typeof updateValorProcedimentoSchema>;
-
-// GET - Listar valores de procedimentos com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -15,25 +12,49 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search") || "";
     const convenio_id = searchParams.get("convenio_id");
     const tipoCliente = searchParams.get("tipoCliente");
+    const tabela_faturamento_id = searchParams.get("tabela_faturamento_id");
+    const procedimento_id = searchParams.get("procedimento_id");
+    const valor = searchParams.get("valor");
     const conveniosId = searchParams.get("conveniosId"); // Para compatibilidade
     const convenioId = convenio_id || conveniosId;
-
-    // Se for busca específica por convênio e tipo de cliente
+    
+    console.log('🔍 [API VALOR-PROCEDIMENTO] Parâmetros recebidos:', {
+      convenio_id,
+      conveniosId, 
+      convenioId,
+      tipoCliente,
+      tabela_faturamento_id,
+      procedimento_id,
+      valor
+    });
+    
     if (convenioId && tipoCliente) {
       const query = `
         SELECT DISTINCT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
         FROM valor_procedimentos vp
         INNER JOIN procedimentos p ON vp.procedimento_id = p.id
         INNER JOIN tabela_faturamentos tf ON vp.tabela_faturamento_id = tf.id
-        INNER JOIN convenios c ON tf.id = c.tabelaFaturamentosId
+        INNER JOIN convenios c ON tf.id = c.tabela_faturamento_id
         WHERE c.id = ? AND vp.tipo = ?
         ORDER BY p.nome ASC
       `;
       
-      const valorRows = await executeWithRetry(gestorPool, query, [convenioId, tipoCliente]);
+      console.log('📊 [API VALOR-PROCEDIMENTO] Executando query:', {
+        query: query.trim(),
+        parametros: [convenioId, tipoCliente]
+      });
       
-      // Transformar os dados para o formato esperado pelo frontend
-      const valorProcedimentosFormatados = (valorRows as any[]).map(row => ({
+      const valorRows = await executeWithRetry(accessPool, query, [convenioId, tipoCliente]);
+      console.log('📈 [API VALOR-PROCEDIMENTO] Quantidade de registros retornados:', (valorRows as any[]).length);
+      const valorProcedimentosFormatados = (valorRows as Array<{
+        id: number;
+        valor: number;
+        tipo: string;
+        tabela_faturamento_id: number;
+        procedimento_id: number;
+        procedimento_nome: string;
+        procedimento_codigo: string;
+      }>).map(row => ({
         id: row.id,
         valor: row.valor,
         tipo: row.tipo,
@@ -49,54 +70,107 @@ export async function GET(request: NextRequest) {
           id: row.tabela_faturamento_id
         }
       }));
-      
-      // Verificar se os dados são válidos
       const dadosValidos = valorProcedimentosFormatados.filter(item => 
         item && item.id && item.procedimento && item.procedimento.nome
       );
       
+      console.log('✅ [API VALOR-PROCEDIMENTO] Dados válidos após filtro:', dadosValidos.length);
+      console.log('📋 [API VALOR-PROCEDIMENTO] Primeiros 3 procedimentos:', 
+        dadosValidos.slice(0, 3).map(item => ({
+          id: item.id,
+          nome: item.procedimento.nome,
+          valor: item.valor,
+          tipo: item.tipo
+        }))
+      );
+      
       return NextResponse.json(dadosValidos);
     }
-
-    // 1. Defina a base da query com o JOIN para que sempre busque o nome do procedimento.
+    
+    // Sempre incluir JOIN com convenios se convenioId for fornecido
+    let extraJoin = "";
+    if (convenioId) {
+      extraJoin = "INNER JOIN convenios c ON tf.id = c.tabela_faturamento_id";
+    }
+    
     const baseQuery = `
       FROM valor_procedimentos vp
       INNER JOIN procedimentos p ON vp.procedimento_id = p.id
       INNER JOIN tabela_faturamentos tf ON vp.tabela_faturamento_id = tf.id
+      ${extraJoin}
     `;
-
     const whereClauses: string[] = [];
     const params: (string | number)[] = [];
-
-    // 2. Adicione as condições WHERE dinamicamente.
-    if (search) {
-      whereClauses.push("WHERE (p.nome LIKE ? OR vp.tipo LIKE ?)");
-      params.push(`%${search}%`, `%${search}%`);
-    } else {
-      whereClauses.push("WHERE 1=1"); // Sem filtros específicos
-    }
-
-    const whereString = whereClauses.join(" ");
     
-    // Debug logs removidos para evitar spam
-
-    // 3. Monte a query para buscar os dados.
+    // Construir condições WHERE
+    const conditions: string[] = [];
+    
+    // Filtro por convênio (se fornecido)
+    if (convenioId) {
+      conditions.push("c.id = ?");
+      params.push(convenioId);
+    }
+    
+    // Filtro por tipo cliente (se fornecido)
+    if (tipoCliente) {
+      conditions.push("vp.tipo = ?");
+      params.push(tipoCliente);
+    }
+    
+    // Filtro por tabela faturamento (se fornecido)
+    if (tabela_faturamento_id) {
+      conditions.push("vp.tabela_faturamento_id = ?");
+      params.push(parseInt(tabela_faturamento_id));
+    }
+    
+    // Filtro por procedimento (se fornecido)
+    if (procedimento_id) {
+      conditions.push("vp.procedimento_id = ?");
+      params.push(parseInt(procedimento_id));
+    }
+    
+    // Filtro por valor (se fornecido)
+    if (valor) {
+      conditions.push("vp.valor = ?");
+      params.push(parseFloat(valor));
+    }
+    
+    // Filtro de busca (se fornecido)  
+    if (search) {
+      conditions.push("(p.nome LIKE ? OR vp.tipo LIKE ?)");
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    // Construir string WHERE
+    if (conditions.length > 0) {
+      whereClauses.push("WHERE " + conditions.join(" AND "));
+    } else {
+      whereClauses.push("WHERE 1=1");
+    }
+    const whereString = whereClauses.join(" ");
+    const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
       SELECT vp.*, p.nome as procedimento_nome, p.codigo as procedimento_codigo
       ${baseQuery}
       ${whereString}
       ORDER BY vp.id DESC
-      LIMIT ? OFFSET ?
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
     const dataParams = [
       ...params,
       parseInt(limit),
       (parseInt(page) - 1) * parseInt(limit),
     ];
-    const valorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
-
-    // 4. Transformar os dados para o formato esperado pelo frontend
-    const valorProcedimentosFormatados = (valorRows as any[]).map(row => ({
+    const valorRows = await executeWithRetry(accessPool, dataQuery, dataParams);
+    const valorProcedimentosFormatados = (valorRows as Array<{
+      id: number;
+      valor: number;
+      tipo: string;
+      tabela_faturamento_id: number;
+      procedimento_id: number;
+      procedimento_nome: string;
+      procedimento_codigo: string;
+    }>).map(row => ({
       id: row.id,
       valor: row.valor,
       tipo: row.tipo,
@@ -112,21 +186,11 @@ export async function GET(request: NextRequest) {
         id: row.tabela_faturamento_id
       }
     }));
-    
-    // Debug logs removidos para evitar spam
-
-    // 5. Verificar se os dados são válidos
     const dadosValidos = valorProcedimentosFormatados.filter(item => 
       item && item.id && item.procedimento && item.procedimento.nome
     );
-
-    // 6. Monte a query para contar o total de registros (sem repetir código).
     const countQuery = `SELECT COUNT(vp.id) as total ${baseQuery} ${whereString}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, params);
-    const total = (countRows as any[])[0]?.total || 0;
-    
-    // Debug logs removidos para evitar spam
-
+    await executeWithRetry(accessPool, countQuery, params);
     return NextResponse.json({
       data: dadosValidos,
       pagination: {
@@ -137,72 +201,68 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar valores de procedimentos:", error);
+    console.error('❌ [API VALOR-PROCEDIMENTO] Erro:', error);
+    console.error('💥 [API VALOR-PROCEDIMENTO] Stack trace:', error instanceof Error ? error.stack : 'Sem stack trace');
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: "Erro interno do servidor", details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar valor de procedimento
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateValorProcedimentoDTO = await request.json();
-
-    // Inserir valor de procedimento
-    const [result] = await gestorPool.execute(
+    const rawBody = await request.json();
+    const validatedData = createValorProcedimentoSchema.safeParse(rawBody);
+    
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const body = validatedData.data;
+    const [result] = await accessPool.execute(
       `INSERT INTO valor_procedimentos (
         valor, tipo, tabela_faturamento_id, procedimento_id
       ) VALUES (?, ?, ?, ?)`,
       [
-        body.valor, body.tipo, body.tabela_faturamento_id, body.procedimento_id
+        body.valor, body.tipo_cliente, body.tabela_faturamento_id, body.procedimento_id
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar valor de procedimento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PATCH - Atualizar ou deletar valor de procedimento
 export async function PATCH(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     const body = await request.json();
-
     if (!id) {
       return NextResponse.json(
         { error: 'ID é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Se for para deletar (remover o registro)
     if (body.delete === true) {
-      await gestorPool.execute(
+      await accessPool.execute(
         'DELETE FROM valor_procedimentos WHERE id = ?',
         [id]
       );
       return NextResponse.json({ success: true, message: 'Valor de procedimento removido com sucesso' });
     }
-
-    // Se for para atualizar
     if (body.valor !== undefined || body.tipo !== undefined || 
         body.tabela_faturamento_id !== undefined || body.procedimento_id !== undefined) {
-      
       const updateFields: string[] = [];
-      const updateValues: any[] = [];
-
+      const updateValues: (string | number)[] = [];
       if (body.valor !== undefined) {
         updateFields.push('valor = ?');
         updateValues.push(body.valor);
@@ -219,21 +279,16 @@ export async function PATCH(request: NextRequest) {
         updateFields.push('procedimento_id = ?');
         updateValues.push(body.procedimento_id);
       }
-
       updateValues.push(id);
       const updateQuery = `UPDATE valor_procedimentos SET ${updateFields.join(', ')} WHERE id = ?`;
-      
-      await gestorPool.execute(updateQuery, updateValues);
+      await accessPool.execute(updateQuery, updateValues);
       return NextResponse.json({ success: true, message: 'Valor de procedimento atualizado com sucesso' });
     }
-
     return NextResponse.json(
       { error: 'Nenhum campo para atualizar fornecido' },
       { status: 400 }
     );
-
   } catch (error) {
-    console.error('Erro ao atualizar/deletar valor de procedimento:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

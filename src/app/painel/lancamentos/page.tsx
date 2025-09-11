@@ -1,11 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-//Components
 import {
   Table,
   TableBody,
@@ -37,6 +34,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "date-fns";
+import { formatValor } from "@/app/helpers/format";
 import {
   Form,
   FormControl,
@@ -53,14 +51,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-//Helpers
-// Removido import http - usando fetch direto
-//API
-//Types
+import { cn } from "@/lib/utils";
 import { Lancamento } from "@/app/types/Lancamento";
 import { Caixa } from "@/app/types/Caixa";
 import { PlanoConta } from "@/app/types/PlanoConta";
-
 export default function Lancamentos() {
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -74,22 +68,24 @@ export default function Lancamentos() {
   const [loadingAction, setLoadingAction] = useState(false);
   const [caixas, setCaixas] = useState<Caixa[]>([]);
   const [planoConta, setPlanoConta] = useState<PlanoConta[]>([]);
-  const carregarLancamentos = async (filters?: any) => {
+  const carregarLancamentos = async (filters?: {
+    caixa_id?: number;
+    plano_conta_id?: number;
+    data_inicio?: string;
+    data_fim?: string;
+  }) => {
     setCarregando(true);
     try {
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
-      params.append('limit', '5');
+      params.append('limit', '10');
       params.append('search', termoBusca);
-
       if (filters?.caixa_id && filters.caixa_id != 0) {
         params.append('caixa_id', filters.caixa_id.toString());
       }
-
       if (filters?.plano_conta_id && filters.plano_conta_id != 0) {
         params.append('plano_conta_id', filters.plano_conta_id.toString());
       }
-
       if (
         filters?.data_inicio &&
         filters.data_inicio.trim() !== "" &&
@@ -99,19 +95,16 @@ export default function Lancamentos() {
         params.append('data_inicio', filters.data_inicio);
         params.append('data_fim', filters.data_fim);
       }
-
       const response = await fetch(`/api/lancamentos?${params}`);
       const data = await response.json();
-
+      
       if (response.ok) {
         setLancamentos(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalLancamentos(data.pagination.total);
       } else {
-        console.error("Erro ao buscar lançamentos:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar lançamentos:", error);
     } finally {
       setCarregando(false);
     }
@@ -129,72 +122,70 @@ export default function Lancamentos() {
     try {
       const response = await fetch("/api/caixa");
       const data = await response.json();
-      
       if (response.ok) {
         setCaixas(data.data);
       } else {
-        console.error("Erro ao buscar caixas:", data.error);
       }
-    } catch (error: any) {
-      console.error("Erro ao buscar caixas:", error);
+    } catch (error) {
     }
   };
   const fetchPlanoContas = async () => {
     try {
       const response = await fetch("/api/plano_contas");
       const data = await response.json();
-      
       if (response.ok) {
         setPlanoConta(data.data);
       } else {
-        console.error("Erro ao buscar plano de contas:", data.error);
       }
-    } catch (error: any) {
-      console.error("Erro ao buscar plano de contas:", error);
+    } catch (error) {
     }
   };
-
   const handleUpdateStatus = async () => {
     if (!lancamentoSelecionado) return;
     setLoadingAction(true);
-
     try {
       const novoStatus =
-        lancamentoSelecionado.status === "ATIVO" ? "INATIVO" : "ATIVO";
-      console.log(lancamentoSelecionado.id, novoStatus);
-      await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
+        lancamentoSelecionado.status === "Ativo" ? "Inativo" : "Ativo";
+        
+      
+      const response = await fetch(`/api/lancamentos/${lancamentoSelecionado.id}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ status: novoStatus }),
       });
-
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Erro ao atualizar status');
+      }
+      
       toast.success(
         `Lançamento ${
-          novoStatus === "ATIVO" ? "ativado" : "desativado"
+          novoStatus === "Ativo" ? "ativado" : "desativado"
         } com sucesso!`
       );
-
+      
+      // Aguardar um pouco antes de recarregar para garantir que a transação foi commitada
+      await new Promise(resolve => setTimeout(resolve, 500));
       await carregarLancamentos(form.getValues());
+      
     } catch (error) {
-      console.error("Erro ao alterar status do lançamento:", error);
       toast.error("Erro ao tentar alterar o status do lançamento.");
     } finally {
       setLoadingAction(false);
       setIsDialogOpen(false);
     }
   };
-
-  const isAtivando = lancamentoSelecionado?.status === "INATIVO";
-
+  const isAtivando = lancamentoSelecionado?.status === "Inativo";
   useEffect(() => {
     fetchCaixas();
     fetchPlanoContas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -203,12 +194,19 @@ export default function Lancamentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
-  const handleSearch = (values: any) => {
+  const handleSearch = (values: {
+    caixa_id: number;
+    plano_conta_id: number;
+    data_inicio: string;
+    data_fim: string;
+  }) => {
+    if (!values.data_inicio && !values.data_fim) {
+      toast.error("Selecione pelo menos uma data (início ou fim) para buscar os lançamentos");
+      return;
+    }
     setPaginaAtual(0);
     carregarLancamentos(values);
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -218,7 +216,6 @@ export default function Lancamentos() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Lançamentos</h1>
-
       <Form {...form}>
         <div className="border bg-card text-card-foreground p-6 rounded-lg shadow-sm mb-8">
           <form onSubmit={form.handleSubmit(handleSearch)}>
@@ -255,7 +252,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -288,7 +284,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -303,7 +298,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="lg:col-span-1">
                 <FormField
                   control={form.control}
@@ -318,7 +312,6 @@ export default function Lancamentos() {
                   )}
                 />
               </div>
-
               <div className="flex items-center gap-2 lg:col-span-1">
                 <Button className="w-full" variant="default" type="submit">
                   <Search className="w-4 h-4 mr-2" />
@@ -358,7 +351,7 @@ export default function Lancamentos() {
           </Link>
         </Badge>
       </div>
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -369,7 +362,10 @@ export default function Lancamentos() {
           {lancamentos.length === 0 ? (
             <div className="flex justify-center items-center w-full h-40">
               <span className="ml-2 text-gray-500">
-                Nenhuma lançamento encontrado ...
+                {!form.watch('data_inicio') && !form.watch('data_fim') 
+                  ? "Selecione uma data início e fim para buscar os lançamentos"
+                  : "Nenhum lançamento encontrado para os filtros selecionados"
+                }
               </span>
             </div>
           ) : (
@@ -379,8 +375,8 @@ export default function Lancamentos() {
                   <TableHead className="h-12-1">ID</TableHead>
                   <TableHead className="h-12-1">Data Lançamento</TableHead>
                   <TableHead className="h-12-1">Caixa</TableHead>
-                  <TableHead className="h-12-1">Entrada</TableHead>
-                  <TableHead className="h-12-1">Saída</TableHead>
+                  <TableHead className="h-12-1">Tipo</TableHead>
+                  <TableHead className="h-12-1">Valor</TableHead>
                   <TableHead className="h-12-1">Plano de Conta</TableHead>
                   <TableHead className="h-12-1">Pagante</TableHead>
                   <TableHead className="h-12-1">Ações</TableHead>
@@ -390,44 +386,68 @@ export default function Lancamentos() {
                 {lancamentos.map((lancamento) => (
                   <TableRow
                     key={lancamento.id}
-                    className={"odd:bg-gray-100 even:bg-white"}
+                    className={cn(
+                      "odd:bg-gray-100 even:bg-white",
+                      lancamento.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                    )}
                   >
                     <TableCell>{lancamento.id}</TableCell>
                     <TableCell>
                       {formatDate(lancamento.data_lancamento, "dd/MM/yyyy")}
                     </TableCell>
-
                     <TableCell>
-                      <Badge variant="outline">
-                        {lancamento.caixa ? lancamento.caixa.nome : "N/A"}
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
+                        {lancamento.caixa_nome || "N/A"}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {lancamento.tipo === "ENTRADA" && (
-                        <Badge className="bg-green-500">
-                          R${lancamento.valor}
-                        </Badge>
-                      )}
+                      <Badge 
+                        className={cn(
+                          lancamento.tipo === "ENTRADA" ? "bg-green-500" : 
+                          lancamento.tipo === "SAIDA" ? "bg-destructive" :
+                          "bg-orange-400",
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
+                        {lancamento.tipo === "ENTRADA" ? "Entrada" : 
+                         lancamento.tipo === "SAIDA" ? "Saída" : 
+                         "Transferência"}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      {lancamento.tipo === "SAIDA" && (
-                        <Badge className="bg-destructive">
-                          R${lancamento.valor}
-                        </Badge>
-                      )}
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
+                        {formatValor(lancamento.valor)}
+                      </Badge>
                     </TableCell>
-
                     <TableCell>
-                      <Badge variant="default">
+                      <Badge 
+                        variant="default"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >
                         <div>
-                          {lancamento.plano_conta
-                            ? lancamento.plano_conta.nome
-                            : "N/A"}
+                          {lancamento.plano_conta_nome || "N/A"}
                         </div>
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{lancamento.usuario?.nome || 'N/A'}</Badge>
+                      <Badge 
+                        variant="outline"
+                        className={cn(
+                          lancamento.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                        )}
+                      >{lancamento.cliente_nome || 'N/A'}</Badge>
                     </TableCell>
                     <TableCell className="flex gap-3 justify-center">
                       <Tooltip.Provider>
@@ -451,14 +471,13 @@ export default function Lancamentos() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
                             <Button
                               size="icon"
                               variant={
-                                lancamento.status === "ATIVO"
+                                lancamento.status === "Ativo"
                                   ? "destructive"
                                   : "outline"
                               }
@@ -467,7 +486,7 @@ export default function Lancamentos() {
                                 setIsDialogOpen(true);
                               }}
                             >
-                              {lancamento.status === "ATIVO" ? (
+                              {lancamento.status === "Ativo" ? (
                                 <ToggleLeft className="h-5 w-5 " />
                               ) : (
                                 <ToggleRight className="h-5 w-5 text-green-500" />
@@ -479,7 +498,7 @@ export default function Lancamentos() {
                               side="top"
                               className="bg-gray-700 text-white text-xs px-2 py-1 rounded-md shadow-md"
                             >
-                              {lancamento.status === "ATIVO"
+                              {lancamento.status === "Ativo"
                                 ? "Desativar Lançamento"
                                 : "Ativar Lançamento"}
                             </Tooltip.Content>
@@ -492,16 +511,15 @@ export default function Lancamentos() {
               </TableBody>
             </Table>
           )}
-          {/* Totalizador de Lancamentos */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalLancamentos)} de{" "}
               {totalLancamentos} lançamentos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -542,7 +560,6 @@ export default function Lancamentos() {
           </div>
         </>
       )}
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -580,4 +597,4 @@ export default function Lancamentos() {
       </Dialog>
     </div>
   );
-}
+}

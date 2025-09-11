@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(find:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(timeout 300s npm install --save-dev autoprefixer)",
+      "Bash(pkill:*)",
+      "Bash(lsof:*)",
+      "Bash(yarn --version)",
+      "Bash(yarn install)",
+      "Bash(yarn install:*)",
+      "Bash(yarn add:*)",
+      "Bash(npx:*)",
+      "Bash(npm run build:*)",
+      "Bash(grep:*)",
+      "Bash(timeout 10s npm run dev:*)",
+      "Bash(openssl rand:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(mysql:*)",
+      "Bash(cat:*)",
+      "Bash(timeout 30s npm run dev)",
+      "Bash(timeout 5s npm run dev)",
+      "Bash(timeout 30s npm run build)",
+      "Bash(./start-database.ps1)",
+      "Bash(./start-database.bat)",
+      "Bash(npm run lint)",
+      "Bash(ping:*)",
+      "Bash(sed:*)",
+      "Bash(timeout 300s npm run build)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

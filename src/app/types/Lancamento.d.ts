@@ -1,7 +1,6 @@
 import { Caixa } from "./Caixa";
 import { PlanoConta } from "./PlanoConta";
 import { Usuario } from "./Usuario";
-
 export type Lancamento = {
   id: number;
   valor: number;
@@ -22,15 +21,11 @@ export type Lancamento = {
   status?: string;
   created_at: string;
   updated_at: string;
-  
-  // Campos de JOIN para exibição
   caixa_nome?: string;
   plano_conta_nome?: string;
   usuario_nome?: string;
   cliente_nome?: string;
-  
-  // Relacionamentos (opcionais)
   plano_conta?: PlanoConta;
   caixa?: Caixa;
   usuario?: Usuario;
-};
+};

@@ -1,7 +1,5 @@
 "use client";
-//React
 import { useEffect, useState } from "react";
-//Components
 import {
   Table,
   TableBody,
@@ -26,10 +24,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-
-//Types
+import { cn } from "@/lib/utils";
+import { http } from "@/util/http";
 import { Usuario } from "@/app/types/Usuario";
-
 export default function UsuariosPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -42,47 +39,35 @@ export default function UsuariosPage() {
   );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-
-
   const fetchUsers = async () => {
     try {
       setLoading(true)
       const searchParams = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       })
-
       const response = await fetch(`/api/usuarios?${searchParams.toString()}`)
-      console.log('Response status:', response.status)
       
       if (response.ok) {
         const data = await response.json()
-        console.log('Data received:', data)
-        setUsuarios(data.data || data) // Ajuste para a nova estrutura da API
-        setTotalUsuarios(data.pagination?.total || 0)
+        setUsuarios(data.data || [])
         setTotalPaginas(data.pagination?.totalPages || 1)
+        setTotalUsuarios(data.pagination?.total || 0)
       } else {
-        console.error('Erro na resposta:', response.status, response.statusText)
+        throw new Error('Erro ao carregar usuários')
       }
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error)
+      toast.error('Erro ao carregar usuários')
     } finally {
       setLoading(false)
     }
-  }
-
-
-  const formatarPalavra = (palavra: string): string => {
-    return palavra.replace("U", "Ú");
   };
-
   useEffect(() => {
     fetchUsers();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -91,25 +76,30 @@ export default function UsuariosPage() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     fetchUsers();
   };
-
   const deletarUsuario = async () => {
     if (!usuarioSelecionado) return;
     setLoadingInativar(true);
     try {
-      // Por enquanto, apenas remove da lista local
-      // TODO: Implementar API de delete quando necessário
-      setUsuarios((prevUsuarios) =>
-        prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
-      );
-      toast.success("Usuário removido da lista!");
-      setIsDialogOpen(false);
+      const response = await fetch(`/api/usuarios?login=${usuarioSelecionado.login}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Remove da lista local após sucesso na API
+        setUsuarios((prevUsuarios) =>
+          prevUsuarios.filter((usuario) => usuario.login !== usuarioSelecionado.login)
+        );
+        toast.success("Usuário deletado com sucesso!");
+        setIsDialogOpen(false);
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || "Erro ao deletar usuário");
+      }
     } catch (error) {
-      console.error("Erro ao deletar usuário:", error);
       toast.error("Erro ao deletar usuário");
     } finally {
       setLoadingInativar(false);
@@ -124,8 +114,7 @@ export default function UsuariosPage() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Usuários</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Usuario */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -140,17 +129,7 @@ export default function UsuariosPage() {
             Buscar
           </Button>
         </div>
-
         <div className="flex gap-2">
-          {/* ✅ Botão Gerenciar Acesso */}
-          <Button variant="outline" asChild>
-            <Link href="/painel/usuarios/gerenciar-acesso">
-              <Users className="h-5 w-5 mr-2" />
-              Gerenciar Acesso
-            </Link>
-          </Button>
-          
-          {/* ✅ Botão Novo Usuario */}
           <Button asChild>
             <Link href="/painel/usuarios/novo">
               <Plus className="h-5 w-5 mr-2" />
@@ -159,7 +138,6 @@ export default function UsuariosPage() {
           </Button>
         </div>
       </div>
-
       <div>
         {loading ? (
           <div className="flex justify-center items-center w-full h-40">
@@ -182,7 +160,10 @@ export default function UsuariosPage() {
                 {usuarios.map((usuario) => (
                   <TableRow
                     key={usuario.login}
-                    className="odd:bg-gray-100 even:bg-white"
+                    className={cn(
+                      "odd:bg-gray-100 even:bg-white",
+                      usuario.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                    )}
                   >
                     <TableCell>{usuario.login}</TableCell>
                     <TableCell>{usuario.nome}</TableCell>
@@ -213,19 +194,83 @@ export default function UsuariosPage() {
                       </Tooltip.Provider>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {usuario.sistemas && usuario.sistemas.length > 0 ? (
-                          usuario.sistemas.map((sistema, index) => (
-                            <Badge key={index} variant="secondary">
-                              {sistema.nome}: {sistema.nivel}
-                            </Badge>
-                          ))
+                      <div className="flex flex-wrap gap-1.5 max-w-xs">
+                        {usuario.grupos && usuario.grupos.length > 0 ? (
+                          usuario.grupos.map((grupo, index) => {
+                            // Definir cores por sistema com base no nome do sistema
+                            const getSystemColor = (sistema: string) => {
+                              const sistemaLower = sistema.toLowerCase();
+                              if (sistemaLower.includes('saude') || sistemaLower.includes('principal')) {
+                                return "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100";
+                              } else if (sistemaLower.includes('cpsi') || sistemaLower.includes('financeiro')) {
+                                return "bg-green-50 text-green-700 border-green-200 hover:bg-green-100";
+                              } else if (sistemaLower.includes('agendamento')) {
+                                return "bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100";
+                              } else if (sistemaLower.includes('relatorio')) {
+                                return "bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100";
+                              } else {
+                                return "bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100";
+                              }
+                            };
+
+                            const getSystemIcon = (sistema: string) => {
+                              const iconClass = "w-3 h-3 mr-1.5";
+                              const sistemaLower = sistema.toLowerCase();
+                              if (sistemaLower.includes('saude') || sistemaLower.includes('principal')) {
+                                return <Users className={iconClass} />;
+                              } else if (sistemaLower.includes('cpsi') || sistemaLower.includes('financeiro')) {
+                                return <div className={`${iconClass} rounded-full bg-current`} />;
+                              } else if (sistemaLower.includes('agendamento')) {
+                                return <div className={`${iconClass} rounded bg-current`} />;
+                              } else if (sistemaLower.includes('relatorio')) {
+                                return <div className={`${iconClass} rounded-sm bg-current`} />;
+                              } else {
+                                return <Users className={iconClass} />;
+                              }
+                            };
+
+                            return (
+                              <Tooltip.Provider key={index}>
+                                <Tooltip.Root>
+                                  <Tooltip.Trigger asChild>
+                                    <Badge 
+                                      className={cn(
+                                        "px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all cursor-default flex items-center",
+                                        usuario.status === "Inativo" 
+                                          ? "bg-gray-50 text-gray-400 border-gray-200" 
+                                          : getSystemColor(grupo.sistema)
+                                      )}
+                                    >
+                                      {getSystemIcon(grupo.sistema)}
+                                      <div className="flex flex-col items-start">
+                                        <span className="font-semibold text-xs leading-tight">{grupo.nome}</span>
+                                        <span className="text-[10px] opacity-75 leading-tight">{grupo.sistema}</span>
+                                      </div>
+                                    </Badge>
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Portal>
+                                    <Tooltip.Content
+                                      side="top"
+                                      className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg border border-gray-700"
+                                    >
+                                      <div className="font-medium">{grupo.sistema}</div>
+                                      <div className="text-gray-300">Grupo: {grupo.nome}</div>
+                                    </Tooltip.Content>
+                                  </Tooltip.Portal>
+                                </Tooltip.Root>
+                              </Tooltip.Provider>
+                            );
+                          })
                         ) : (
-                          <span className="text-gray-500 text-sm">Sem acesso</span>
+                          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
+                            <div className="w-2 h-2 rounded-full bg-gray-300" />
+                            <span className="text-gray-500 text-xs font-medium">
+                              Sem acesso
+                            </span>
+                          </div>
                         )}
                       </div>
                     </TableCell>
-                   
                     <TableCell className="flex gap-2 justify-center items-center h-[83px] w-full">
                       <Tooltip.Provider>
                         <Tooltip.Root>
@@ -278,15 +323,13 @@ export default function UsuariosPage() {
                 ))}
               </TableBody>
             </Table>
-
-            {/* Totalizador de Usuarios */}
+            {}
             <div className="flex justify-between items-center ml-1 mt-4">
               <div className="text-sm text-gray-600">
                 Mostrando {Math.min((paginaAtual + 1) * 5, totalUsuarios)} de{" "}
                 {totalUsuarios} usuários
               </div>
             </div>
-
             <div className="flex justify-center mt-4">
               <ReactPaginate
                 previousLabel={
@@ -332,7 +375,7 @@ export default function UsuariosPage() {
             <DialogHeader>
               <DialogTitle>Confirmar Ação</DialogTitle>
             </DialogHeader>
-            <p>Tem certeza que deseja deletar este usuario?</p>
+            <p>Tem certeza que deseja deletar este usuário? Esta ação não pode ser desfeita e o usuário será removido permanentemente do sistema.</p>
             <DialogFooter>
               <Button
                 variant="secondary"
@@ -355,8 +398,7 @@ export default function UsuariosPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
-        {/* Modal de detalhes */}
+        {}
       </div>
     </div>
   );

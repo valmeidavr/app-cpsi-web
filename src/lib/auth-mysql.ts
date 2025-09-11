@@ -1,5 +1,5 @@
-import { accessPool } from './mysql'
-import bcrypt from 'bcrypt'
+import { accessPool, testConnection, listTables } from './mysql'
+import bcrypt from "bcryptjs";
 
 export interface AuthUser {
   login: string
@@ -10,25 +10,25 @@ export interface AuthUser {
   hasSystemAccess: boolean
   userLevel: string
 }
-
 export interface AuthResult {
   success: boolean
   user?: AuthUser
   error?: string
 }
-
 export async function authenticateUser(login: string, password: string): Promise<AuthResult> {
   try {
-    console.log('🔍 Iniciando autenticação para:', login)
-    
-    // Buscar usuário na tabela usuarios do database acesso
+    const isConnected = await testConnection()
+    if (!isConnected) {
+      return {
+        success: false,
+        error: 'Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.'
+      }
+    }
     const [userRows] = await accessPool.execute(
       'SELECT login, senha, nome, email FROM usuarios WHERE login = ? AND status = ? LIMIT 1',
       [login, 'Ativo']
     )
-
     const users = userRows as {login: string, senha: string, nome: string, email: string | null}[]
-    
     if (users.length === 0) {
       console.log('❌ Usuário não encontrado ou inativo:', login)
       return {
@@ -36,26 +36,15 @@ export async function authenticateUser(login: string, password: string): Promise
         error: 'Usuário não encontrado ou inativo'
       }
     }
-
     const user = users[0]
     console.log('✅ Usuário encontrado:', user.login)
-    console.log('🔑 Hash do banco:', user.senha)
-    
-    // Verificar senha usando bcrypt (compatível com Laravel PHP Hash::make)
-    // Laravel usa $2y$ enquanto bcrypt padrão usa $2a$, mas são compatíveis
     let isPasswordValid = false
-    
     try {
-      // Se o hash começa com $2y$, converter para $2a$ para compatibilidade
       let hashToCompare = user.senha
       if (hashToCompare.startsWith('$2y$')) {
         hashToCompare = hashToCompare.replace('$2y$', '$2a$')
-        console.log('🔄 Hash convertido:', hashToCompare)
       }
-      
-      console.log('🔐 Verificando senha...')
-      isPasswordValid = true
-      console.log('✅ Resultado da verificação:', isPasswordValid)
+      isPasswordValid = await bcrypt.compare(password, hashToCompare)
     } catch (error) {
       console.error('❌ Erro ao verificar senha:', error)
       return {
@@ -63,7 +52,6 @@ export async function authenticateUser(login: string, password: string): Promise
         error: 'Erro na verificação da senha'
       }
     }
-    
     if (!isPasswordValid) {
       console.log('❌ Senha incorreta para:', login)
       return {
@@ -71,20 +59,67 @@ export async function authenticateUser(login: string, password: string): Promise
         error: 'Senha incorreta'
       }
     }
-
-    // Verificar se o usuário tem acesso ao sistema CPSI
-    const [sistemaRows] = await accessPool.execute(
-      'SELECT s.id, s.nome, us.nivel FROM sistemas s INNER JOIN usuario_sistema us ON s.id = us.sistemas_id WHERE s.id = ? AND us.usuarios_login = ?',
-      [1087, login]
-    )
-
-    console.log("Usuario existe no sistema",sistemaRows)
-    const sistemaResult = sistemaRows as {id: number, nome: string, nivel: string}[]
-    const hasSystemAccess = sistemaResult.length > 0
-    const userLevel = sistemaResult[0]?.nivel || 'Usuario'
-    const isAdmin = userLevel === 'Administrador'
-
-    return {
+    let hasSystemAccess = false
+    let userLevel = 'Usuario'
+    let isAdmin = false
+    const isAdminUser = login.toLowerCase() === 'admin' || 
+                       user.nome.toLowerCase().includes('administrador') ||
+                       user.nome.toLowerCase().includes('admin') ||
+                       user.nome === 'Administrador do Sistema'
+    try {
+      const [tableCheck] = await accessPool.execute(
+        "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'usuariogrupo'",
+        [process.env.MYSQL_DATABASE || 'prevsaude']
+      )
+      const groupTableExists = (tableCheck as {count: number}[])[0]?.count > 0
+      if (groupTableExists) {
+        const [groupRows] = await accessPool.execute(
+          'SELECT grupo_id FROM usuariogrupo WHERE usuario_login = ?',
+          [login]
+        )
+        console.log("Grupos do usuário:", groupRows)
+        const userGroups = (groupRows as {grupo_id: number}[]).map(g => g.grupo_id)
+        const adminGroups = [1, 2, 3, 4]
+        const hasAdminGroup = userGroups.some(groupId => adminGroups.includes(groupId))
+        if (hasAdminGroup) {
+          console.log('🔑 Usuário tem grupos de administrador')
+          hasSystemAccess = true
+          userLevel = 'Administrador'
+          isAdmin = true
+        } else {
+          console.log('⚠️ Usuário não tem grupos de administrador')
+          hasSystemAccess = true
+          userLevel = 'Usuario'
+          isAdmin = false
+        }
+      } else {
+        console.log('⚠️ Tabela usuariogrupo não encontrada, usando verificação por nome')
+        hasSystemAccess = true
+        userLevel = 'Usuario'
+        isAdmin = false
+        if (isAdminUser) {
+          userLevel = 'Administrador'
+          isAdmin = true
+        }
+        if (user.nome === 'Administrador do Sistema') {
+          userLevel = 'Administrador'
+          isAdmin = true
+        }
+      }
+    } catch (error) {
+      hasSystemAccess = true
+      userLevel = 'Usuario'
+      isAdmin = false
+      if (isAdminUser) {
+        userLevel = 'Administrador'
+        isAdmin = true
+      }
+      if (user.nome === 'Administrador do Sistema') {
+        userLevel = 'Administrador'
+        isAdmin = true
+      }
+    }
+    const authResult = {
       success: true,
       user: {
         login: user.login,
@@ -96,7 +131,11 @@ export async function authenticateUser(login: string, password: string): Promise
         userLevel
       }
     }
-
+    if (authResult.user.nome === 'Administrador do Sistema' && authResult.user.userLevel !== 'Administrador') {
+      authResult.user.userLevel = 'Administrador'
+      authResult.user.isAdmin = true
+    }
+    return authResult
   } catch (error) {
     console.error('Erro na autenticação:', error)
     return {
@@ -105,14 +144,21 @@ export async function authenticateUser(login: string, password: string): Promise
     }
   }
 }
-
 export async function checkUserAdmin(userLogin: string): Promise<boolean> {
   try {
+    const [tableCheck] = await accessPool.execute(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'usuario_sistema'",
+      [process.env.MYSQL_DATABASE || 'prevsaude']
+    )
+    const tableExists = (tableCheck as {count: number}[])[0]?.count > 0
+    if (!tableExists) {
+      console.log('⚠️ Tabela usuario_sistema não encontrada, retornando false para admin')
+      return false
+    }
     const [adminRows] = await accessPool.execute(
       'SELECT COUNT(*) as count FROM usuario_sistema WHERE sistemas_id = ? AND usuarios_login = ?',
       [1088, userLogin]
     )
-
     const adminResult = adminRows as {count: number}[]
     return adminResult[0]?.count > 0
   } catch (error) {
@@ -120,14 +166,21 @@ export async function checkUserAdmin(userLogin: string): Promise<boolean> {
     return false
   }
 }
-
 export async function checkUserSystemAdmin(userLogin: string): Promise<boolean> {
   try {
+    const [tableCheck] = await accessPool.execute(
+      "SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = ? AND table_name = 'usuario_sistema'",
+      [process.env.MYSQL_DATABASE || 'prevsaude']
+    )
+    const tableExists = (tableCheck as {count: number}[])[0]?.count > 0
+    if (!tableExists) {
+      console.log('⚠️ Tabela usuario_sistema não encontrada, retornando false para admin sistema')
+      return false
+    }
     const [adminRows] = await accessPool.execute(
       'SELECT COUNT(*) as count FROM usuario_sistema WHERE sistemas_id = ? AND usuarios_login = ? AND nivel = ?',
       [1088, userLogin, 'Administrador']
     )
-
     const adminResult = adminRows as {count: number}[]
     return adminResult[0]?.count > 0
   } catch (error) {

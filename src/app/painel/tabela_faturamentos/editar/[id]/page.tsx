@@ -1,15 +1,10 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { redirect, useParams } from "next/navigation";
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -23,10 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { updateTabelaFaturamentoSchema } from "@/app/api/tabela_faturamentos/schema/formSchemaEspecialidade";
-
 export default function EditarTabelaFaturamento() {
   const [loading, setLoading] = useState(false);
   const [tabelaFaturamento, setTabelaFaturamento] = useState(null);
@@ -35,7 +27,6 @@ export default function EditarTabelaFaturamento() {
   const tabelaFaturamentoId = Array.isArray(params.id)
     ? params.id[0]
     : params.id;
-
   const form = useForm({
     resolver: zodResolver(updateTabelaFaturamentoSchema),
     mode: "onChange",
@@ -43,9 +34,7 @@ export default function EditarTabelaFaturamento() {
       nome: "",
     },
   });
-
   const router = useRouter();
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -53,32 +42,27 @@ export default function EditarTabelaFaturamento() {
         if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
         const response = await fetch(`/api/tabela_faturamentos/${tabelaFaturamentoId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setTabelaFaturamento(data);
           form.reset({
             nome: data.nome,
           });
         } else {
-          console.error("Erro ao carregar tabela de faturamento:", data.error);
           toast.error("Erro ao carregar dados da tabela de faturamento");
         }
       } catch (error) {
-        console.error("Erro ao carregar tabela de faturamento:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (
     values: z.infer<typeof updateTabelaFaturamentoSchema>
   ) => {
     setLoading(true);
     try {
       if (!tabelaFaturamentoId) redirect("/painel/tabelaFaturamentos");
-
       const response = await fetch(`/api/tabela_faturamentos/${tabelaFaturamentoId}`, {
         method: 'PUT',
         headers: {
@@ -86,25 +70,20 @@ export default function EditarTabelaFaturamento() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar tabela de faturamento.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Tabela atualizada com sucesso!");
-
       router.push(`/painel/tabela_faturamentos?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar tabela de faturamento");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -117,7 +96,7 @@ export default function EditarTabelaFaturamento() {
           { label: "Editar Tabela Faturamento" },
         ]}
       />
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -129,7 +108,7 @@ export default function EditarTabelaFaturamento() {
             Editar Tabela Faturamento
           </h1>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Campos de Nome e Código */}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <FormField
                 control={form.control}
@@ -152,8 +131,7 @@ export default function EditarTabelaFaturamento() {
                 )}
               />
             </div>
-
-            {/* Botão de Envio */}
+            {}
             <Button
               type="submit"
               disabled={loading}
@@ -174,4 +152,4 @@ export default function EditarTabelaFaturamento() {
       )}
     </div>
   );
-}
+}

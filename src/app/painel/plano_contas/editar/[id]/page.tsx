@@ -1,16 +1,10 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { redirect, useParams } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -24,31 +18,25 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { updatePlanosSchema } from "@/app/api/plano_contas/schema/formSchemaPlanos";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-
 export default function EditarPlanoConta() {
   const [loading, setLoading] = useState(false);
   const [planoConta, setPlanoConta] = useState(null);
   const params = useParams();
   const planoContaId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [carregando, setCarregando] = useState(false);
-
   const form = useForm({
     resolver: zodResolver(updatePlanosSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
+      tipo: "",
       categoria: "",
       descricao: "",
     },
   });
-
   const router = useRouter();
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -56,32 +44,28 @@ export default function EditarPlanoConta() {
         if (!planoContaId) redirect("/painel/plano_contas");
         const response = await fetch(`/api/plano_contas/${planoContaId}`);
         const data = await response.json();
-
         if (response.ok) {
           setPlanoConta(data);
           form.reset({
             nome: data.nome,
+            tipo: data.tipo,
             categoria: data.categoria,
             descricao: data.descricao,
           });
         } else {
-          console.error("Erro ao carregar plano de contas:", data.error);
           toast.error("Erro ao carregar dados do plano de contas");
         }
       } catch (error) {
-        console.error("Erro ao carregar plano de contas:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (values: z.infer<typeof updatePlanosSchema>) => {
     setLoading(true);
     try {
       if (!planoContaId) redirect("/painel/plano_contas");
-
       const response = await fetch(`/api/plano_contas/${planoContaId}`, {
         method: 'PUT',
         headers: {
@@ -89,30 +73,24 @@ export default function EditarPlanoConta() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar plano de contas.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Plano de contas atualizado com sucesso!");
-
       router.push(`/painel/plano_contas?${queryParams.toString()}`);
-    } catch (error: any) {
-      toast.error(error.message);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar plano de contas");
     } finally {
       setLoading(false);
     }
   };
-
   const tipoOptions = [
     { value: "ENTRADA", label: "ENTRADA" },
     { value: "SAIDA", label: "SAIDA" },
   ];
-
   const fetchPlanos = async () => {
     try {
       const response = await fetch('/api/plano_contas');
@@ -120,9 +98,8 @@ export default function EditarPlanoConta() {
       if (response.ok) {
         setPlanoConta(data.data);
       }
-    } catch (error: any) { }
+    } catch (error) { }
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -132,8 +109,7 @@ export default function EditarPlanoConta() {
           { label: "Editar Plano" },
         ]}
       />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -144,7 +120,7 @@ export default function EditarPlanoConta() {
           <h1 className="text-2xl font-bold mb-4 mt-5">Editar Plano</h1>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {" "}
-            {/* Campos do fomulário*/}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               <FormField
                 control={form.control}
@@ -185,7 +161,6 @@ export default function EditarPlanoConta() {
                 )}
               />
             </div>
-
             <FormField
               control={form.control}
               name="tipo"
@@ -219,7 +194,6 @@ export default function EditarPlanoConta() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="descricao"
@@ -240,7 +214,7 @@ export default function EditarPlanoConta() {
                 </FormItem>
               )}
             />
-            {/* Botão de Envio */}
+            {}
             <Button
               type="submit"
               disabled={loading}
@@ -261,4 +235,4 @@ export default function EditarPlanoConta() {
       )}
     </div>
   );
-}
+}

@@ -1,13 +1,10 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, ArrowLeft, Lock } from "lucide-react";
-
 export default function AcessoNegado() {
   const router = useRouter();
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -34,12 +31,11 @@ export default function AcessoNegado() {
                   <li>• Você não está logado no sistema</li>
                   <li>• Sua conta não tem permissão para esta área</li>
                   <li>• Sua sessão expirou</li>
-                  <li>• Você não tem acesso ao sistema CPSI</li>
+                  <li>• Você não tem acesso ao sistema prevSaúde</li>
                 </ul>
               </div>
             </div>
           </div>
-          
           <div className="flex flex-col space-y-3">
             <Button 
               onClick={() => router.push("/")} 
@@ -49,7 +45,6 @@ export default function AcessoNegado() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Voltar para o Login
             </Button>
-            
             <Button 
               onClick={() => router.back()} 
               className="w-full"

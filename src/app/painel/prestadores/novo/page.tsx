@@ -1,14 +1,8 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -29,15 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-//API
-
-//Helpers
 import { useRouter } from "next/navigation";
 import { http } from "@/util/http";
-
-import { handleCEPChange } from "@/app/helpers/handleCEP";
-// Removido import http - usando fetch direto
+import { handleCEPChange, formatCEP } from "@/app/helpers/handleCEP";
 import { isValid, parse } from "date-fns";
 import {
   formatCPFInput,
@@ -50,15 +38,12 @@ const sexOptions = [
   { value: "Feminino", label: "Feminino" },
   { value: "outro", label: "Outro" },
 ];
-
 export default function NovoPrestador() {
   const [loading, setLoading] = useState(false);
-  const [isCheckingCpf, setIsCheckingCpf] = useState<Boolean>(false);
+  const [isCheckingCpf, setIsCheckingCpf] = useState<boolean>(false);
   const [cpfError, setCpfError] = useState<string | null>("");
   const [timeoutCpfId, setTimeoutCpfId] = useState<NodeJS.Timeout | null>(null);
-
   const router = useRouter();
-
   const form = useForm({
     resolver: zodResolver(createPrestadorSchema),
     mode: "onChange",
@@ -79,22 +64,33 @@ export default function NovoPrestador() {
       complemento: "",
     },
   });
-
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    const formattedCEP = formatCEP(e.target.value);
+    form.setValue("cep", formattedCEP);
+    
+    const formAdapter = {
+      setValue: (field: string, value: string) => {
+        form.setValue(field as any, value);
+      },
+      setError: (field: string, error: { type: string; message: string }) => {
+        form.setError(field as any, error);
+      },
+      clearErrors: (field: string) => {
+        form.clearErrors(field as any);
+      }
+    };
+    
+    handleCEPChange(e, formAdapter);
   };
-
   const checkCpf = async (cpf: string) => {
     if (!cpf) {
       setCpfError(null);
       return;
     }
-
     setIsCheckingCpf(true);
     try {
       const response = await fetch(`/api/prestadores/findByCpf/${encodeURIComponent(cpf)}`);
       const data = await response.json();
-      
       if (response.ok) {
         if (data) {
           setCpfError("Este cpf já está em uso.");
@@ -102,20 +98,16 @@ export default function NovoPrestador() {
           setCpfError(null);
         }
       } else {
-        console.error("Erro ao verificar CPF:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao verificar cpf:", error);
       setCpfError("Erro ao verificar cpf.");
     } finally {
       setIsCheckingCpf(false);
     }
   };
-
   const handlecpfChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const cpf = event.target.value;
     form.setValue("cpf", cpf, { shouldValidate: true });
-
     if (timeoutCpfId) clearTimeout(timeoutCpfId);
     const newTimeoutCpfId = setTimeout(() => checkCpf(cpf), 500);
     setTimeoutCpfId(newTimeoutCpfId);
@@ -131,7 +123,6 @@ export default function NovoPrestador() {
       setLoading(false);
     }
   };
-
   return (
     <div className="flex flex-col flex-1 h-full">
       <Breadcrumb
@@ -141,7 +132,6 @@ export default function NovoPrestador() {
           { label: "Novo Prestador" }, // Último item sem link
         ]}
       />
-
       <Form {...form}>
         <h1 className="text-2xl font-bold mb-4 mt-5">Novo Prestador</h1>
         <form
@@ -183,9 +173,8 @@ export default function NovoPrestador() {
                       maxLength={12}
                       value={field.value || ""}
                       onChange={(e) => {
-                        let rawValue = e.target.value.replace(/\D/g, "");
+                        const rawValue = e.target.value.replace(/\D/g, "");
                         const inputEvent = e.nativeEvent as InputEvent;
-
                         if (inputEvent.inputType === "deleteContentBackward") {
                           field.onChange(rawValue);
                         } else {
@@ -203,7 +192,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="cpf"
@@ -216,9 +204,8 @@ export default function NovoPrestador() {
                       value={field.value || ""}
                       onChange={(e) => {
                         handlecpfChange(e);
-                        let rawValue = e.target.value.replace(/\D/g, "");
+                        const rawValue = e.target.value.replace(/\D/g, "");
                         const inputEvent = e.nativeEvent as InputEvent;
-
                         if (inputEvent.inputType === "deleteContentBackward") {
                           field.onChange(rawValue);
                         } else {
@@ -243,7 +230,6 @@ export default function NovoPrestador() {
               )}
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -278,7 +264,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="dtnascimento"
@@ -292,19 +277,16 @@ export default function NovoPrestador() {
                       value={field.value || ""}
                       onChange={(e) => {
                         let value = e.target.value.replace(/\D/g, "");
-
                         if (value.length > 2) {
                           value = value.replace(/^(\d{2})/, "$1/");
                         }
                         if (value.length > 5) {
                           value = value.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
                         }
-
                         field.onChange(value);
                       }}
                       onBlur={() => {
                         if (!field.value) return;
-
                         const parsedDate = parse(
                           field.value,
                           "dd/MM/yyyy",
@@ -313,7 +295,6 @@ export default function NovoPrestador() {
                         const currentDate = new Date();
                         const minYear = 1920;
                         const year = parseInt(field.value.split("/")[2]);
-
                         if (
                           !isValid(parsedDate) ||
                           parsedDate > currentDate ||
@@ -329,7 +310,6 @@ export default function NovoPrestador() {
               )}
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <FormField
               control={form.control}
@@ -353,7 +333,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="logradouro"
@@ -367,7 +346,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="numero"
@@ -381,7 +359,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="bairro"
@@ -396,7 +373,6 @@ export default function NovoPrestador() {
               )}
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
@@ -411,7 +387,6 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="uf"
@@ -473,8 +448,24 @@ export default function NovoPrestador() {
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="complemento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Complemento</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      placeholder="Apto, sala, etc."
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
@@ -531,7 +522,6 @@ export default function NovoPrestador() {
               )}
             />
           </div>
-
           <Button
             type="submit"
             disabled={loading}
@@ -553,4 +543,4 @@ export default function NovoPrestador() {
       </Form>
     </div>
   );
-}
+}

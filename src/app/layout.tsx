@@ -4,15 +4,12 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/components/providers/AuthProvider";
-
 const fontSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const fontTitle = Nunito({ subsets: ["latin"], variable: "--font-title" });
-
 export const metadata: Metadata = {
-  title: "CPSI AAP-VR",
+  title: "PrevSaúde AAP-VR",
   description: "Software de Gestão AAP-VR",
 };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,4 +31,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-}
+}

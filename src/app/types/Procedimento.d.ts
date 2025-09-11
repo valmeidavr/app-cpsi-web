@@ -1,7 +1,6 @@
 import { Agenda } from "./Agenda";
 import { Turma } from "./Turma";
 import { Especialidade } from "./Especialidade";
-
 export type Procedimento = {
   id: number;
   nome: string;
@@ -14,4 +13,4 @@ export type Procedimento = {
   updatedAt: Date;
   Turma: Turma[]; 
   Agenda: Agenda[]; 
-};
+};

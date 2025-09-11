@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool, executeWithRetry } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createPrestadorSchema, updatePrestadorSchema } from "./schema/formSchemaPretadores";
-
+const updatePrestadorStatusSchema = z.object({
+  status: z.enum(["Ativo", "Inativo"], { message: "Status deve ser 'Ativo' ou 'Inativo'" }),
+});
 export type CreatePrestadorDTO = z.infer<typeof createPrestadorSchema>;
 export type UpdatePrestadorDTO = z.infer<typeof updatePrestadorSchema>;
-
-// GET - Listar prestadores com paginação e busca
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -14,49 +14,93 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const all = searchParams.get('all') || '';
-
-    // Se for para retornar todos os prestadores (sem paginação)
+    const comExpediente = searchParams.get('com_expediente') || '';
+    const unidadeId = searchParams.get('unidade_id') || '';
+    const especialidadeId = searchParams.get('especialidade_id') || '';
     if (all === 'true' || limit === '1000') {
-      console.log('🔍 Debug - Buscando todos os prestadores ativos');
-      const [rows] = await gestorPool.execute(
-        'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC'
-      );
-      console.log('🔍 Debug - Prestadores encontrados:', (rows as any[]).length);
+      let query = 'SELECT * FROM prestadores WHERE status = "Ativo" ORDER BY nome ASC';
+      
+      if (comExpediente === 'true') {
+        let whereClause = ' WHERE p.status = "Ativo"';
+        let queryParams: any[] = [];
+        
+        if (unidadeId) {
+          whereClause += ' AND a.unidade_id = ?';
+          queryParams.push(parseInt(unidadeId));
+        }
+        
+        if (especialidadeId) {
+          whereClause += ' AND a.especialidade_id = ?';
+          queryParams.push(parseInt(especialidadeId));
+        }
+        
+        query = `
+          SELECT DISTINCT p.* FROM prestadores p
+          INNER JOIN alocacoes a ON p.id = a.prestador_id
+          INNER JOIN expedientes e ON a.id = e.alocacao_id
+          ${whereClause}
+          ORDER BY p.nome ASC
+        `;
+        
+        const [rows] = await accessPool.execute(query, queryParams);
+        return NextResponse.json({
+          data: rows,
+          pagination: {
+            page: 1,
+            limit: (rows as Array<any>).length,
+            total: (rows as Array<any>).length,
+            totalPages: 1
+          }
+        });
+      }
+      
+      const [rows] = await accessPool.execute(query);
       return NextResponse.json({
         data: rows,
         pagination: {
           page: 1,
-          limit: (rows as any[]).length,
-          total: (rows as any[]).length,
+          limit: (rows as Array<any>).length,
+          total: (rows as Array<any>).length,
           totalPages: 1
         }
       });
     }
-
-    // 1. Construir a cláusula WHERE dinamicamente
-    let whereClause = ' WHERE status = "Ativo"'; // Mostrar apenas prestadores ativos
+    let baseQuery = 'prestadores p';
+    let selectQuery = 'p.*';
+    let whereClause = ' WHERE p.status = "Ativo"';
     const queryParams: (string | number)[] = [];
-
+    
+    if (comExpediente === 'true') {
+      baseQuery = 'prestadores p INNER JOIN alocacoes a ON p.id = a.prestador_id INNER JOIN expedientes e ON a.id = e.alocacao_id';
+      selectQuery = 'DISTINCT p.*';
+    }
+    
+    if (unidadeId) {
+      whereClause += ' AND a.unidade_id = ?';
+      queryParams.push(parseInt(unidadeId));
+    }
+    
+    if (especialidadeId) {
+      whereClause += ' AND a.especialidade_id = ?';
+      queryParams.push(parseInt(especialidadeId));
+    }
+    
     if (search) {
-      whereClause += ' AND (nome LIKE ? OR cpf LIKE ? OR rg LIKE ?)';
+      whereClause += ' AND (p.nome LIKE ? OR p.cpf LIKE ? OR p.rg LIKE ?)';
       queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
-
-    // 2. Query para contar o total de registros
-    const countQuery = `SELECT COUNT(*) as total FROM prestadores${whereClause}`;
-    const countRows = await executeWithRetry(gestorPool, countQuery, queryParams);
-    const total = (countRows as any[])[0]?.total || 0;
-
-    // 3. Query para buscar os dados com paginação
+    
+    const countQuery = `SELECT COUNT(${comExpediente === 'true' ? 'DISTINCT p.id' : '*'}) as total FROM ${baseQuery}${whereClause}`;
+    const countRows = await executeWithRetry(accessPool, countQuery, queryParams);
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const dataQuery = `
-      SELECT * FROM prestadores${whereClause}
-      ORDER BY nome ASC
-      LIMIT ? OFFSET ?
+      SELECT ${selectQuery} FROM ${baseQuery}${whereClause}
+      ORDER BY p.status ASC, p.nome ASC
+      LIMIT ${parseInt(limit)} OFFSET ${offset}
     `;
-    const dataParams = [...queryParams, parseInt(limit), offset];
-    const prestadorRows = await executeWithRetry(gestorPool, dataQuery, dataParams);
-
+    const dataParams = [...queryParams];
+    const prestadorRows = await executeWithRetry(accessPool, dataQuery, dataParams);
     return NextResponse.json({
       data: prestadorRows,
       pagination: {
@@ -67,150 +111,154 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar prestadores:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar prestador
 export async function POST(request: NextRequest) {
   try {
-    const body: CreatePrestadorDTO = await request.json();
-
-    // Inserir prestador
-    const [result] = await gestorPool.execute(
+    const body = await request.json();
+    const validatedData = createPrestadorSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    const result = await executeWithRetry(accessPool,
       `INSERT INTO prestadores (
         nome, rg, cpf, sexo, dtnascimento, cep, logradouro, numero, 
         bairro, cidade, uf, telefone, celular, complemento, status
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        body.nome, body.rg, body.cpf, body.sexo, body.dtnascimento,
-        body.cep, body.logradouro, body.numero, body.bairro,
-        body.cidade, body.uf, body.telefone, body.celular,
-        body.complemento, 'Ativo'
+        payload.nome, payload.rg, payload.cpf, payload.sexo, payload.dtnascimento,
+        payload.cep, payload.logradouro, payload.numero, payload.bairro,
+        payload.cidade, payload.uf, payload.telefone, payload.celular,
+        payload.complemento, 'Ativo'
       ]
     );
-
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
-
-// PUT - Atualizar prestador
+}
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do prestador é obrigatório' },
         { status: 400 }
       );
     }
-
-    const body: UpdatePrestadorDTO = await request.json();
-
-    // Atualizar prestador
-    await gestorPool.execute(
+    const body = await request.json();
+    const validatedData = updatePrestadorSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    await executeWithRetry(accessPool,
       `UPDATE prestadores SET 
         nome = ?, rg = ?, cpf = ?, sexo = ?, dtnascimento = ?, cep = ?,
         logradouro = ?, numero = ?, bairro = ?, cidade = ?, uf = ?,
         telefone = ?, celular = ?, complemento = ?
        WHERE id = ?`,
       [
-        body.nome, body.rg, body.cpf, body.sexo, body.dtnascimento,
-        body.cep, body.logradouro, body.numero, body.bairro,
-        body.cidade, body.uf, body.telefone, body.celular,
-        body.complemento, id
+        payload.nome, payload.rg, payload.cpf, payload.sexo, payload.dtnascimento,
+        payload.cep, payload.logradouro, payload.numero, payload.bairro,
+        payload.cidade, payload.uf, payload.telefone, payload.celular,
+        payload.complemento, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PATCH - Alterar status do prestador
 export async function PATCH(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do prestador é obrigatório' },
         { status: 400 }
       );
     }
-
     const body = await request.json();
-    const { status } = body;
-
-    if (!status || !['Ativo', 'Inativo'].includes(status)) {
+    const validatedData = updatePrestadorStatusSchema.safeParse(body);
+    if (!validatedData.success) {
       return NextResponse.json(
-        { error: 'Status deve ser "Ativo" ou "Inativo"' },
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
         { status: 400 }
       );
     }
-
-    // Atualizar status do prestador
-    await gestorPool.execute(
+    const { status } = validatedData.data;
+    await executeWithRetry(accessPool,
       'UPDATE prestadores SET status = ? WHERE id = ?',
       [status, id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao alterar status do prestador:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// DELETE - Deletar prestador
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do prestador é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    await accessPool.execute(
       'UPDATE prestadores SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar prestador:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
-} 
+}

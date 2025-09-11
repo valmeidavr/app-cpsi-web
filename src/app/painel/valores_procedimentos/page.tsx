@@ -1,11 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import { FormProvider, useForm } from "react-hook-form";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-//Components
 import {
   Table,
   TableBody,
@@ -21,6 +18,7 @@ import Breadcrumb from "@/components/ui/Breadcrumb";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "date-fns";
+import { formatValor, formatValorInput, parseValorInput } from "@/app/helpers/format";
 import {
   Form,
   FormControl,
@@ -37,10 +35,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-//Helpers
-// Removido import http - usando fetch direto
-//API
-
 import { ValorProcedimento } from "@/app/types/ValorProcedimento";
 import { Procedimento } from "@/app/types/Procedimento";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
@@ -57,14 +51,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { formatValor } from "@/app/helpers/format";
-
 export default function ValorProcedimentos() {
   const [valorProcedimentos, setValorProcedimentos] = useState<
     ValorProcedimento[]
   >([]);
-  
-  // Garantir que valorProcedimentos seja sempre um array
   const valorProcedimentosSeguro = Array.isArray(valorProcedimentos) ? valorProcedimentos : [];
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -78,78 +68,108 @@ export default function ValorProcedimentos() {
   const [tabelaFaturamentos, setTabelaFaturamentos] = useState<
     TabelaFaturamento[]
   >([]);
-
   const [procedimentoSelecionado, setProcedimentoSelecionado] =
     useState<Procedimento | null>();
-
   const [tabelaSelecionado, setTabelaSelecionado] =
     useState<TabelaFaturamento | null>();
-
-  const [convenios, setConvenios] = useState<any[]>([]);
-  const [convenioSelecionado, setConvenioSelecionado] = useState<any>(null);
-  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("SOCIO");
-
+  const [convenios, setConvenios] = useState<{ id: number; nome: string; tabela_faturamento_id: number }[]>([]);
+  const [convenioSelecionado, setConvenioSelecionado] = useState<{ id: number; nome: string; tabela_faturamento_id: number } | null>(null);
+  const [tipoClienteSelecionado, setTipoClienteSelecionado] = useState<string>("");
+  const [valorFormatado, setValorFormatado] = useState("R$ 0,00");
+  const [valorEditFormatado, setValorEditFormatado] = useState("R$ 0,00");
+  const [isFilterMode, setIsFilterMode] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
   useEffect(() => {
-    if (tabelaSelecionado && convenioSelecionado) {
+    if (convenioSelecionado) {
       carregarValorProcedimentos();
     } else {
-      // Limpar dados quando não há tabela ou convênio selecionado
       setValorProcedimentos([]);
       setTotalPaginas(0);
       setTotalValorProcedimentos(0);
+      setPaginaAtual(0);
     }
-  }, [tabelaSelecionado, convenioSelecionado, procedimentoSelecionado]);
-
-  const carregarValorProcedimentos = async (filters?: any) => {
+  }, [tabelaSelecionado, convenioSelecionado, procedimentoSelecionado, tipoClienteSelecionado]);
+  const carregarValorProcedimentos = async (filters?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    tabela_faturamento_id?: number;
+    procedimento_id?: number;
+  }) => {
     setCarregando(true);
     try {
-      if (!tabelaSelecionado || !convenioSelecionado) {
-        console.log('🔍 Debug - Tabela ou convênio não selecionado, retornando...');
+      if (!convenioSelecionado) {
         setValorProcedimentos([]);
         setTotalPaginas(0);
         setTotalValorProcedimentos(0);
+        setPaginaAtual(0);
         return;
       }
-      
       const params = new URLSearchParams();
       params.append('page', (paginaAtual + 1).toString());
-      params.append('limit', '5');
+      params.append('limit', '10');
       params.append('search', termoBusca);
-      params.append('tabela_faturamento_id', tabelaSelecionado.id.toString());
+      
+      // Sempre incluir convênio (obrigatório)
+      params.append('convenio_id', convenioSelecionado.id.toString());
+      
+      // Filtros progressivos - só adiciona se selecionado
+      if (tipoClienteSelecionado) {
+        params.append('tipoCliente', tipoClienteSelecionado);
+      }
+      
+      if (tabelaSelecionado) {
+        params.append('tabela_faturamento_id', tabelaSelecionado.id.toString());
+      }
+      
       if (procedimentoSelecionado) {
         params.append('procedimento_id', procedimentoSelecionado.id.toString());
       }
-
-      // Debug logs removidos para evitar spam
+      
+      const valorFilter = form.getValues('valor');
+      if (valorFilter && valorFilter > 0) {
+        params.append('valor', valorFilter.toString());
+      }
+      
       const response = await fetch(`/api/valor-procedimento?${params}`);
       const data = await response.json();
-
-              if (response.ok) {
-          if (data.data && Array.isArray(data.data)) {
-            // Debug logs removidos para evitar spam
-            
-            // Verificar se os dados têm a estrutura correta
-            const dadosValidos = data.data.filter((item: any) => 
-              item && item.id && item.procedimento && item.procedimento.nome
-            );
+      
+      
+      if (response.ok) {
+        // Detectar se a resposta é array direto ou objeto com data
+        const dataArray = Array.isArray(data) ? data : (data.data || []);
+        
+        if (Array.isArray(dataArray)) {
+          const dadosValidos = dataArray.filter((item: { id: number; procedimento: { nome: string } }) => 
+            item && item.id && item.procedimento && item.procedimento.nome
+          );
+          
           
           setValorProcedimentos(dadosValidos);
-          setTotalPaginas(data.pagination?.totalPages || 1);
-          setTotalValorProcedimentos(data.pagination?.total || 0);
+          
+          // Se é array direto, calcular paginação simples
+          if (Array.isArray(data)) {
+            setTotalPaginas(Math.ceil(dadosValidos.length / 10));
+            setTotalValorProcedimentos(dadosValidos.length);
+          } else {
+            // Se tem estrutura de paginação, usar ela
+            setTotalPaginas(data.pagination?.totalPages || 1);
+            setTotalValorProcedimentos(data.pagination?.total || dadosValidos.length);
+          }
         } else {
-          console.error("🔍 Debug - Formato de dados inesperado:", data);
           setValorProcedimentos([]);
           setTotalPaginas(0);
           setTotalValorProcedimentos(0);
         }
       } else {
-        console.error("Erro ao buscar valores de procedimentos:", data.error);
         setValorProcedimentos([]);
         setTotalPaginas(0);
         setTotalValorProcedimentos(0);
       }
     } catch (error) {
-      console.error("Erro ao buscar lançamentos:", error);
+      console.error('Erro ao buscar valores procedimentos:', error);
+      toast.error('Erro ao carregar valores procedimentos');
     } finally {
       setCarregando(false);
     }
@@ -159,14 +179,13 @@ export default function ValorProcedimentos() {
     resolver: zodResolver(createValorProcedimentoSchema),
     mode: "onChange",
     defaultValues: {
-      convenio_id: 0,
-      tipo_cliente: "SOCIO",
-      tabela_faturamento_id: 0,
-      procedimento_id: 0,
-      valor: 0,
+      convenio_id: undefined,
+      tipo_cliente: undefined,
+      tabela_faturamento_id: undefined,
+      procedimento_id: undefined,
+      valor: undefined,
     },
   });
-
   const formUpdate = useForm({
     resolver: zodResolver(updateValorProcedimentoSchema),
     mode: "onChange",
@@ -178,48 +197,42 @@ export default function ValorProcedimentos() {
       valor: 0,
     },
   });
-
   useEffect(() => {
     async function fetchData() {
       setCarregando(true);
       try {
         if (!valorProcedimentoSelecionado) return;
-
+        setValorEditFormatado(formatValor(+valorProcedimentoSelecionado.valor));
+        // Encontrar o convênio baseado na tabela de faturamento do item selecionado
+        const convenioDoItem = convenios.find(conv => 
+          conv.tabela_faturamento_id === valorProcedimentoSelecionado.tabela_faturamento_id
+        );
+        
         formUpdate.reset({
-          convenio_id: 0, // Será preenchido quando implementarmos a busca reversa
-          tipo: valorProcedimentoSelecionado.tipo,
+          convenio_id: convenioDoItem?.id || 0,
+          tipo_cliente: valorProcedimentoSelecionado.tipo,
           tabela_faturamento_id:
             valorProcedimentoSelecionado.tabela_faturamento_id,
           procedimento_id: valorProcedimentoSelecionado.procedimento_id,
           valor: +valorProcedimentoSelecionado.valor,
         });
       } catch (error) {
-        console.error("Erro ao carregar valor procedimento:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, [valorProcedimentoSelecionado]);
-
-
-
   const fetchProcedimentos = async () => {
     try {
-      // Para criação de novos valores, sempre buscar todos os procedimentos disponíveis
-      // O filtro por convênio será aplicado na validação do backend
       const response = await fetch("/api/procedimentos");
       const data = await response.json();
-
       if (response.ok) {
         setProcedimentos(data.data);
-        console.log("✅ Todos os procedimentos carregados:", data.data);
       } else {
-        console.error("Erro ao buscar procedimentos:", data.error);
         setProcedimentos([]);
       }
-    } catch (error: any) {
-      console.error("Erro ao buscar procedimentos:", error);
+    } catch (error) {
       setProcedimentos([]);
     }
   };
@@ -227,32 +240,24 @@ export default function ValorProcedimentos() {
     try {
       const response = await fetch("/api/tabela_faturamentos");
       const data = await response.json();
-
       if (response.ok) {
         setTabelaFaturamentos(data.data);
       } else {
-        console.error("Erro ao buscar tabela de faturamentos:", data.error);
       }
-    } catch (error: any) {
-      console.error("Erro ao buscar tabela de faturamentos:", error);
+    } catch (error) {
     }
   };
-
   const fetchConvenios = async () => {
     try {
       const response = await fetch("/api/convenios");
       const data = await response.json();
-
       if (response.ok) {
         setConvenios(data.data);
       } else {
-        console.error("Erro ao buscar convênios:", data.error);
       }
-    } catch (error: any) {
-      console.error("Erro ao buscar convênios:", error);
+    } catch (error) {
     }
   };
-
   useEffect(() => {
     fetchProcedimentos();
     fetchTabelaFaturamentos();
@@ -260,7 +265,6 @@ export default function ValorProcedimentos() {
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -269,27 +273,25 @@ export default function ValorProcedimentos() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, []); // Removido paginaAtual para carregar apenas uma vez
-
-  // Recarregar dados quando a página mudar
   useEffect(() => {
-    if (tabelaSelecionado && convenioSelecionado) {
+    if (convenioSelecionado) {
       carregarValorProcedimentos();
     }
   }, [paginaAtual]);
-
   const onSubmit = async (
     values: z.infer<typeof createValorProcedimentoSchema>
   ) => {
+    
     setCarregando(true);
     try {
-      // Usar o tipo do campo tipo_cliente para o campo tipo
+      // Create new record - only use required fields for API
       const dadosParaEnviar = {
-        ...values,
+        valor: values.valor,
         tipo: values.tipo_cliente,
-        // Remover campos que não são enviados para a API
-        convenio_id: undefined,
-        tipo_cliente: undefined
+        tabela_faturamento_id: values.tabela_faturamento_id,
+        procedimento_id: values.procedimento_id
       };
+      
       
       const response = await fetch("/api/valor-procedimento", {
         method: 'POST',
@@ -298,80 +300,70 @@ export default function ValorProcedimentos() {
         },
         body: JSON.stringify(dadosParaEnviar),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         toast.success("Valor de procedimento criado com sucesso");
+        // Apenas limpar o campo valor após cadastrar
+        setValorFormatado("R$ 0,00");
+        form.setValue("valor", undefined);
+        // Recarregar a lista para mostrar o novo item
         await carregarValorProcedimentos();
-        // Limpar o formulário
-        form.reset({
-          convenio_id: 0,
-          tipo_cliente: "SOCIO",
-          tabela_faturamento_id: 0,
-          procedimento_id: 0,
-          valor: 0,
-        });
-        // Limpar estados
-        setConvenioSelecionado(null);
-        setProcedimentoSelecionado(null);
-        setTabelaSelecionado(null);
       } else {
         toast.error(data.error || "Erro ao criar valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao criar:", error);
       toast.error("Erro ao criar valor de procedimento");
     } finally {
       setCarregando(false);
     }
   };
-
   const handleDeleteValor = async (valorId: number) => {
-    if (!confirm("Tem certeza que deseja deletar este valor de procedimento?")) {
-      return;
-    }
+    setItemToDelete(valorId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
     
     setCarregando(true);
     try {
-      const response = await fetch(`/api/valor-procedimento?id=${valorId}`, {
-        method: 'PATCH',
+      const response = await fetch(`/api/valor-procedimento/${itemToDelete}`, {
+        method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: "Inativo" }),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
-        toast.success(data.message || "Valor de procedimento deletado com sucesso");
+        toast.success(data.message || "Valor de procedimento excluído com sucesso");
         await carregarValorProcedimentos();
       } else {
-        toast.error(data.error || "Erro ao deletar valor de procedimento");
+        toast.error(data.error || "Erro ao excluir valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao deletar:", error);
-      toast.error("Erro ao deletar valor de procedimento");
+      toast.error("Erro ao excluir valor de procedimento");
     } finally {
       setCarregando(false);
+      setShowDeleteModal(false);
+      setItemToDelete(null);
     }
   };
-
   const onSubmitUpdate = async (
     values: z.infer<typeof updateValorProcedimentoSchema>
   ) => {
     setCarregando(true);
     try {
       if (!valorProcedimentoSelecionado) return;
-      
-      // Preparar dados para atualização
-      const updateData: any = {};
+      const updateData: {
+        valor?: number;
+        tipo?: string;
+        tabela_faturamento_id?: number;
+        procedimento_id?: number;
+      } = {};
       if (values.valor !== undefined) updateData.valor = values.valor;
       if (values.tipo_cliente !== undefined) updateData.tipo = values.tipo_cliente;
       if (values.tabela_faturamento_id !== undefined) updateData.tabela_faturamento_id = values.tabela_faturamento_id;
       if (values.procedimento_id !== undefined) updateData.procedimento_id = values.procedimento_id;
-      
       const response = await fetch(`/api/valor-procedimento?id=${valorProcedimentoSelecionado.id}`, {
         method: 'PATCH',
         headers: {
@@ -379,9 +371,7 @@ export default function ValorProcedimentos() {
         },
         body: JSON.stringify(updateData),
       });
-      
       const data = await response.json();
-      
       if (response.ok) {
         toast.success(data.message || "Valor de procedimento atualizado com sucesso");
         await carregarValorProcedimentos();
@@ -390,7 +380,6 @@ export default function ValorProcedimentos() {
         toast.error(data.error || "Erro ao atualizar valor de procedimento");
       }
     } catch (error) {
-      console.error("Erro ao atualizar:", error);
       toast.error("Erro ao atualizar valor de procedimento");
     } finally {
       setCarregando(false);
@@ -407,10 +396,9 @@ export default function ValorProcedimentos() {
       <h1 className="text-2xl font-bold mb-4 mt-5">
         Lista de Valor de Procedimentos
       </h1>
-
       <Form {...form}>
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-2 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4 items-end">
             <FormField
               control={form.control}
               name="convenio_id"
@@ -422,7 +410,6 @@ export default function ValorProcedimentos() {
                       field.onChange(value);
                       const convenio = convenios.find((item) => item.id == +value);
                       setConvenioSelecionado(convenio || null);
-                      // Limpar procedimento selecionado quando convênio mudar
                       setProcedimentoSelecionado(null);
                       form.setValue("procedimento_id", 0);
                     }}
@@ -434,7 +421,6 @@ export default function ValorProcedimentos() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
                       {convenios.map((item) => (
                         <SelectItem key={item.id} value={item.id.toString()}>
                           {item.nome}
@@ -458,7 +444,6 @@ export default function ValorProcedimentos() {
                     onValueChange={(value) => {
                       field.onChange(value);
                       setTipoClienteSelecionado(value);
-                      // Limpar procedimento selecionado quando tipo mudar
                       setProcedimentoSelecionado(null);
                       form.setValue("procedimento_id", 0);
                     }}
@@ -504,7 +489,6 @@ export default function ValorProcedimentos() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
                       {tabelaFaturamentos.map((item) => (
                         <SelectItem key={item.id} value={item.id.toString()}>
                           {item.nome}
@@ -539,7 +523,6 @@ export default function ValorProcedimentos() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="0">Selecione</SelectItem>
                       {procedimentos.map((item) => (
                         <SelectItem key={item.id} value={item.id.toString()}>
                           {item.nome}
@@ -553,7 +536,6 @@ export default function ValorProcedimentos() {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="valor"
@@ -563,12 +545,13 @@ export default function ValorProcedimentos() {
                   <FormControl>
                     <Input
                       type="text"
-                      value={field.value || ""}
+                      value={valorFormatado}
                       onChange={(e) => {
-                        let value = e.target.value.replace(/\D/g, "");
-                        value = "R$" + (Number(value) / 100).toFixed(2) + "";
-                        field.onChange(value.replace(".", ","));
-                      }}
+                        const formatted = formatValorInput(e.target.value);
+                        setValorFormatado(formatted);
+                        const numericValue = parseValorInput(formatted);
+                        field.onChange(numericValue);
+                        }}
                       placeholder="R$ 0,00"
                       className={
                         form.formState.errors.valor
@@ -583,22 +566,27 @@ export default function ValorProcedimentos() {
                 </FormItem>
               )}
             />
-            <Button variant={"default"} type="submit">
-              Salvar
+            <Button 
+              variant={"default"} 
+              type="submit"
+              onClick={(e) => {
+              }}
+            >
+              Cadastrar
             </Button>
           </div>
         </form>
       </Form>
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
           <span className="ml-2 text-gray-500">Carregando ...</span>
         </div>
-      ) : !tabelaSelecionado || !convenioSelecionado ? (
+      ) : !convenioSelecionado ? (
         <div className="flex justify-center items-center w-full h-40">
           <span className="text-gray-500">
-            Selecione um convênio e uma tabela de faturamento para ver os valores de procedimentos
+            Selecione um convênio para ver os valores de procedimentos
           </span>
         </div>
       ) : (
@@ -606,9 +594,9 @@ export default function ValorProcedimentos() {
           {valorProcedimentosSeguro.length === 0 ? (
             <div className="flex justify-center items-center w-full h-40">
                           <span className="ml-2 text-gray-500">
-              {!tabelaSelecionado || !convenioSelecionado ? 
-                'Selecione um convênio e uma tabela de faturamento para ver os valores de procedimentos' : 
-                'Nenhum valor de procedimento encontrado'
+              {!convenioSelecionado ? 
+                'Selecione um convênio para ver os valores de procedimentos' : 
+                'Nenhum valor de procedimento encontrado para os filtros selecionados'
               }
             </span>
             </div>
@@ -617,6 +605,8 @@ export default function ValorProcedimentos() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="h-12-1">ID</TableHead>
+                  <TableHead className="h-12-1">Convênio</TableHead>
+                  <TableHead className="h-12-1">Tabela</TableHead>
                   <TableHead className="h-12-1">Procedimento</TableHead>
                   <TableHead className="h-12-1">Valor</TableHead>
                   <TableHead className="h-12-1">Tipo</TableHead>
@@ -632,14 +622,23 @@ export default function ValorProcedimentos() {
                     <TableCell>{valorProcedimento.id}</TableCell>
                     <TableCell>
                       <Badge variant="outline">
+                        {convenioSelecionado?.nome || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {tabelaFaturamentos.find(t => t.id === valorProcedimento.tabela_faturamento_id)?.nome || 'N/A'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
                         {valorProcedimento.procedimento?.nome || 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatValor(valorProcedimento.valor)}</TableCell>
                     <TableCell>{valorProcedimento.tipo}</TableCell>
                     <TableCell className="flex gap-3 justify-center">
-                      {/* ✅ Botão Editar com Tooltip */}
-
+                      {}
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -666,8 +665,7 @@ export default function ValorProcedimentos() {
                           </Tooltip.Portal>
                         </Tooltip.Root>
                       </Tooltip.Provider>
-                      {/* ✅ Botão Editar com Tooltip */}
-
+                      {}
                       <Tooltip.Provider>
                         <Tooltip.Root>
                           <Tooltip.Trigger asChild>
@@ -697,7 +695,7 @@ export default function ValorProcedimentos() {
               </TableBody>
             </Table>
           )}
-          {/* Totalizador de ValorProcedimentos */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando{" "}
@@ -705,9 +703,8 @@ export default function ValorProcedimentos() {
               {totalValorProcedimentos} valores de procedimentos
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -720,8 +717,8 @@ export default function ValorProcedimentos() {
                   →
                 </span>
               }
-              pageCount={totalPaginas}
-              forcePage={paginaAtual}
+              pageCount={Math.max(totalPaginas, 1)}
+              forcePage={totalPaginas > 0 ? Math.min(paginaAtual, totalPaginas - 1) : 0}
               onPageChange={(event) => setPaginaAtual(event.selected)}
               containerClassName={"flex gap-2"}
               pageClassName={
@@ -748,7 +745,6 @@ export default function ValorProcedimentos() {
           </div>
         </>
       )}
-
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <FormProvider {...formUpdate}>
           <DialogContent className="w-full max-w-2xl">
@@ -780,8 +776,7 @@ export default function ValorProcedimentos() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="0">Selecione</SelectItem>
-                          {convenios.map((item) => (
+                              {convenios.map((item) => (
                             <SelectItem
                               key={item.id}
                               value={item.id.toString()}
@@ -857,8 +852,7 @@ export default function ValorProcedimentos() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="0">Selecione</SelectItem>
-                          {tabelaFaturamentos.map((item) => (
+                              {tabelaFaturamentos.map((item) => (
                             <SelectItem
                               key={item.id}
                               value={item.id.toString()}
@@ -899,8 +893,7 @@ export default function ValorProcedimentos() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="0">Selecione</SelectItem>
-                          {procedimentos.map((item) => (
+                              {procedimentos.map((item) => (
                             <SelectItem
                               key={item.id}
                               value={item.id.toString()}
@@ -916,7 +909,6 @@ export default function ValorProcedimentos() {
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={formUpdate.control}
                   name="valor"
@@ -926,12 +918,12 @@ export default function ValorProcedimentos() {
                       <FormControl>
                         <Input
                           type="text"
-                          value={field.value || ""}
+                          value={valorEditFormatado}
                           onChange={(e) => {
-                            let value = e.target.value.replace(/\D/g, "");
-                            value =
-                              "R$" + (Number(value) / 100).toFixed(2) + "";
-                            field.onChange(value.replace(".", ","));
+                            const formatted = formatValorInput(e.target.value);
+                            setValorEditFormatado(formatted);
+                            const numericValue = parseValorInput(formatted);
+                            field.onChange(numericValue);
                           }}
                           placeholder="R$ 0,00"
                           className={
@@ -968,6 +960,49 @@ export default function ValorProcedimentos() {
           </DialogContent>
         </FormProvider>
       </Dialog>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="w-full max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirmar Exclusão</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-600">
+              Tem certeza que deseja excluir este valor de procedimento?
+            </p>
+            <p className="text-sm text-red-600 mt-2">
+              Esta ação não pode ser desfeita.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setItemToDelete(null);
+              }}
+              disabled={carregando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={carregando}
+            >
+              {carregando ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Excluindo...
+                </>
+              ) : (
+                'Excluir'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
-}
+}

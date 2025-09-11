@@ -5,7 +5,6 @@ import { Expediente } from "./Expediente";
 import { Prestador } from "./Prestador";
 import { Procedimento } from "./Procedimento";
 import { Unidade } from "./Unidades";
-
 export interface Agenda {
   id: number;
   dtagenda: string;
@@ -19,8 +18,6 @@ export interface Agenda {
   especialidade_id: number | null;
   tipo: "PROCEDIMENTO" | "ENCAIXE";
   tipo_cliente: "SOCIO" | "NSOCIO" | "PARCEIRO" | "FUNCIONARIO";
-
-  // Campos de JOIN para exibição
   cliente_nome?: string;
   convenio_nome?: string;
   procedimento_nome?: string;
@@ -28,8 +25,6 @@ export interface Agenda {
   prestador_nome?: string;
   unidade_nome?: string;
   especialidade_nome?: string;
-
-  // Relacionamentos (opcionais)
   clientes?: Cliente;
   convenios?: Convenio;
   procedimentos?: Procedimento;
@@ -37,11 +32,9 @@ export interface Agenda {
   prestador?: Prestador;
   unidade?: Unidade;
   especialidade?: Especialidade;
-  
   createdAt: Date;
   updatedAt: Date;
 }
-
 export enum Situacao {
   AGENDADO = "AGENDADO",
   FALTA = "FALTA",
@@ -50,4 +43,4 @@ export enum Situacao {
   INATIVO = "INATIVO",
   BLOQUEADO = "BLOQUEADO",
   CONFIRMADO = "CONFIRMADO",
-}
+}

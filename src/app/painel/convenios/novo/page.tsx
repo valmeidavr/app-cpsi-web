@@ -1,14 +1,8 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -22,10 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//Helpers
 import { useRouter } from "next/navigation";
-
 import {
   Select,
   SelectContent,
@@ -35,13 +26,11 @@ import {
 } from "@/components/ui/select";
 import { TabelaFaturamento } from "@/app/types/TabelaFaturamento";
 import { createConvenioSchema } from "@/app/api/convenios/schema/formSchemaConvenios";
-
 export default function NovoConvenio() {
   const [loading, setLoading] = useState(false);
   const [tabelaFaturamento, setTabelaFaturamento] = useState<
     TabelaFaturamento[]
   >([]);
-
   const router = useRouter();
   const form = useForm<z.infer<typeof createConvenioSchema>>({
     resolver: zodResolver(createConvenioSchema),
@@ -53,21 +42,14 @@ export default function NovoConvenio() {
       tabela_faturamento_id: undefined,
     },
   });
-
   const onSubmit = async (values: z.infer<typeof createConvenioSchema>) => {
     setLoading(true);
     try {
-      console.log("🔍 Valores do formulário:", values);
-      console.log("🔍 Tipo do tabela_faturamento_id:", typeof values.tabela_faturamento_id);
-      console.log("🔍 Valor do tabela_faturamento_id:", values.tabela_faturamento_id);
-      
-      // Validação adicional
       if (!values.tabela_faturamento_id || values.tabela_faturamento_id <= 0) {
         toast.error("Selecione uma tabela de faturamento válida");
         setLoading(false);
         return;
       }
-      
       const response = await fetch("/api/convenios", {
         method: 'POST',
         headers: {
@@ -75,46 +57,36 @@ export default function NovoConvenio() {
         },
         body: JSON.stringify(values),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Erro ao salvar convênio');
       }
-
       const currentUrl = new URL(window.location.href);
       const queryParams = new URLSearchParams(currentUrl.search);
-
       queryParams.set("type", "success");
       queryParams.set("message", "Convênio salvo com sucesso!");
-
       router.push(`/painel/convenios?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar convênio";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar convênio";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
   const fetchTabelaFaturamento = async () => {
     try {
       const response = await fetch("/api/tabela_faturamentos");
       const data = await response.json();
-      
       if (response.ok) {
         setTabelaFaturamento(data.data);
       } else {
-        console.error("Erro ao buscar tabelas de faturamento:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar tabelas de faturamento:", error);
     }
   };
-
   useEffect(() => {
     fetchTabelaFaturamento();
   }, []);
-
   const regrasOption = [
     { value: "CONVENIO", label: "CONVÊNIO" },
     { value: "AAPVR", label: "AAPVR" },
@@ -130,10 +102,9 @@ export default function NovoConvenio() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">Novo Convênio</h1>
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Campos de Nome e Código */}
+          {}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <FormField
               control={form.control}
@@ -177,7 +148,6 @@ export default function NovoConvenio() {
                         if (isNaN(value)) value = 0;
                         if (value > 100) value = 100;
                         if (value < 0) value = 0;
-                      
                         field.onChange(value);
                       }}
                       className={`border ${
@@ -234,7 +204,6 @@ export default function NovoConvenio() {
                     value={field.value ? field.value.toString() : ""}
                     onValueChange={(value) => {
                       const numValue = Number(value);
-                      console.log("🔍 Valor selecionado:", numValue);
                       field.onChange(numValue);
                     }}
                   >
@@ -265,8 +234,7 @@ export default function NovoConvenio() {
               )}
             />
           </div>
-
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -286,4 +254,4 @@ export default function NovoConvenio() {
       </Form>
     </div>
   );
-}
+}

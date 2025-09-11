@@ -1,6 +1,6 @@
-# CPSI da AAPVR
+# prevSaúde da AAPVR
 
-![CPSI da AAPVR](https://www.aapvr.org.br/wp-content/uploads/2023/08/LOGO-HORIZONTAL-COLORIDO.png)
+![prevSaúde da AAPVR](https://www.aapvr.org.br/wp-content/uploads/2023/08/LOGO-HORIZONTAL-COLORIDO.png)
 
 > Um sistema moderno e eficiente para a gestão da **Associação de Aposentados e Pensionistas de Volta Redonda (AAPVR)**.
 

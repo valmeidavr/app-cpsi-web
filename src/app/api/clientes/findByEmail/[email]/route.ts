@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
-
+import { accessPool } from "@/lib/mysql";
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ email: string }> }
@@ -8,19 +7,21 @@ export async function GET(
   try {
     const { email } = await params;
     const emailDecoded = decodeURIComponent(email);
-
-    const [rows] = await gestorPool.execute(
+    console.log('🔍 [EMAIL API] Verificando email:', emailDecoded);
+    
+    const [rows] = await accessPool.execute(
       'SELECT id FROM clientes WHERE email = ? AND status = "Ativo"',
       [emailDecoded]
     );
-
-    const exists = (rows as any[]).length > 0;
-
-    return NextResponse.json(exists);
+    
+    const exists = (rows as Array<{ id: number }>).length > 0;
+    console.log('📊 [EMAIL API] Email já existe:', exists);
+    
+    return NextResponse.json({ exists });
   } catch (error) {
-    console.error('Erro ao verificar email:', error);
+    console.error('❌ [EMAIL API] Erro ao verificar email:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

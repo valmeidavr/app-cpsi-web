@@ -1,11 +1,7 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import * as Tooltip from "@radix-ui/react-tooltip";
-
-//Components
 import {
   Table,
   TableBody,
@@ -36,13 +32,9 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-
-//Helpers
-// Removido import http - usando fetch direto
+import { cn } from "@/lib/utils";
 import { formatarCPF, formatarTelefone } from "@/util/clearData";
-//Types
 import { Prestador } from "@/app/types/Prestador";
-
 export default function Prestadores() {
   const [prestadores, setPrestadores] = useState<Prestador[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -54,35 +46,29 @@ export default function Prestadores() {
     useState<Prestador | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loadingInativar, setLoadingInativar] = useState(false);
-
   const carregarPrestadores = async () => {
     setCarregando(true);
     try {
       const params = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '10', // Aumentei para 10 por página
+        limit: '10',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/prestadores?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setPrestadores(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalPrestadores(data.pagination.total);
       } else {
-        console.error("Erro ao buscar prestadores:", data.error);
         toast.error("Erro ao carregar prestadores");
       }
     } catch (error) {
-      console.error("Erro ao buscar prestadores:", error);
       toast.error("Erro ao carregar prestadores");
     } finally {
       setCarregando(false);
     }
   };
-
   const alterarStatusPrestador = async () => {
     if (!prestadorSelecionado) return;
     setLoadingInativar(true);
@@ -98,7 +84,6 @@ export default function Prestadores() {
           status: novoStatus,
         }),
       });
-
       if (response.ok) {
         setPrestadores((prestadores) =>
           prestadores.map((prestador) =>
@@ -116,19 +101,16 @@ export default function Prestadores() {
         toast.error(errorData.error || "Erro ao alterar status");
       }
     } catch (error) {
-      console.error("Erro ao alterar status do prestador:", error);
       toast.error("Erro ao alterar status do prestador");
     } finally {
       setLoadingInativar(false);
     }
   };
-
   useEffect(() => {
     carregarPrestadores();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success("Prestador salvo com sucesso!");
     } else if (type == "error") {
@@ -137,24 +119,19 @@ export default function Prestadores() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
-  // Recarregar prestadores quando o termo de busca mudar
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (termoBusca !== '') {
         setPaginaAtual(0);
         carregarPrestadores();
       }
-    }, 500); // Delay de 500ms para evitar muitas requisições
-
+    }, 500);
     return () => clearTimeout(timeoutId);
   }, [termoBusca]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarPrestadores();
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -164,8 +141,6 @@ export default function Prestadores() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Prestadores</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Prestador */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -180,8 +155,6 @@ export default function Prestadores() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Prestador */}
         <Button asChild>
           <Link href="/painel/prestadores/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -189,8 +162,6 @@ export default function Prestadores() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -198,7 +169,6 @@ export default function Prestadores() {
         </div>
       ) : (
         <>
-          {/* Tabela de Prestadores */}
           <Table>
             <TableHeader>
               <TableRow>
@@ -214,12 +184,20 @@ export default function Prestadores() {
               {prestadores.map((prestador) => (
                 <TableRow
                   key={prestador.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    prestador.status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{prestador.id}</TableCell>
                   <TableCell>{prestador.nome}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">
+                    <Badge 
+                      variant="outline"
+                      className={cn(
+                        prestador.status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >
                       {formatarCPF(prestador.cpf)}
                     </Badge>
                   </TableCell>
@@ -263,7 +241,6 @@ export default function Prestadores() {
                     {prestador.status}
                   </TableCell>
                   <TableCell className="flex gap-3 justify-center">
-                    {/* ✅ Botão Editar com Tooltip */}
                     {prestador.status === "Ativo" && (
                       <Tooltip.Provider>
                         <Tooltip.Root>
@@ -271,7 +248,10 @@ export default function Prestadores() {
                             <Link
                               href={`/painel/prestadores/editar/${prestador.id}`}
                             >
-                              <Button size="icon" variant="outline">
+                              <Button 
+                                size="icon" 
+                                variant="outline"
+                              >
                                 <Edit className="h-5 w-5" />
                               </Button>
                             </Link>
@@ -287,7 +267,6 @@ export default function Prestadores() {
                         </Tooltip.Root>
                       </Tooltip.Provider>
                     )}
-                    {/* ✅ Botão Ativar/Inativar com Tooltip */}
                     <Tooltip.Provider>
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
@@ -325,16 +304,12 @@ export default function Prestadores() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Prestadores */}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 10, totalPrestadores)} de{" "}
               {totalPrestadores} prestadores
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -375,8 +350,6 @@ export default function Prestadores() {
           </div>
         </>
       )}
-
-      {/* ✅ Diálogo de Confirmação */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -413,4 +386,4 @@ export default function Prestadores() {
       </Dialog>
     </div>
   );
-}
+}

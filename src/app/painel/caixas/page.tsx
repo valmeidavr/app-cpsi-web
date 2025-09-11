@@ -1,12 +1,8 @@
 "use client";
-
-//React
 import { useEffect, useState } from "react";
 import ReactPaginate from "react-paginate";
 import Link from "next/link";
 import * as Tooltip from "@radix-ui/react-tooltip";
-
-//Components
 import {
   Table,
   TableBody,
@@ -19,15 +15,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2, Search, Edit, Power, Plus } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import Breadcrumb from "@/components/ui/Breadcrumb";
 import { Badge } from "@/components/ui/badge";
-
-//Helpers
-// Removido import http - usando fetch direto
-
-//Types
 import { Caixa } from "@/app/types/Caixa";
-
+import { formatValor } from "@/app/helpers/format";
 export default function Caixas() {
   const [caixa, setCaixa] = useState<Caixa[]>([]);
   const [paginaAtual, setPaginaAtual] = useState(0);
@@ -35,39 +27,32 @@ export default function Caixas() {
   const [totalCaixas, setTotalCaixas] = useState(0);
   const [termoBusca, setTermoBusca] = useState("");
   const [carregando, setCarregando] = useState(false);
-
   const carregarCaixas = async () => {
     setCarregando(true);
     try {
       const params = new URLSearchParams({
         page: (paginaAtual + 1).toString(),
-        limit: '5',
+        limit: '10',
         search: termoBusca,
       });
-
       const response = await fetch(`/api/caixa?${params}`);
       const data = await response.json();
-
       if (response.ok) {
         setCaixa(data.data);
         setTotalPaginas(data.pagination.totalPages);
         setTotalCaixas(data.pagination.total);
       } else {
-        console.error("Erro ao buscar caixas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao buscar Caixa:", error);
     } finally {
       setCarregando(false);
     }
   };
-
   useEffect(() => {
     carregarCaixas();
     const params = new URLSearchParams(window.location.search);
     const message = params.get("message");
     const type = params.get("type");
-
     if (message && type == "success") {
       toast.success(message);
     } else if (type == "error") {
@@ -76,12 +61,10 @@ export default function Caixas() {
     const newUrl = window.location.pathname;
     window.history.replaceState({}, "", newUrl);
   }, [paginaAtual]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarCaixas();
   };
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -91,8 +74,7 @@ export default function Caixas() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-4 mt-5">Lista de Caixas</h1>
-
-      {/* Barra de Pesquisa e Botão Novo Caixa */}
+      {}
       <div className="flex justify-between items-center mb-4">
         <div className="flex gap-2">
           <Input
@@ -107,8 +89,7 @@ export default function Caixas() {
             Buscar
           </Button>
         </div>
-
-        {/* ✅ Botão Novo Caixa */}
+        {}
         <Button asChild>
           <Link href="/painel/caixas/novo">
             <Plus className="h-5 w-5 mr-2" />
@@ -116,8 +97,7 @@ export default function Caixas() {
           </Link>
         </Button>
       </div>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -125,7 +105,7 @@ export default function Caixas() {
         </div>
       ) : (
         <>
-          {/* Tabela de Caixa */}
+          {}
           <Table>
             <TableHeader>
               <TableRow>
@@ -140,23 +120,30 @@ export default function Caixas() {
               {caixa.map((caixas) => (
                 <TableRow
                   key={caixas.id}
-                  className={"odd:bg-gray-100 even:bg-white"}
+                  className={cn(
+                    "odd:bg-gray-100 even:bg-white",
+                    (caixas as any).status === "Inativo" && "bg-gray-50 text-gray-500 opacity-75"
+                  )}
                 >
                   <TableCell>{caixas.id}</TableCell>
                   <TableCell>{caixas.nome}</TableCell>
                   <TableCell>
                     <Badge
-                      className={`${
-                        caixas.saldo <= 0 ? "bg-destructive" : "bg-green-500"
-                      }`}
+                      className={cn(
+                        caixas.saldo <= 0 ? "bg-destructive" : "bg-green-500",
+                        (caixas as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
                     >
-                      {caixas.saldo}
+                      {formatValor(caixas.saldo)}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge>{caixas.tipo}</Badge>
+                    <Badge
+                      className={cn(
+                        (caixas as any).status === "Inativo" && "bg-gray-100 text-gray-400 border-gray-200"
+                      )}
+                    >{caixas.tipo}</Badge>
                   </TableCell>
-
                   <TableCell className="flex gap-3 justify-center">
                     <Tooltip.Provider>
                       <Tooltip.Root>
@@ -182,16 +169,15 @@ export default function Caixas() {
               ))}
             </TableBody>
           </Table>
-          {/* Totalizador de Caixas */}
+          {}
           <div className="flex justify-between items-center ml-1 mt-4">
             <div className="text-sm text-gray-600">
               Mostrando {Math.min((paginaAtual + 1) * 5, totalCaixas)} de{" "}
               {totalCaixas} caixas
             </div>
           </div>
-
-          {/* ✅ Paginação */}
-          {/* ✅ Paginação corrigida */}
+          {}
+          {}
           <div className="flex justify-center mt-4">
             <ReactPaginate
               previousLabel={
@@ -234,4 +220,4 @@ export default function Caixas() {
       )}
     </div>
   );
-}
+}

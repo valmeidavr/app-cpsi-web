@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,13 +37,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (collapsed: boolean) => void;
+  isMobile?: boolean;
 }
-
-// Mapeia os ícones para serem usados dinamicamente
 const iconMap: { [key: string]: React.ElementType } = {
   DockIcon,
   BoxIcon,
@@ -67,7 +64,6 @@ const iconMap: { [key: string]: React.ElementType } = {
   Table,
   Calendar,
 };
-
 interface MenuItem {
   icon: React.ElementType;
   label: string;
@@ -80,15 +76,12 @@ interface MenuItem {
     requiredGroups?: string[]; // Adicione aqui também para os subitens
   }[];
 }
-
-export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
+export default function Sidebar({ collapsed, setCollapsed, isMobile = false }: SidebarProps) {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const pathname = usePathname();
   const { hasSystemAccess, userLevel } = useAuth();
-  const [menuItems, setMenuItems] = useState<any[]>([]);
-
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   useEffect(() => {
-    // Carrega os itens do menu e converte os ícones para componentes React
     const parsedMenu = menuData.map((item) => ({
       ...item,
       icon: iconMap[item.icon], // Mapeia o ícone principal
@@ -99,19 +92,16 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           }))
         : [],
     }));
-
     setMenuItems(parsedMenu);
   }, []);
-
   const hasAccess = (requiredGroups?: string[]) => {
-    // Se não tem acesso ao sistema, não mostra nada
-    if (!hasSystemAccess) return false;
-    
-    // Se não há grupos requeridos, permite acesso
-    if (!requiredGroups || requiredGroups.length === 0) return true;
-    
-    // Verifica se o nível do usuário está nos grupos permitidos
-    return requiredGroups.some((group) => {
+    if (!hasSystemAccess) {
+      return false;
+    }
+    if (!requiredGroups || requiredGroups.length === 0) {
+      return true;
+    }
+    const hasPermission = requiredGroups.some((group) => {
       switch (group) {
         case 'ADMIN':
           return userLevel === 'Administrador';
@@ -123,20 +113,19 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
           return false;
       }
     });
+    return hasPermission;
   };
-
   const renderMenuItem = (item: MenuItem, index: number) => {
     if (item.requiredGroups && !hasAccess(item.requiredGroups)) return null; // Esconde o item se houver requiredGroups e o usuário não tiver acesso.
-
     if (collapsed) {
       return (
         <Popover key={index}>
           <PopoverTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-center py-2 px-3 hover:bg-gray-800 transition-colors hover:text-white text-white"
+              className="w-full justify-center py-1.5 px-2 md:py-2 md:px-3 hover:bg-gray-800 transition-colors hover:text-white text-white"
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-4 w-4 md:h-5 md:w-5" />
             </Button>
           </PopoverTrigger>
           <PopoverContent
@@ -164,7 +153,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                             variant="ghost"
                             className={cn(
                               "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                              pathname === subItem.href && "bg-gray-700"
+                              pathname === subItem.href && "bg-gray-700 border-l-4 border-primary"
                             )}
                           >
                             <subItem.icon className="h-4 w-4 mr-2" />
@@ -180,25 +169,24 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
         </Popover>
       );
     }
-
     return (
       <div key={index} className="mb-2">
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-start py-2 px-3 text-left hover:bg-gray-800 transition-colors hover:text-white text-white",
-            pathname === item.href && "bg-gray-800"
+            "w-full justify-start py-1.5 px-2 md:py-2 md:px-3 text-left hover:bg-gray-800 transition-colors hover:text-white text-white",
+            pathname === item.href && "bg-gray-800 border-l-4 border-primary"
           )}
           onClick={() =>
             setActiveItem(activeItem === item.label ? null : item.label)
           }
         >
-          <item.icon className="h-5 w-5 mr-2" />
-          <span>{item.label}</span>
+          <item.icon className="h-4 w-4 md:h-5 md:w-5 mr-1.5 md:mr-2" />
+          <span className="text-xs md:text-sm">{item.label}</span>
           {item.subItems && (
             <ChevronRight
               className={cn(
-                "h-4 w-4 ml-auto transition-transform",
+                "h-3 w-3 md:h-4 md:w-4 ml-auto transition-transform",
                 activeItem === item.label && "rotate-90"
               )}
             />
@@ -218,7 +206,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
                       variant="ghost"
                       className={cn(
                         "w-full justify-start py-1 px-3 text-sm hover:bg-gray-800 transition-colors hover:text-white text-white",
-                        pathname === subItem.href && "bg-gray-700"
+                                                      pathname === subItem.href && "bg-gray-700 border-l-4 border-primary"
                       )}
                     >
                       <subItem.icon className="h-4 w-4 mr-2" />
@@ -232,43 +220,48 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       </div>
     );
   };
-
   return (
     <div
       className={cn(
-        "flex flex-col h-full bg-gray-900 text-gray-100 transition-all duration-300 ease-in-out",
-        collapsed ? "w-16" : "w-64"
+        "flex flex-col min-h-screen bg-gray-900 text-gray-100 transition-all duration-300 ease-in-out",
+        isMobile 
+          ? collapsed 
+            ? "fixed left-0 top-0 z-50 transform -translate-x-full w-64" 
+            : "fixed left-0 top-0 z-50 transform translate-x-0 w-64"
+          : collapsed 
+            ? "w-12 md:w-16" 
+            : "w-56 md:w-64"
       )}
     >
-      <div className="flex items-center justify-between p-4">
+      <div className="flex items-center justify-between p-2 md:p-4">
         {!collapsed ? (
           <Link href="/painel" className="flex items-center">
             <Image
               src="/logotipo.svg"
               alt="Grupo AAP-VR"
-              width={40}
-              height={40}
-              className="mr-5"
+              width={32}
+              height={32}
+              className="mr-2 md:mr-5 md:w-10 md:h-10"
             />
-            <span className="text-ml font-bold">AAP-VR / CPSI</span>
+            <span className="text-sm md:text-base font-bold">AAP-VR / Prev-Saúde</span>
           </Link>
         ) : (
-          <div className=" h-8" /> // Placeholder para manter o espaçamento
+          <div className="h-6 md:h-8" />
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="hover:bg-gray-800 hover:text-white text-white"
+          className="hover:bg-gray-800 hover:text-white text-white p-1 md:p-2"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4 md:h-5 md:w-5" />
         </Button>
       </div>
       <ScrollArea className="flex-grow">
-        <div className="px-3 py-2">
+        <div className="px-1 py-1 md:px-3 md:py-2">
           {menuItems.map((item, index) => renderMenuItem(item, index))}
         </div>
       </ScrollArea>
     </div>
   );
-}
+}

@@ -1,15 +1,9 @@
 "use client";
-
-//React
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-
-//Zod
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
-//Components
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
 import {
@@ -23,11 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
-
-//API
 import { updateCaixaSchema } from "@/app/api/caixa/schema/formSchemaCaixa";
-
-//Helpers
 import { redirect, useParams } from "next/navigation";
 import {
   Select,
@@ -36,17 +26,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import { Caixa } from "@/app/types/Caixa";
-
+import { formatValorInput, parseValorInput, formatValor } from "@/app/helpers/format";
 export default function EditarCaixa() {
   const [loading, setLoading] = useState(false);
-  const [caixa, setCaixa] = useState(null);
+  const [caixa, setCaixa] = useState<Caixa | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [caixaOptions, setCaixaOptions] = useState<Caixa[]>([]);
+  const [saldoFormatado, setSaldoFormatado] = useState("R$ 0,00");
   const params = useParams();
   const caixaId = Array.isArray(params.id) ? params.id[0] : params.id;
-
   const form = useForm({
     resolver: zodResolver(updateCaixaSchema),
     mode: "onChange",
@@ -56,24 +45,18 @@ export default function EditarCaixa() {
       tipo: "",
     },
   });
-
   const router = useRouter();
-
   const fetchCaixas = async () => {
     try {
       const response = await fetch("/api/caixa");
       const data = await response.json();
-      
       if (response.ok) {
         setCaixaOptions(data.data);
       } else {
-        console.error("Erro ao carregar caixas:", data.error);
       }
     } catch (error) {
-      console.error("Erro ao carregar caixas:", error);
     }
   };
-
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
@@ -82,32 +65,28 @@ export default function EditarCaixa() {
         await fetchCaixas();
         const response = await fetch(`/api/caixa/${caixaId}`);
         const data = await response.json();
-        
         if (response.ok) {
           setCaixa(data);
+          setSaldoFormatado(formatValor(data.saldo));
           form.reset({
             nome: data.nome,
             saldo: data.saldo,
             tipo: data.tipo,
           });
         } else {
-          console.error("Erro ao carregar caixa:", data.error);
           toast.error("Erro ao carregar dados do caixa");
         }
       } catch (error) {
-        console.error("Erro ao carregar caixa:", error);
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
   }, []);
-
   const onSubmit = async (values: z.infer<typeof updateCaixaSchema>) => {
     setLoading(true);
     try {
       if (!caixaId) redirect("/painel/caixas");
-
       const response = await fetch(`/api/caixa/${caixaId}`, {
         method: 'PUT',
         headers: {
@@ -115,31 +94,25 @@ export default function EditarCaixa() {
         },
         body: JSON.stringify(values),
       });
-
       const responseData = await response.json();
-
       if (!response.ok) {
         throw new Error(responseData.error || "Erro ao atualizar caixa.");
       }
-
       const queryParams = new URLSearchParams();
       queryParams.set("type", "success");
       queryParams.set("message", "Caixa atualizado com sucesso!");
-
       router.push(`/painel/caixas?${queryParams.toString()}`);
-    } catch (error: any) {
-      const errorMessage = error.message || "Erro ao salvar caixa!";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao salvar caixa!";
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
-
   const tipoOptions = [
     { value: "CAIXA", label: "CAIXA" },
     { value: "BANCO", label: "BANCO" },
   ];
-
   return (
     <div className="container mx-auto">
       <Breadcrumb
@@ -150,8 +123,7 @@ export default function EditarCaixa() {
         ]}
       />
       <h1 className="text-2xl font-bold mb-6 mt-5">Editar Caixa</h1>
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
+      {}
       {carregando ? (
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
@@ -161,7 +133,7 @@ export default function EditarCaixa() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {" "}
-            {/* Campos do fomulário*/}
+            {}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
               <FormField
                 control={form.control}
@@ -191,7 +163,14 @@ export default function EditarCaixa() {
                     <FormLabel>Saldo *</FormLabel>
                     <FormControl>
                       <Input
-                        {...field}
+                        value={saldoFormatado}
+                        onChange={(e) => {
+                          const formatted = formatValorInput(e.target.value);
+                          setSaldoFormatado(formatted);
+                          const numericValue = parseValorInput(formatted);
+                          field.onChange(numericValue);
+                        }}
+                        placeholder="R$ 0,00"
                         className={`border ${
                           form.formState.errors.saldo
                             ? "border-red-500"
@@ -204,8 +183,6 @@ export default function EditarCaixa() {
                 )}
               />
             </div>
-
-
           <FormField
               control={form.control}
               name="tipo"
@@ -215,7 +192,6 @@ export default function EditarCaixa() {
                   <Select
                     onValueChange={field.onChange}
                     value={field.value || ""}
-                    
                   >
                     <FormControl
                       className={
@@ -240,7 +216,7 @@ export default function EditarCaixa() {
                 </FormItem>
               )}
             />
-          {/* Botão de Envio */}
+          {}
           <Button
             type="submit"
             disabled={loading}
@@ -261,4 +237,4 @@ export default function EditarCaixa() {
       )}
     </div>
   );
-}
+}

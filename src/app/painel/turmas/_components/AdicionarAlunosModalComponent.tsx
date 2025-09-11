@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,7 +21,10 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { getDateOnlyUTCISO } from "@/app/helpers/dateUtils";
+// Função para obter data atual no formato YYYY-MM-DD
+const getCurrentDateString = () => {
+  return new Date().toISOString().split('T')[0];
+};
 import { Cliente } from "@/app/types/Cliente";
 import {
   Table,
@@ -52,16 +54,14 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Turma } from "@/app/types/Turma";
-import { Loader2, MenuIcon, Search, Trash2 } from "lucide-react";
+import { Loader2, MenuIcon, Search, Trash2, Plus, Users, UserPlus, GraduationCap } from "lucide-react";
 import AlunoDetalhesModal from "./detalhesAlunoModal";
 import { http } from "@/util/http";
-
 interface Props {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   turmaId: number;
 }
-
 const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }) => {
   const [paginaAtual, setPaginaAtual] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -86,22 +86,18 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           search: termoBusca,
         },
       });
-
       setClientes(data.data);
     } catch (error) {
-      console.error("Erro ao carregar clientes:", error);
     } finally {
       setLoading(false);
     }
   };
-
   const deleteAllAlunos = async () => {
     try {
       setLoadingDeleteAll(true);
       await http.delete(`/api/alunos_turmas/${turmaSelected}`);
       await carregarAlunos();
     } catch (error) {
-      console.error("Erro ao deletar todos os alunos:", error);
     } finally {
       setLoadingDeleteAll(false);
     }
@@ -116,12 +112,12 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       const payload = {
         cliente_id,
         turma_id,
-        data_inscricao: getDateOnlyUTCISO(),
+        data_inscricao: getCurrentDateString(),
       };
       await http.post("/api/alunos_turmas", payload);
       await carregarAlunos();
-    } catch (error: any) {
-      toast.error(`Erro ao adicionar alunos: ${error.message}`);
+    } catch (error) {
+      toast.error(`Erro ao adicionar alunos: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setLoadingAluno(false);
     }
@@ -132,12 +128,10 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       await http.delete(`/api/alunos_turmas/${alunoId}`);
       await carregarAlunos();
     } catch (error) {
-      console.error("Erro ao deletar alunos:", error);
     } finally {
       setLoadingAluno(false);
     }
   };
-
   const carregarAlunos = async () => {
     try {
       setLoadingAluno(true);
@@ -154,23 +148,18 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
       );
       setAlunos(data.data);
     } catch (error) {
-      console.error("Erro ao carregar alunos:", error);
     } finally {
       setLoadingAluno(false);
     }
   };
-
   useEffect(() => {
     carregarAlunos();
   }, [paginaAtual]);
-
-  // Adicionar useEffect para carregar clientes quando o modal abre
   useEffect(() => {
     if (isOpen) {
       carregarClientes();
     }
   }, [isOpen]);
-
   const handleSearch = () => {
     setPaginaAtual(0);
     carregarClientes();
@@ -179,48 +168,81 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     setPaginaAtual(0);
     carregarAlunos();
   };
-
   return (
     <div>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="w-full max-w-6xl max-h-[90vh] ">
-          <DialogHeader>
-            <DialogTitle>Confirmar Ação</DialogTitle>
-          </DialogHeader>
-          <div className="flex justify-between items-center mb-1">
-            <div>
-              <Label>Buscar Clientes: </Label>
-              <div className="flex gap-2">
-                <Input
-                  type="text"
-                  placeholder="Pesquisar Cliente"
-                  value={termoBusca}
-                  onChange={(e) => setTermoBusca(e.target.value)}
-                  className="w-96 max-w-lg"
-                />
-                <Button variant="default" onClick={handleSearch}>
-                  <Search className="w-4 h-4" />
-                  Buscar
-                </Button>
+        <DialogContent className="w-full max-w-7xl max-h-[95vh] bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30">
+          <DialogHeader className="pb-6">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg">
+                <GraduationCap className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent">
+                  Gerenciar Alunos da Turma
+                </DialogTitle>
+                <p className="text-slate-600 font-medium text-lg mt-1">
+                  Adicione ou remova alunos desta turma
+                </p>
               </div>
             </div>
+          </DialogHeader>
+
+          {/* Seção de Buscar Clientes */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                <UserPlus className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Adicionar Novos Alunos</h3>
+                <p className="text-slate-600 text-sm">Busque e adicione clientes à turma</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Pesquisar por nome ou CPF..."
+                  value={termoBusca}
+                  onChange={(e) => setTermoBusca(e.target.value)}
+                  className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-xl"
+                />
+              </div>
+              <Button 
+                variant="default" 
+                onClick={handleSearch}
+                className="h-12 px-6 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 rounded-xl font-semibold"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Buscar
+              </Button>
+            </div>
           </div>
-          <div className="max-h-[200px] overflow-y-auto">
-            <Table className="mb-2 w-full border-b">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-white/30 overflow-hidden">
+            <div className="bg-gradient-to-r from-slate-50 to-blue-50 p-4 border-b">
+              <h4 className="font-semibold text-slate-800 flex items-center gap-2">
+                <Users className="h-5 w-5 text-blue-600" />
+                Clientes Disponíveis
+              </h4>
+            </div>
+            <div className="max-h-[280px] overflow-y-auto">
+            <Table className="w-full">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Nome</TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Celular
+                <TableRow className="bg-gray-50/50">
+                  <TableHead className="font-semibold text-slate-700">Nome do Cliente</TableHead>
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Telefone
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Data de Nascimento
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Nascimento
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Situação
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Status
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Opções
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Ações
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -240,18 +262,25 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                   clientes.map((cliente) => (
                     <TableRow
                       key={cliente.id}
-                      className={`cursor-context-menu text-center 
+                      className={`text-center transition-colors 
                         ${
                           alunos.find(
                             (aluno) => aluno.cliente_id == +cliente.id
                           )
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed opacity-60"
-                            : "hover:bg-blue-100 cursor-pointer"
+                            ? "bg-red-50 text-red-600 cursor-not-allowed opacity-75"
+                            : "hover:bg-blue-50 cursor-pointer hover:shadow-sm"
                         }
                         `}
                     >
-                      <TableCell className="text-start">
-                        {cliente.nome}
+                      <TableCell className="text-start font-medium">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full ${
+                            alunos.find(
+                              (aluno) => aluno.cliente_id == +cliente.id
+                            ) ? "bg-red-500" : "bg-blue-500"
+                          }`}></div>
+                          {cliente.nome}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {cliente.telefone1
@@ -295,11 +324,15 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                             ) ? (
                               <DropdownMenuItem
                                 onSelect={() => addAluno(+cliente.id, turmaId)}
+                                className="text-green-600 font-semibold"
                               >
+                                <Plus className="h-4 w-4 mr-2" />
                                 Adicionar Aluno
                               </DropdownMenuItem>
                             ) : (
-                              ""
+                              <DropdownMenuItem disabled className="text-gray-500">
+                                Já Matriculado
+                              </DropdownMenuItem>
                             )}
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -309,61 +342,84 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                 )}
               </TableBody>
             </Table>
+            </div>
           </div>
-
-          <div className="flex justify-between items-end mt-2 ">
-            <div>
-              <Label>Buscar Alunos: </Label>
-              <div className="flex gap-2">
+          
+          {/* Seção de Alunos Matriculados */}
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/30">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-800">Alunos Matriculados</h3>
+                  <p className="text-slate-600 text-sm">Gerencie os alunos já matriculados na turma</p>
+                </div>
+              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => {
+                        setisModalDeleteAllOpen(true);
+                        setTurmaSelected(turmaId);
+                      }}
+                      variant="destructive"
+                      className="h-11 px-4 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 rounded-xl"
+                    >
+                      <Trash2 className="h-5 w-5 mr-2" />
+                      Remover Todos
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Excluir Todos os Alunos desta Turma</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            <div className="flex gap-3 mb-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   type="text"
-                  placeholder="Pesquisar Aluno"
+                  placeholder="Pesquisar aluno matriculado..."
                   value={termoBuscaAluno}
                   onChange={(e) => setTermoBuscaAluno(e.target.value)}
-                  className="w-96 max-w-lg"
+                  className="pl-10 h-12 text-base border-2 border-gray-200 focus:border-purple-500 rounded-xl"
                 />
-                <Button variant="default" onClick={handleSearchAluno}>
-                  <Search className="w-4 h-4" />
-                  Buscar
-                </Button>
               </div>
+              <Button 
+                variant="outline" 
+                onClick={handleSearchAluno}
+                className="h-12 px-6 border-2 border-purple-200 hover:border-purple-500 rounded-xl font-semibold"
+              >
+                <Search className="w-5 h-5 mr-2" />
+                Filtrar
+              </Button>
             </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => {
-                      setisModalDeleteAllOpen(true);
-                      setTurmaSelected(turmaId);
-                    }}
-                    variant={"destructive"}
-                  >
-                    <Trash2 />{" "}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Excluir Todos os Alunos</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          <div className="max-h-[200px] overflow-y-auto">
-            <Table className="mb-2 w-full border-b">
+            <div className="bg-gradient-to-r from-slate-50 to-purple-50 rounded-xl p-3 border">
+              <h4 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
+                <Users className="h-5 w-5 text-purple-600" />
+                Lista de Alunos Matriculados ({alunos.length})
+              </h4>
+              <div className="max-h-[280px] overflow-y-auto bg-white rounded-lg border">
+              <Table className="w-full">
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[100px]">Nome</TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Celular
+                <TableRow className="bg-gray-50/50">
+                  <TableHead className="font-semibold text-slate-700">Nome do Aluno</TableHead>
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Telefone
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Data de Nascimento
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Nascimento
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Data de Inclusão
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Data Matrícula
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Situação
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Status
                   </TableHead>
-                  <TableHead className="w-[100px] text-center">
-                    Opções
+                  <TableHead className="text-center font-semibold text-slate-700">
+                    Ações
                   </TableHead>
                 </TableRow>
               </TableHeader>
@@ -383,10 +439,13 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                   alunos.map((aluno) => (
                     <TableRow
                       key={aluno.id}
-                      className="cursor-context-menu text-center"
+                      className="text-center hover:bg-purple-50 transition-colors"
                     >
-                      <TableCell className="text-start">
-                        {aluno.cliente.nome}
+                      <TableCell className="text-start font-medium">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                          {aluno.cliente.nome}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {aluno.cliente.telefone1
@@ -426,7 +485,9 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                                 setisModalDeleteOpen(true),
                                   setAlunoSelecionado(aluno);
                               }}
+                              className="text-red-600 font-semibold"
                             >
+                              <Trash2 className="h-4 w-4 mr-2" />
                               Excluir Aluno
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -437,19 +498,29 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
                 )}
               </TableBody>
             </Table>
+              </div>
+            </div>
           </div>
-          <DialogFooter>
-            <Button type="submit" variant="default" disabled={loadingAluno}>
+
+          <DialogFooter className="pt-6">
+            <Button 
+              type="button" 
+              onClick={() => onOpenChange(false)}
+              disabled={loadingAluno}
+              className="px-8 py-3 bg-gradient-to-r from-slate-500 to-slate-600 hover:from-slate-600 hover:to-slate-700 text-white rounded-xl font-semibold"
+            >
               {loadingAluno ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Processando...
+                </>
               ) : (
-                <span>Fechar</span>
+                <span>Concluir</span>
               )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Dialog
         open={isModalDeleteAllOpen}
         onOpenChange={setisModalDeleteAllOpen}
@@ -480,7 +551,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <Dialog open={isModalDeleteOpen} onOpenChange={setisModalDeleteOpen}>
         <DialogContent>
           <DialogHeader>
@@ -511,7 +581,6 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <AlunoDetalhesModal
         isOpen={isDetalhesOpen}
         onOpenChange={setIsDetalhesOpen}
@@ -520,5 +589,4 @@ const AdicionarAlunosModal: React.FC<Props> = ({ isOpen, onOpenChange, turmaId }
     </div>
   );
 }
-
 export default AdicionarAlunosModal;

@@ -6,19 +6,16 @@ export default withAuth(
     const token = req.nextauth.token
     const pathname = req.nextUrl.pathname
     
-    // Debug: log do token
-    console.log('Middleware - Token:', token)
-    console.log('Middleware - Pathname:', pathname)
+    console.log('🔒 Middleware:', { pathname, hasToken: !!token, hasAccess: token?.hasSystemAccess })
     
-    // Se não tem acesso ao sistema, redirecionar para página de acesso negado
-    if (token && !token.hasSystemAccess) {
-      console.log('Middleware - Usuário sem acesso ao sistema, redirecionando...')
+    // Verificar se tem acesso ao sistema
+    if (!token?.hasSystemAccess) {
+      console.log('❌ Sem acesso ao sistema, redirecionando para /acesso-negado')
       return NextResponse.redirect(new URL('/acesso-negado', req.url))
     }
     
-    // Verificar permissões específicas para rotas do painel
+    // Verificar permissões específicas de rotas
     if (pathname.startsWith('/painel/') && token?.role) {
-      // Mapeamento de rotas e permissões necessárias
       const routePermissions = {
         '/painel/usuarios': ['Administrador'],
         '/painel/convenios': ['Administrador', 'Gestor'],
@@ -37,31 +34,27 @@ export default withAuth(
         '/painel/tabela_faturamentos': ['Administrador', 'Gestor'],
         '/painel/valores_procedimentos': ['Administrador', 'Gestor'],
       }
-      
-      // Verificar se a rota atual requer permissões específicas
       const currentRoute = Object.keys(routePermissions).find(route => 
         pathname.startsWith(route)
       )
-      
       if (currentRoute) {
         const requiredRoles = routePermissions[currentRoute as keyof typeof routePermissions]
         const hasPermission = requiredRoles.includes(token.role)
-        
         if (!hasPermission) {
-          console.log(`Middleware - Usuário sem permissão para ${pathname}. Nível: ${token.role}, Requerido: ${requiredRoles}`)
           return NextResponse.redirect(new URL('/acesso-negado', req.url))
         }
       }
     }
+    
+    return NextResponse.next()
   },
   {
     callbacks: {
-      authorized: ({ token }) => {
-        console.log('Middleware - Verificando autorização:', !!token, token?.hasSystemAccess)
-        // Verificar se está autenticado E tem acesso ao sistema
-        return !!token && !!token.hasSystemAccess
-      },
-    },
+      authorized: ({ token, req }) => {
+        console.log('🛂 Authorized callback:', { hasToken: !!token, url: req.url })
+        return !!token
+      }
+    }
   }
 )
 
@@ -70,4 +63,4 @@ export const config = {
     '/painel/:path*',
     '/api/protected/:path*',
   ],
-}
+}

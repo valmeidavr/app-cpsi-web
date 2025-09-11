@@ -1,14 +1,14 @@
 "use client";
-// React
+import React from "react";
+import { parse, isValid } from "date-fns";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-//Components
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Save, Loader2, Plus } from "lucide-react";
-import { toast } from "sonner";
 import Breadcrumb from "@/components/ui/Breadcrumb";
+import { Save, Loader2, Plus } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -25,17 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { format, isValid, parse } from "date-fns";
+import { toast } from "sonner";
 import { handleCEPChange } from "@/app/helpers/handleCEP";
 import { formatCPFInput, formatTelefoneInput } from "@/app/helpers/format";
-//Zod
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-//API
-import { http } from "@/util/http";
 import { createClienteSchema } from "@/app/api/clientes/shema/formSchemaCliente";
-//Types
-import { Cliente, TipoCliente } from "@/app/types/Cliente";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +38,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Convenio } from "@/app/types/Convenios";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
   TableBody,
@@ -53,7 +47,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Cliente, TipoCliente } from "@/app/types/Cliente";
+import { useParams, redirect } from "next/navigation";
+import { format } from "date-fns";
 
 const sexOptions = [
   { value: "Masculino", label: "Masculino" },
@@ -65,23 +61,35 @@ export default function EditarCliente() {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(false);
-  const params = useParams();
-  const clienteId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [loadingInativar, setLoadingInativar] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [convenios, setConvenios] = useState<Convenio[]>([]);
+  const params = useParams();
+  const clienteId = Array.isArray(params.id) ? params.id[0] : params.id;
   const router = useRouter();
-  const [loadingInativar, setLoadingInativar] = useState(false);
 
-  //Definindo valores default com os dado do cliente
+  useEffect(() => {
+    const fetchConvenios = async () => {
+      try {
+        const response = await fetch("/api/convenios");
+        const data = await response.json();
+        if (data?.data) {
+          setConvenios(data.data);
+        } else {
+          toast.error("Erro ao carregar convênios: estrutura de dados inválida");
+        }
+      } catch (error) {
+        toast.error("Erro ao carregar convênios");
+      }
+    };
+    fetchConvenios();
+  }, []);
+
   const form = useForm<z.infer<typeof createClienteSchema>>({
     resolver: zodResolver(createClienteSchema),
     mode: "onChange",
     defaultValues: {
       nome: "",
-      email: "",
-      dtnascimento: "",
-      sexo: "",
-      tipo: TipoCliente.SOCIO,
       cpf: "",
       cep: "",
       logradouro: "",
@@ -89,53 +97,34 @@ export default function EditarCliente() {
       bairro: "",
       cidade: "",
       uf: "",
+      tipo: undefined,
       telefone1: "",
       telefone2: "",
+      dtnascimento: "",
       convenios: [],
       desconto: {},
     },
   });
+
   useEffect(() => {
-    const body = document.body;
-
-    if (isDialogOpen) {
-      body.style.pointerEvents = "auto"; // Corrige o bug
-    } else {
-      body.style.pointerEvents = ""; // Reseta quando fecha
+    if (convenios.length > 0) {
+      const initialDescontos: Record<string, number> = {};
+      convenios.forEach((convenio) => {
+        initialDescontos[convenio.id] = convenio.desconto;
+      });
+      form.setValue("desconto", initialDescontos);
     }
-  }, [isDialogOpen]);
-  //Formatação dos Campos
-  useEffect(() => {
-    if (cliente) {
-      const formattedPhone1 = formatTelefoneInput(cliente.telefone1 || "");
-      const formattedPhone2 = formatTelefoneInput(cliente.telefone || "");
-      const formattedCPF = formatCPFInput(cliente.cpf || "");
+  }, [convenios, form]);
 
-      form.setValue("telefone1", formattedPhone1);
-      form.setValue("telefone2", formattedPhone2);
-      form.setValue("cpf", formattedCPF);
-      form.setValue("cep", cliente.cep || "");
-      form.setValue("logradouro", cliente.logradouro || "");
-      form.setValue("bairro", cliente.bairro || "");
-      form.setValue("uf", cliente.uf || "");
-      form.setValue("numero", cliente.numero || "");
-      form.setValue("cidade", cliente.cidade || "");
-    }
-  }, [cliente, form]);
-
-  //Função de submeter os dados
   const onSubmit = async (values: z.infer<typeof createClienteSchema>) => {
     setLoading(true);
+    
     try {
-      // Garantir que todos os convênios selecionados tenham desconto definido
       const descontosPreenchidos: Record<string, number> = {};
-
-      // Para cada convênio selecionado, garantir que tenha um desconto válido
       values.convenios.forEach((convenioId) => {
         const convenio = convenios.find(c => c.id === convenioId);
         if (convenio) {
           const descontoAtual = values.desconto[convenioId];
-          // Se não há desconto definido ou é inválido, usar o desconto padrão do convênio
           if (
             descontoAtual === undefined ||
             descontoAtual === null ||
@@ -152,8 +141,9 @@ export default function EditarCliente() {
         ...values,
         desconto: descontosPreenchidos,
       };
-      if (!clienteId) throw new Error("ID do cliente não encontrado.");
 
+      if (!clienteId) throw new Error("ID do cliente não encontrado.");
+      
       const response = await fetch(`/api/clientes/${clienteId}`, {
         method: 'PUT',
         headers: {
@@ -161,71 +151,70 @@ export default function EditarCliente() {
         },
         body: JSON.stringify(payload),
       });
-
+      
       const responseData = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(responseData.error || "Erro ao atualizar cliente.");
+        throw new Error(responseData.error || responseData.details || "Erro ao atualizar cliente.");
       }
-      const queryParams = new URLSearchParams();
-
+      
+      const currentUrl = new URL(window.location.href);
+      const queryParams = new URLSearchParams(currentUrl.search);
       queryParams.set("type", "success");
       queryParams.set("message", "Cliente atualizado com sucesso!");
-
       router.push(`/painel/clientes?${queryParams.toString()}`);
     } catch (error: any) {
-      toast.error(error.message);
+      
+      // Verifica se é um erro de validação com detalhes específicos
+      if (error.response?.data?.details?.fieldErrors) {
+        const fieldErrors = error.response.data.details.fieldErrors;
+        const errorMessages: string[] = [];
+        
+        // Extrai todas as mensagens de erro dos campos
+        Object.entries(fieldErrors).forEach(([field, messages]) => {
+          if (Array.isArray(messages)) {
+            messages.forEach((message: string) => {
+              errorMessages.push(`${field}: ${message}`);
+            });
+          }
+        });
+        
+        if (errorMessages.length > 0) {
+          toast.error(`Erro de validação: ${errorMessages.join(', ')}`);
+          return;
+        }
+      }
+      
+      // Se não é um erro de validação específico, usa a mensagem genérica
+      const errorMessage = error.response?.data?.error || 
+        error.response?.data?.message || 
+        (error instanceof Error ? error.message : "Erro ao atualizar cliente");
+      
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  //Função de buscar endereco com o CEP
   const handleCEPChangeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleCEPChange(e, form);
+    handleCEPChange(e, {
+      setValue: (field: string, value: string) => form.setValue(field as keyof z.infer<typeof createClienteSchema>, value),
+      setError: (field: string, error: { type: string; message: string }) => form.setError(field as keyof z.infer<typeof createClienteSchema>, error),
+      clearErrors: (field: string) => form.clearErrors(field as keyof z.infer<typeof createClienteSchema>)
+    });
   };
-  const fetchConvenios = async () => {
-    try {
-      const response = await fetch("/api/convenios");
-      const data = await response.json();
-      
-      if (response.ok) {
-        setConvenios(data.data);
-      } else {
-        console.error("Erro ao buscar convênios:", data.error);
-      }
-    } catch (error) {
-      console.error("Error ao buscar convênios:", error);
-    }
-  };
-
-  // Inicializar descontos quando convênios são carregados
-  useEffect(() => {
-    if (convenios.length > 0 && !cliente) {
-      const initialDescontos: Record<string, number> = {};
-      convenios.forEach((convenio) => {
-        initialDescontos[convenio.id] = convenio.desconto;
-      });
-      form.setValue("desconto", initialDescontos);
-    }
-  }, [convenios, form, cliente]);
 
   useEffect(() => {
     setCarregando(true);
     async function fetchData() {
       try {
-        await fetchConvenios();
-        if (!clienteId) {
-          router.push("/painel/clientes");
-          return;
-        }
+        if (!clienteId) redirect("painel/clientes");
+        
         const response = await fetch(`/api/clientes/${clienteId}`);
         const data = await response.json();
         
         if (response.ok) {
           setCliente(data);
-          
-          // Formatar a data de nascimento do formato ISO para DD/MM/AAAA
           let dataFormatada = "";
           if (data.dtnascimento) {
             try {
@@ -234,552 +223,466 @@ export default function EditarCliente() {
                 dataFormatada = format(dataISO, "dd/MM/yyyy");
               }
             } catch (error) {
-              console.error("Erro ao formatar data:", error);
             }
           }
 
-          // Mapear os campos corretamente baseado na estrutura do banco
           const formData = {
             nome: data.nome || "",
             email: data.email || "",
             dtnascimento: dataFormatada,
             sexo: data.sexo || "",
-            tipo: data.tipo || data.tipoCliente || TipoCliente.SOCIO, // Usar tipo ou tipoCliente
-            cpf: data.cpf || "",
+            tipo: data.tipo || data.tipoCliente || TipoCliente.SOCIO,
+            cpf: formatCPFInput(data.cpf || ""), // Aplicar formatação do CPF
             cep: data.cep || "",
             logradouro: data.logradouro || "",
             numero: data.numero || "",
             bairro: data.bairro || "",
             cidade: data.cidade || "",
             uf: data.uf || "",
-            telefone1: data.telefone1 || "",
-            telefone2: data.telefone2 || data.telefone || "", // Usar telefone2 ou telefone
+            telefone1: formatTelefoneInput(data.telefone1 || ""), // Aplicar formatação do telefone
+            telefone2: formatTelefoneInput(data.telefone2 || data.telefone || ""), // Aplicar formatação do telefone
             convenios: [],
             desconto: {},
           };
 
-          // Log para debug dos dados recebidos
-          console.log('🔍 Dados recebidos da API:', data);
-          console.log('🔍 Dados mapeados para o formulário:', formData);
-
-          // Se há convênios, mapear corretamente
           if (data.convenios && Array.isArray(data.convenios)) {
-            const conveniosIds = data.convenios.map((item: any) => item.convenioId);
-            const descontos = data.convenios.reduce((acc: any, item: any) => {
+            const conveniosIds = data.convenios.map((item: { convenioId: number }) => item.convenioId);
+            const descontos = data.convenios.reduce((acc: Record<number, number>, item: { convenioId: number; desconto: number }) => {
               acc[item.convenioId] = item.desconto;
               return acc;
             }, {} as Record<number, number>);
-
             formData.convenios = conveniosIds;
             formData.desconto = descontos;
           }
 
           form.reset(formData);
         } else {
-          console.error("Erro ao carregar cliente:", data.error);
           toast.error("Erro ao carregar dados do cliente");
         }
       } catch (error) {
-        console.error("Erro ao carregar usuário:", error);
+        toast.error("Erro ao carregar dados do cliente");
       } finally {
         setCarregando(false);
       }
     }
     fetchData();
-  }, []);
+  }, [clienteId]);
 
-  return (
-    <div>
-      <Breadcrumb
-        items={[
-          { label: "Painel", href: "/painel" },
-          { label: "Clientes", href: "/painel/clientes" },
-          { label: "Editar Cliente" }, // Último item sem link
-        ]}
-      />
-
-      {/* Loader - Oculta a Tabela enquanto carrega */}
-      {carregando ? (
+  if (carregando) {
+    return (
+      <div className="w-full">
+        <Breadcrumb
+          items={[
+            { label: "Painel", href: "/painel" },
+            { label: "Clientes", href: "/painel/clientes" },
+            { label: "Editar Cliente" },
+          ]}
+        />
         <div className="flex justify-center items-center w-full h-40">
           <Loader2 className="w-6 h-6 animate-spin text-gray-500" />
-          <span className="ml-2 text-gray-500">Carregando ...</span>
+          <span className="ml-2 text-gray-500">Carregando...</span>
         </div>
-      ) : (
-        <div className="flex flex-col flex-1 h-full">
-          {" "}
-          {/* overflow-hidden */}
-          <Form {...form}>
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
-              <div className="space-x-2">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    console.log('🔍 Dados do formulário:', form.getValues());
-                    console.log('🔍 Cliente carregado:', cliente);
-                    console.log('🔍 Erros do formulário:', form.formState.errors);
-                  }}
-                >
-                  🐛 Debug
-                </Button>
-              </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full">
+      <div className="flex flex-col">
+        <Breadcrumb
+          items={[
+            { label: "Painel", href: "/painel" },
+            { label: "Clientes", href: "/painel/clientes" },
+            { label: "Editar Cliente" },
+          ]}
+        />
+        <Form {...form}>
+        <h1 className="text-2xl font-bold mb-4 mt-5">Editar Cliente</h1>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="space-y-6 p-2 pb-8"
+        >
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Dados Pessoais</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="nome"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nome *</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      value={field.value || ""}
+                      className={`border ${
+                        form.formState.errors.nome
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 text-sm mt-1">
+                    {form.formState.errors.nome?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      {...field}
+                      value={field.value || ""}
+                      className={`border ${
+                        form.formState.errors.email
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+              control={form.control}
+              name="cpf"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Somente Números"
+                      maxLength={14}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                        const inputEvent = e.nativeEvent as InputEvent; // Força o tipo correto
+                        if (inputEvent.inputType === "deleteContentBackward") {
+                          field.onChange(rawValue);
+                        } else {
+                          field.onChange(formatCPFInput(rawValue)); // Aplica a máscara
+                        }
+                      }}
+                      className={`border ${
+                        form.formState.errors.cpf
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="dtnascimento"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Data de Nascimento *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="DD/MM/AAAA"
+                      maxLength={10}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 2) {
+                          value = value.replace(/^(\d{2})/, "$1/");
+                        }
+                        if (value.length > 5) {
+                          value = value.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
+                        }
+                        field.onChange(value);
+                      }}
+                      onBlur={() => {
+                        if (!field.value) return;
+                        const parsedDate = parse(
+                          field.value,
+                          "dd/MM/yyyy",
+                          new Date()
+                        );
+                        const currentDate = new Date();
+                        const minYear = 1920;
+                        const year = parseInt(field.value.split("/")[2]);
+                        if (
+                          !isValid(parsedDate) ||
+                          parsedDate > currentDate ||
+                          year < minYear
+                        ) {
+                          field.onChange(""); // Limpa campo se a data for inválida
+                        }
+                      }}
+                      className={`border ${
+                        form.formState.errors.dtnascimento
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="sexo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Sexo *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.sexo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {sexOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="telefone1"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone 1 *</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Telefone"
+                      maxLength={15}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const formattedPhone = formatTelefoneInput(
+                          e.target.value
+                        );
+                        field.onChange(formattedPhone);
+                      }}
+                      className={`border ${
+                        form.formState.errors.telefone1
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="telefone2"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Telefone 2</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Telefone"
+                      maxLength={15}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const formattedPhone = formatTelefoneInput(
+                          e.target.value
+                        );
+                        field.onChange(formattedPhone);
+                      }}
+                      className={`border ${
+                        form.formState.errors.telefone2
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      } focus:ring-2 focus:ring-primary`}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-red-500 mt-1 font-light" />
+                </FormItem>
+              )}
+            />
             </div>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="flex-1 overflow-y-auto space-y-4 p-2"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="nome"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome *</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value || ""}
-                          className={`border ${
-                            form.formState.errors.nome
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
+          </div>
 
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          {...field}
-                          value={field.value || ""}
-                          className={`border ${
-                            form.formState.errors.email
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* 🔹 Linha 2: Data de nascimento + Sexo */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="dtnascimento"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data de Nascimento *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="DD/MM/AAAA"
-                          maxLength={10}
-                          value={field.value || ""}
-                          className={`border ${
-                            form.formState.errors.dtnascimento
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                          onChange={(e) => {
-                            let inputDate = e.target.value.replace(/\D/g, "");
-                            let formatted = inputDate
-                              .replace(/(\d{2})(\d)/, "$1/$2")
-                              .replace(/(\d{2})(\d)/, "$1/$2")
-                              .slice(0, 10);
-
-                            field.onChange(formatted);
-                          }}
-                          onBlur={() => {
-                            const parsedDate = parse(
-                              field.value,
-                              "dd/MM/yyyy",
-                              new Date()
-                            );
-                            const currentDate = new Date();
-                            const minYear = 1920;
-
-                            const year = parseInt(field.value.split("/")[2]);
-
-                            if (
-                              !isValid(parsedDate) ||
-                              parsedDate > currentDate ||
-                              year < minYear
-                            ) {
-                              field.onChange("");
-                            }
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="sexo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Sexo *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Endereço</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <FormField
+                control={form.control}
+                name="cep"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="00000-000"
+                        maxLength={9}
                         value={field.value || ""}
-                      >
-                        <FormControl
-                          className={
-                            form.formState.errors.sexo
-                              ? "border-red-500"
-                              : "border-gray-300"
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/\D/g, ""); // Remove não numéricos
+                          const inputEvent = e.nativeEvent as InputEvent;
+                          if (inputEvent.inputType === "deleteContentBackward") {
+                            field.onChange(rawValue);
+                          } else {
+                            field.onChange(
+                              rawValue.replace(/^(\d{5})(\d)/, "$1-$2")
+                            ); // Aplica a máscara ao digitar
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {sexOptions.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="tipo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Cliente *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
+                          handleCEPChangeHandler(e);
+                        }}
+                        className={`border ${
+                          form.formState.errors.cep
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } focus:ring-2 focus:ring-primary`}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="logradouro"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Logradouro</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="numero"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Número</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+              <FormField
+                control={form.control}
+                name="bairro"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bairro</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="cidade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="uf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>UF</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value || ""}
+                    >
+                      <FormControl
+                        className={
+                          form.formState.errors.uf
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        }
                       >
-                        <FormControl
-                          className={
-                            form.formState.errors.tipo
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {Object.values(TipoCliente).map((item) => {
-                            return (
-                              <SelectItem key={item} value={item}>
-                                {item}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage>
-                        {form.formState.errors.tipo?.message}
-                      </FormMessage>
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* 🔹 Linha 2: CPF, CEP, Logradouro, Número */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <FormField
-                  control={form.control}
-                  name="cpf"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CPF *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Somente Números"
-                          maxLength={14}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-                            const inputEvent = e.nativeEvent as InputEvent;
-                            if (
-                              inputEvent.inputType === "deleteContentBackward"
-                            ) {
-                              // Se o usuário estiver apagando, não aplica a formatação
-                              field.onChange(rawValue);
-                            } else {
-                              // Aplica a formatação normalmente
-                              field.onChange(formatCPFInput(rawValue));
-                            }
-                          }}
-                          className={`border ${
-                            form.formState.errors.cpf
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        {[
+                          "AC",
+                          "AL",
+                          "AP",
+                          "AM",
+                          "BA",
+                          "CE",
+                          "DF",
+                          "ES",
+                          "GO",
+                          "MA",
+                          "MT",
+                          "MS",
+                          "MG",
+                          "PA",
+                          "PB",
+                          "PR",
+                          "PE",
+                          "PI",
+                          "RJ",
+                          "RN",
+                          "RS",
+                          "RO",
+                          "RR",
+                          "SC",
+                          "SP",
+                          "SE",
+                          "TO",
+                        ].map((estado) => (
+                          <SelectItem key={estado} value={estado}>
+                            {estado}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-red-500 mt-1 font-light" />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
 
-                <FormField
-                  control={form.control}
-                  name="cep"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CEP</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="00000-000"
-                          maxLength={9}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            let rawValue = e.target.value.replace(/\D/g, "");
-                            const inputEvent = e.nativeEvent as InputEvent;
-
-                            if (
-                              inputEvent.inputType === "deleteContentBackward"
-                            ) {
-                              // Se o usuário estiver apagando, não aplica a formatação
-                              field.onChange(rawValue);
-                            } else {
-                              // Aplica a máscara ao digitar
-                              const formattedValue = rawValue.replace(
-                                /^(\d{5})(\d)/,
-                                "$1-$2"
-                              );
-
-                              field.onChange(formattedValue);
-                            }
-
-                            // Chama a função para buscar o endereço baseado no CEP digitado
-                            handleCEPChangeHandler(e);
-                          }}
-                          className={`border ${
-                            form.formState.errors.cep
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="logradouro"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Logradouro</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="numero"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* 🔹 Linha 3: Bairro, Cidade, UF */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FormField
-                  control={form.control}
-                  name="bairro"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bairro</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="cidade"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cidade</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          value={field.value ?? ""}
-                          onChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="uf"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>UF</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || ""}
-                      >
-                        <FormControl
-                          className={
-                            form.formState.errors.uf
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {[
-                            "AC",
-                            "AL",
-                            "AP",
-                            "AM",
-                            "BA",
-                            "CE",
-                            "DF",
-                            "ES",
-                            "GO",
-                            "MA",
-                            "MT",
-                            "MS",
-                            "MG",
-                            "PA",
-                            "PB",
-                            "PR",
-                            "PE",
-                            "PI",
-                            "RJ",
-                            "RN",
-                            "RS",
-                            "RO",
-                            "RR",
-                            "SC",
-                            "SP",
-                            "SE",
-                            "TO",
-                          ].map((estado) => (
-                            <SelectItem key={estado} value={estado}>
-                              {estado}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* 🔹 Linha 4: Telefone, Celular, Número do SUS */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="telefone1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefone 1 *</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Telefone"
-                          maxLength={15}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            const formattedPhone = formatTelefoneInput(
-                              e.target.value
-                            );
-                            field.onChange(formattedPhone);
-                          }}
-                          className={`border ${
-                            form.formState.errors.telefone1
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="telefone2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Telefone 2</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Telefone"
-                          maxLength={15}
-                          value={field.value || ""}
-                          onChange={(e) => {
-                            const formattedPhone = formatTelefoneInput(
-                              e.target.value
-                            );
-                            field.onChange(formattedPhone);
-                          }}
-                          className={`border ${
-                            form.formState.errors.telefone2
-                              ? "border-red-500"
-                              : "border-gray-300"
-                          } focus:ring-2 focus:ring-primary`}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-red-500 mt-1 font-light" />
-                    </FormItem>
-                  )}
-                />
-              </div>
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Convênios</h2>
+            <div className="space-y-4">
               <Button
                 type="button"
                 variant="outline"
@@ -787,163 +690,224 @@ export default function EditarCliente() {
                 onClick={() => setIsDialogOpen(true)}
               >
                 <Plus className="w-4 h-4" />
-                Adicionar Convênios
+                Gerenciar Convênios
               </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-3xl sm:rounded-lg">
-                  <DialogHeader>
-                    <DialogTitle className="text-lg">
-                      Gerenciar Convênios
-                    </DialogTitle>
-                    <DialogDescription>
-                      Selecione os convênios vinculados a este cliente e informe
-                      os respectivos descontos.
-                    </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="max-h-[60vh] overflow-y-auto mt-4">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-20">Selecionar</TableHead>
-                          <TableHead>Convênio</TableHead>
-                          <TableHead className="w-32">Desconto</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {convenios.map((item) => (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name="convenios"
-                                render={({ field }) => {
-                                  const currentValue = Array.isArray(
-                                    field.value
-                                  )
-                                    ? field.value
-                                    : [];
-
-                                  return (
-                                    <FormControl>
-                                      <Checkbox
-                                        className="w-5 h-5"
-                                        checked={currentValue.includes(item.id)}
-                                        onCheckedChange={(checked) => {
-                                          if (checked) {
-                                            field.onChange([
-                                              ...currentValue,
-                                              item.id,
-                                            ]);
-                                          } else {
-                                            field.onChange(
-                                              currentValue.filter(
-                                                (v) => v !== item.id
-                                              )
-                                            );
-                                          }
-                                        }}
-                                      />
-                                    </FormControl>
-                                  );
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>{item.nome}</TableCell>
-                            <TableCell>
-                              <FormField
-                                control={form.control}
-                                name={`desconto.${item.id}`}
-                                render={({ field }) => (
-                                  <FormItem>
-                                    <FormControl>
-                                      <Input
-                                        type="text"
-                                        inputMode="numeric"
-                                        placeholder="0%"
-                                        value={
-                                          field.value !== undefined &&
-                                          field.value !== null &&
-                                          !isNaN(field.value)
-                                            ? `${field.value}%`
-                                            : `${item.desconto}%`
-                                        }
-                                        onChange={(e) => {
-                                          const raw = e.target.value.replace(
-                                            /[^\d]/g,
-                                            ""
-                                          );
-                                          let value = Number(raw);
-                                          if (isNaN(value)) value = 0;
-                                          if (value > 100) value = 100;
-                                          if (value < 0) value = 0;
-                                          field.onChange(value);
-                                        }}
-                                        onBlur={() => {
-                                          // Se o campo ficou vazio, usar o desconto padrão do convênio
-                                          if (field.value === undefined || field.value === null || isNaN(field.value)) {
-                                            field.onChange(item.desconto);
-                                          }
-                                        }}
-                                        className={`text-right ${
-                                          form.formState.errors.desconto?.[
-                                            item.id
-                                          ]
-                                            ? "border-red-500"
-                                            : ""
-                                        }`}
-                                      />
-                                    </FormControl>
-                                    <FormMessage />
-                                  </FormItem>
-                                )}
-                              />
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+              
+              {/* Lista de convênios selecionados */}
+              <div className="min-h-[60px]">
+                {form.watch("convenios") && form.watch("convenios").length > 0 ? (
+                  <div className="mt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Convênios Selecionados:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {form.watch("convenios").map((convenioId: number) => {
+                        const convenio = convenios.find(c => c.id === convenioId);
+                        const desconto = form.watch(`desconto.${convenioId}`);
+                        return convenio ? (
+                          <div key={convenioId} className="bg-blue-50 border border-blue-200 rounded-md px-3 py-1 text-sm">
+                            <span className="font-medium">{convenio.nome}</span>
+                            <span className="text-gray-600 ml-1">({desconto ?? convenio.desconto}%)</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
-
-                  <DialogFooter className="mt-6">
-                    <Button
-                      variant="ghost"
-                      onClick={() => setIsDialogOpen(false)}
-                      disabled={loadingInativar}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={() => setIsDialogOpen(false)}
-                      disabled={loadingInativar}
-                    >
-                      Confirmar
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Atualizando...
-                  </>
                 ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Atualizar
-                  </>
+                  <p className="text-sm text-gray-500 italic">Nenhum convênio selecionado</p>
                 )}
-              </Button>
-            </form>
-          </Form>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+            <h2 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Tipo de Cliente</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Cliente *</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ""}
+                  >
+                    <FormControl
+                      className={
+                        form.formState.errors.tipo
+                          ? "border-red-500"
+                          : "border-gray-300"
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecionar" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.values(TipoCliente).map((item) => {
+                        return (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage>
+                    {form.formState.errors.tipo?.message}
+                  </FormMessage>
+                </FormItem>
+              )}
+            />
+            </div>
+          </div>
+          
+          <Button
+            type="submit"
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Atualizando...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                Atualizar
+              </>
+            )}
+          </Button>
+        
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-3xl sm:rounded-lg">
+            <DialogHeader>
+              <DialogTitle className="text-lg">
+                Gerenciar Convênios
+              </DialogTitle>
+              <DialogDescription>
+                Selecione os convênios vinculados a este cliente e informe os
+                respectivos descontos.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto mt-4">
+              <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-20">Selecionar</TableHead>
+                        <TableHead>Convênio</TableHead>
+                        <TableHead className="w-32">Desconto</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {convenios.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name="convenios"
+                              render={({ field }) => {
+                                const currentValue = Array.isArray(field.value)
+                                  ? field.value
+                                  : [];
+                                return (
+                                  <FormControl>
+                                    <Checkbox
+                                      className="w-5 h-5"
+                                      checked={currentValue.includes(item.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          field.onChange([
+                                            ...currentValue,
+                                            item.id,
+                                          ]);
+                                        } else {
+                                          field.onChange(
+                                            currentValue.filter(
+                                              (v) => v !== item.id
+                                            )
+                                          );
+                                        }
+                                      }}
+                                    />
+                                  </FormControl>
+                                );
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>{item.nome}</TableCell>
+                          <TableCell>
+                            <FormField
+                              control={form.control}
+                              name={`desconto.${item.id}`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      type="text"
+                                      inputMode="numeric"
+                                      placeholder="0%"
+                                      value={
+                                        field.value !== undefined &&
+                                        field.value !== null &&
+                                        !isNaN(field.value)
+                                          ? `${field.value}%`
+                                          : `${item.desconto}%`
+                                      }
+                                      onChange={(e) => {
+                                        const raw = e.target.value.replace(
+                                          /[^\d]/g,
+                                          ""
+                                        );
+                                        let value = Number(raw);
+                                        if (isNaN(value)) value = 0;
+                                        if (value > 100) value = 100;
+                                        if (value < 0) value = 0;
+                                        field.onChange(value);
+                                      }}
+                                      onBlur={() => {
+                                        if (field.value === undefined || field.value === null || isNaN(field.value)) {
+                                          field.onChange(item.desconto);
+                                        }
+                                      }}
+                                      className={`text-right ${
+                                        form.formState.errors.desconto?.[item.id]
+                                          ? "border-red-500"
+                                          : ""
+                                      }`}
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <DialogFooter className="mt-6">
+                  <Button
+                    variant="ghost"
+                    onClick={() => setIsDialogOpen(false)}
+                    disabled={loadingInativar}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    variant="default"
+                    onClick={() => setIsDialogOpen(false)}
+                    disabled={loadingInativar}
+                  >
+                    Confirmar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+        </form>
+        </Form>
         </div>
-      )}
     </div>
   );
 }

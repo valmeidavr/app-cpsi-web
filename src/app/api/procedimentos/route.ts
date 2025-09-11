@@ -1,47 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool, executeWithRetry } from "@/lib/mysql";
 import { z } from "zod";
 import { createProcedimentoSchema, updateProcedimentoSchema } from "./schema/formSchemaProcedimentos";
-
 export type CreateProcedimentoDTO = z.infer<typeof createProcedimentoSchema>;
 export type UpdateProcedimentoDTO = z.infer<typeof updateProcedimentoSchema>;
-
-// GET - Listar procedimentos com paginação e busca
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 [PROCEDIMENTOS API] Iniciando requisição GET');
     const { searchParams } = new URL(request.url);
     const page = searchParams.get('page') || '1';
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
-
-    let query = 'SELECT * FROM procedimentos WHERE status = "Ativo"';
+    
+    console.log('📊 [PROCEDIMENTOS API] Parâmetros:', { page, limit, search });
+    let query = 'SELECT * FROM procedimentos';
     const params: (string | number)[] = [];
-
     if (search) {
-      query += ' AND (nome LIKE ? OR codigo LIKE ?)';
+      query += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
-
-    const [procedimentoRows] = await gestorPool.execute(query, params);
-
-    // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos WHERE status = "Ativo"';
+    query += ` ORDER BY status ASC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    
+    console.log('🔍 [PROCEDIMENTOS API] Query principal:', query);
+    console.log('📊 [PROCEDIMENTOS API] Parâmetros da query:', params);
+    const [procedimentoRows] = await accessPool.execute(query, params);
+    console.log('✅ [PROCEDIMENTOS API] Query executada com sucesso. Resultados:', procedimentoRows);
+    let countQuery = 'SELECT COUNT(*) as total FROM procedimentos';
     const countParams: (string)[] = [];
-
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR codigo LIKE ?)';
+      countQuery += ' WHERE (nome LIKE ? OR codigo LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
-
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
-
-    return NextResponse.json({
+    
+    console.log('🔍 [PROCEDIMENTOS API] Query de contagem:', countQuery);
+    const [countRows] = await accessPool.execute(countQuery, countParams);
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
+    
+    console.log('📊 [PROCEDIMENTOS API] Total de registros:', total);
+    const response = {
       data: procedimentoRows,
       pagination: {
         page: parseInt(page),
@@ -49,104 +46,138 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / parseInt(limit))
       }
-    });
+    };
+    
+    console.log('✅ [PROCEDIMENTOS API] Resposta final:', response);
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Erro ao buscar procedimentos:', error);
+    console.error('❌ [PROCEDIMENTOS API] Erro na execução:', error);
+    console.error('❌ [PROCEDIMENTOS API] Stack trace:', error instanceof Error ? error.stack : 'N/A');
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar procedimento
 export async function POST(request: NextRequest) {
   try {
-    const body: CreateProcedimentoDTO = await request.json();
-
-    // Inserir procedimento
-    const [result] = await gestorPool.execute(
-      `INSERT INTO procedimentos (
-        nome, codigo, tipo, especialidade_id, status
-      ) VALUES (?, ?, ?, ?, ?)`,
+    console.log('📝 [PROCEDIMENTOS API] Iniciando requisição POST');
+    const body = await request.json();
+    console.log('📊 [PROCEDIMENTOS API] Dados recebidos:', body);
+    
+    const validatedData = createProcedimentoSchema.safeParse(body);
+    if (!validatedData.success) {
+      console.error('❌ [PROCEDIMENTOS API] Erro de validação:', validatedData.error.flatten());
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    
+    const { ...payload } = validatedData.data;
+    console.log('✅ [PROCEDIMENTOS API] Dados validados:', payload);
+    const query = `INSERT INTO procedimentos (
+        nome, codigo, especialidade_id, status, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, NOW(), NOW())`;
+      
+    console.log('🔍 [PROCEDIMENTOS API] Query INSERT:', query);
+    
+    const [result] = await accessPool.execute(
+      query,
       [
-        body.nome, body.codigo, body.tipo, body.especialidade_id, 'Ativo'
+        payload.nome, payload.codigo, payload.especialidade_id, 'Ativo'
       ]
     );
-
+    
+    console.log('✅ [PROCEDIMENTOS API] Procedimento criado com sucesso:', result);
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar procedimento:', error);
+    console.error('❌ [PROCEDIMENTOS API] Erro ao criar procedimento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
-} 
-
-// PUT - Atualizar procedimento
+}
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
-    
     if (!id) {
       return NextResponse.json(
         { error: 'ID do procedimento é obrigatório' },
         { status: 400 }
       );
     }
-
-    const body: UpdateProcedimentoDTO = await request.json();
-
-    // Atualizar procedimento
-    await gestorPool.execute(
+    const body = await request.json();
+    const validatedData = updateProcedimentoSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    await executeWithRetry(accessPool,
       `UPDATE procedimentos SET 
-        nome = ?, codigo = ?, tipo = ?, especialidade_id = ?
+        nome = ?, codigo = ?, tipo = ?, especialidade_id = ?, updatedAt = NOW()
        WHERE id = ?`,
       [
-        body.nome, body.codigo, body.tipo, body.especialidade_id, id
+        payload.nome, payload.codigo, payload.tipo, payload.especialidade_id, id
       ]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar procedimento:', error);
+    console.error('❌ [PROCEDIMENTOS API] Erro ao atualizar procedimento:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
 }
-
-// DELETE - Deletar procedimento
 export async function DELETE(request: NextRequest) {
   try {
+    console.log('🗑️ [PROCEDIMENTOS API] Iniciando requisição DELETE');
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
     if (!id) {
+      console.error('❌ [PROCEDIMENTOS API] ID não fornecido');
       return NextResponse.json(
         { error: 'ID do procedimento é obrigatório' },
         { status: 400 }
       );
     }
-
-    // Soft delete - marcar como inativo
-    await gestorPool.execute(
+    
+    console.log('🔍 [PROCEDIMENTOS API] Inativando procedimento com ID:', id);
+    
+    await executeWithRetry(accessPool,
       'UPDATE procedimentos SET status = "Inativo" WHERE id = ?',
       [id]
     );
-
+    
+    console.log('✅ [PROCEDIMENTOS API] Procedimento inativado com sucesso');
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao deletar procedimento:', error);
+    console.error('❌ [PROCEDIMENTOS API] Erro ao inativar procedimento:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }
-} 
+}

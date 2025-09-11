@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
+import { accessPool } from "@/lib/mysql";
 import { createAlunoTurmaSchema } from "./schema/formSchemaAlunosTurmas";
-
-// GET - Listar alunos de turmas com paginação e busca
+import { z } from "zod";
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -10,14 +9,12 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10';
     const search = searchParams.get('search') || '';
     const turmaId = searchParams.get('turmaId') || '';
-
     let query = `
       SELECT 
         at.id,
         at.turma_id,
         at.cliente_id,
         at.data_inscricao,
-        at.status,
         at.createdAt,
         at.updatedAt,
         JSON_OBJECT(
@@ -33,25 +30,17 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const params: (string | number)[] = [];
-
     if (turmaId) {
       query += ' AND at.turma_id = ?';
       params.push(parseInt(turmaId));
     }
-
     if (search) {
       query += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
       params.push(`%${search}%`, `%${search}%`);
     }
-
-    // Adicionar paginação
     const offset = (parseInt(page) - 1) * parseInt(limit);
-    query += ' ORDER BY at.id DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
-
-    const [alunoTurmaRows] = await gestorPool.execute(query, params);
-
-    // Buscar total de registros para paginação
+    query += ` ORDER BY c.nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`;
+    const [alunoTurmaRows] = await accessPool.execute(query, params);
     let countQuery = `
       SELECT COUNT(*) as total 
       FROM alunos_turmas at
@@ -59,20 +48,16 @@ export async function GET(request: NextRequest) {
       WHERE 1=1
     `;
     const countParams: (string | number)[] = [];
-
     if (turmaId) {
       countQuery += ' AND at.turma_id = ?';
       countParams.push(parseInt(turmaId));
     }
-
     if (search) {
       countQuery += ' AND (c.nome LIKE ? OR c.cpf LIKE ?)';
       countParams.push(`%${search}%`, `%${search}%`);
     }
-
-    const [countRows] = await gestorPool.execute(countQuery, countParams);
-    const total = (countRows as any[])[0]?.total || 0;
-
+    const [countRows] = await accessPool.execute(countQuery, countParams);
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0;
     return NextResponse.json({
       data: alunoTurmaRows,
       pagination: {
@@ -83,40 +68,86 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Erro ao buscar alunos de turmas:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// POST - Criar aluno em turma
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    console.log('📥 POST alunos_turmas - dados recebidos:', body);
     
-    // Validar dados com Zod
-    const validatedData = createAlunoTurmaSchema.parse(body);
+    // Converter strings para números se necessário
+    const processedBody = {
+      ...body,
+      cliente_id: typeof body.cliente_id === 'string' ? parseInt(body.cliente_id) : body.cliente_id,
+      turma_id: typeof body.turma_id === 'string' ? parseInt(body.turma_id) : body.turma_id
+    };
+    
+    console.log('🔄 POST alunos_turmas - dados processados:', processedBody);
+    
+    const validatedData = createAlunoTurmaSchema.safeParse(processedBody);
+    
+    if (!validatedData.success) {
+      console.error('❌ Validação falhou:', validatedData.error.flatten());
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
 
-    // Inserir aluno em turma
-    const [result] = await gestorPool.execute(
+    console.log('✅ Dados validados:', validatedData.data);
+
+    // Garantir que a data esteja no formato correto (YYYY-MM-DD)
+    let dataInscricao = validatedData.data.data_inscricao;
+    if (!dataInscricao) {
+      dataInscricao = new Date().toISOString().split('T')[0];
+    } else {
+      // Se a data vier como ISO string completa, extrair apenas a parte da data
+      if (dataInscricao.includes('T')) {
+        dataInscricao = dataInscricao.split('T')[0];
+      }
+      // Verificar se está no formato correto (YYYY-MM-DD)
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(dataInscricao)) {
+        console.warn('Data em formato inválido:', dataInscricao);
+        dataInscricao = new Date().toISOString().split('T')[0];
+      }
+    }
+
+    console.log('📅 Data de inscrição formatada:', dataInscricao);
+
+    const [result] = await accessPool.execute(
       `INSERT INTO alunos_turmas (
-        cliente_id, turma_id, data_inscricao, status
-      ) VALUES (?, ?, ?, ?)`,
+        cliente_id, turma_id, data_inscricao
+      ) VALUES (?, ?, ?)`,
       [
-        validatedData.cliente_id, validatedData.turma_id, validatedData.data_inscricao || new Date().toISOString(), 'Ativo'
+        validatedData.data.cliente_id, 
+        validatedData.data.turma_id, 
+        dataInscricao
       ]
     );
 
+    console.log('✅ Aluno inserido com sucesso:', (result as { insertId: number }).insertId);
+
     return NextResponse.json({ 
       success: true, 
-      id: (result as any).insertId 
+      id: (result as { insertId: number }).insertId 
     });
   } catch (error) {
-    console.error('Erro ao criar aluno em turma:', error);
+    console.error('❌ Erro no POST alunos_turmas:', error);
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor', details: error instanceof Error ? error.message : 'Erro desconhecido' },
       { status: 500 }
     );
   }

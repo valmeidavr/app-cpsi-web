@@ -3,11 +3,9 @@ import { accessPool } from "@/lib/mysql";
 import { z } from "zod";
 import { createUsuarioSchema } from "./schema/formSchemaUsuarios";
 import { updateUsuarioSchema } from "./schema/formShemaUpdateUsuario";
-import bcrypt from 'bcrypt';
-
+import bcrypt from 'bcryptjs';
 export type CreateUsuarioDTO = z.infer<typeof createUsuarioSchema>;
 export type UpdateUsuarioDTO = z.infer<typeof updateUsuarioSchema>;
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -15,27 +13,26 @@ export async function GET(request: NextRequest) {
     const limit = searchParams.get('limit') || '10'
     const search = searchParams.get('search') || ''
     const all = searchParams.get('all') || ''
-
-    console.log('🔍 API Debug - GET /api/usuarios chamada com:', { page, limit, search, all })
-
-    // Para o cadastro de lançamentos, sempre retornar todos os usuários
+    try {
+      await accessPool.execute('DESCRIBE usuarios');
+    } catch (structureError) {
+      return NextResponse.json(
+        { error: 'Erro ao verificar estrutura da tabela', details: (structureError as Error).message },
+        { status: 500 }
+      );
+    }
     if ((limit === '1000' || all === 'true') && !search) {
-      console.log('🔍 API Debug - Retornando todos os usuários...');
-      
       try {
-        // Primeiro, vamos ver a estrutura real da tabela
-        const [structureRows] = await accessPool.execute('DESCRIBE usuarios');
-        console.log('🔍 API Debug - Estrutura da tabela usuarios:', structureRows);
-        
-        // Buscar usuários com a estrutura correta
         const [rows] = await accessPool.execute(
-          'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo" ORDER BY nome ASC'
+          'SELECT id, login, nome, email, status FROM usuarios ORDER BY status ASC, nome ASC'
         );
-        const usuarios = rows as any[];
-        
-        console.log('🔍 API Debug - Usuários encontrados no banco:', usuarios.length);
-        console.log('🔍 API Debug - Primeiro usuário:', usuarios[0]);
-        
+        const usuarios = rows as Array<{
+          id: number;
+          login: string;
+          nome: string;
+          email: string;
+          status: string;
+        }>;
         return NextResponse.json({
           data: usuarios,
           pagination: {
@@ -46,46 +43,60 @@ export async function GET(request: NextRequest) {
           }
         });
       } catch (dbError) {
-        console.error('🔍 API Debug - Erro ao consultar banco:', dbError);
         throw dbError;
       }
     }
-
-    // Lógica para busca com paginação
-    let query = 'SELECT login, nome, email, status FROM usuarios WHERE status = "Ativo"'
-    const params: (string | number)[] = []
-
+    let query = 'SELECT id, login, nome, email, status FROM usuarios WHERE 1=1'
     if (search) {
-      query += ' AND (nome LIKE ? OR email LIKE ?)'
-      params.push(`%${search}%`, `%${search}%`)
-      console.log('🔍 API Debug - Query com busca:', query, 'Params:', params)
+      query += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
-
     const offset = (parseInt(page) - 1) * parseInt(limit)
-    query += ' ORDER BY nome ASC LIMIT ? OFFSET ?'
-    params.push(parseInt(limit), offset)
-
-    // Debug logs removidos para evitar spam
-
-    const [userRows] = await accessPool.execute(query, params)
-    const usuarios = userRows as any[]
-    // Debug logs removidos para evitar spam
-
-    // Buscar total de registros para paginação
-    let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE status = "Ativo"'
-    const countParams: (string)[] = []
-
+    query += ` ORDER BY status ASC, nome ASC LIMIT ${parseInt(limit)} OFFSET ${offset}`
+    const [userRows] = await accessPool.execute(query)
+    const usuarios = userRows as Array<{
+      id: number;
+      login: string;
+      nome: string;
+      email: string;
+      status: string;
+    }>;
+    const usuariosComGrupos = await Promise.all(
+      usuarios.map(async (usuario) => {
+        try {
+          const [grupoRows] = await accessPool.execute(
+            `SELECT g.nome as grupo_nome, g.sistemaId, s.nome as sistema_nome
+             FROM usuariogrupo ug 
+             INNER JOIN grupo g ON ug.grupo_id = g.id 
+             INNER JOIN sistema s ON g.sistemaId = s.id
+             WHERE ug.usuario_id = ?`,
+            [usuario.id]
+          );
+          const grupos = (grupoRows as Array<{ grupo_nome: string; sistemaId: number; sistema_nome: string }>).map(g => ({
+            nome: g.grupo_nome,
+            sistema: g.sistema_nome,
+            sistemaId: g.sistemaId
+          }));
+          return {
+            ...usuario,
+            grupos: grupos
+          };
+        } catch (error) {
+          return {
+            ...usuario,
+            grupos: []
+          };
+        }
+      })
+    );
+    let countQuery = 'SELECT COUNT(*) as total FROM usuarios WHERE 1=1'
     if (search) {
-      countQuery += ' AND (nome LIKE ? OR email LIKE ?)'
-      countParams.push(`%${search}%`, `%${search}%`)
+      countQuery += ` AND (nome LIKE '%${search}%' OR email LIKE '%${search}%')`
     }
-
-    const [countRows] = await accessPool.execute(countQuery, countParams)
-    const total = (countRows as any[])[0]?.total || 0
+    const [countRows] = await accessPool.execute(countQuery)
+    const total = (countRows as Array<{ total: number }>)[0]?.total || 0
     const totalPages = Math.ceil(total / parseInt(limit))
-
     return NextResponse.json({
-      data: usuarios,
+      data: usuariosComGrupos,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -94,78 +105,132 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('🔍 API Debug - Erro ao buscar usuários:', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
-    )
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const validatedData = createUsuarioSchema.parse(body);
-    
-    // Hash da senha
-    const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
-    
-    // Inserir usuário - usando email como login já que o schema não tem campo login
-    const [result] = await accessPool.execute(
+    const validatedData = createUsuarioSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    const hashedPassword = await bcrypt.hash(payload.senha, 10);
+    await accessPool.execute(
       'INSERT INTO usuarios (login, nome, email, senha, status) VALUES (?, ?, ?, ?, ?)',
-      [validatedData.email, validatedData.nome, validatedData.email, hashedPassword, 'Ativo']
+      [payload.email, payload.nome, payload.email, hashedPassword, 'Ativo']
     );
-    
-    return NextResponse.json({ success: true, login: validatedData.email });
+    return NextResponse.json({ success: true, login: payload.email });
   } catch (error) {
-    console.error('Erro ao criar usuário:', error);
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
 export async function PUT(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const login = searchParams.get('login');
-    
+    if (!login) {
+      return NextResponse.json({ error: 'Login é obrigatório' }, { status: 400 });
+    }
+    const body = await request.json();
+    const validatedData = updateUsuarioSchema.safeParse(body);
+    if (!validatedData.success) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: validatedData.error.flatten() },
+        { status: 400 }
+      );
+    }
+    const { ...payload } = validatedData.data;
+    let query = 'UPDATE usuarios SET ';
+    const params: (string | number)[] = [];
+    if (payload.nome) {
+      query += 'nome = ?, ';
+      params.push(payload.nome);
+    }
+    if (payload.email) {
+      query += 'email = ?, ';
+      params.push(payload.email);
+    }
+    if (payload.senha) {
+      const hashedPassword = await bcrypt.hash(payload.senha, 10);
+      query += 'senha = ?, ';
+      params.push(hashedPassword);
+    }
+    query = query.slice(0, -2) + ' WHERE login = ?';
+    params.push(login);
+    await accessPool.execute(query, params);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: "Dados inválidos", details: error.flatten() },
+        { status: 400 }
+      );
+    }
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    );
+  }
+}
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const login = searchParams.get('login');
     if (!login) {
       return NextResponse.json({ error: 'Login é obrigatório' }, { status: 400 });
     }
     
-    const body = await request.json();
-    const validatedData = updateUsuarioSchema.parse(body);
+    // Verificar se o usuário existe
+    const [existingUser] = await accessPool.execute(
+      'SELECT id, login FROM usuarios WHERE login = ?',
+      [login]
+    );
     
-    let query = 'UPDATE usuarios SET ';
-    const params: any[] = [];
-    
-    if (validatedData.nome) {
-      query += 'nome = ?, ';
-      params.push(validatedData.nome);
+    if (!(existingUser as Array<{ id: number; login: string }>).length) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
     }
     
-    if (validatedData.email) {
-      query += 'email = ?, ';
-      params.push(validatedData.email);
-    }
+    const userId = (existingUser as Array<{ id: number; login: string }>)[0].id;
     
-    if (validatedData.senha) {
-      const hashedPassword = await bcrypt.hash(validatedData.senha, 10);
-      query += 'senha = ?, ';
-      params.push(hashedPassword);
-    }
+    // Deletar primeiro os relacionamentos na tabela usuariogrupo
+    await accessPool.execute(
+      'DELETE FROM usuariogrupo WHERE usuario_id = ?',
+      [userId]
+    );
     
-    // Remove a vírgula extra e adiciona WHERE
-    query = query.slice(0, -2) + ' WHERE login = ?';
-    params.push(login);
+    // Depois deletar o usuário
+    await accessPool.execute(
+      'DELETE FROM usuarios WHERE login = ?',
+      [login]
+    );
     
-    await accessPool.execute(query, params);
-    
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, message: 'Usuário deletado permanentemente com sucesso' });
   } catch (error) {
-    console.error('Erro ao atualizar usuário:', error);
+    console.error('Erro ao deletar usuário:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -1,20 +1,16 @@
 import { Agenda } from "./Agenda";
 import { Convenio } from "./Convenios";
 import ConveniosCliente from "./ConveniosCliente";
-
-
 export enum Status {
   "Ativo",
   "Inativo",
 }
-
 export enum TipoCliente {
   SOCIO = "SOCIO",
   NSOCIO = "NSOCIO",
   PARCEIRO = "PARCEIRO",
   FUNCIONARIO = "FUNCIONARIO",
 }
-
 export type Cliente = {
   id: number;
   nome: string;
@@ -44,10 +40,9 @@ export type Cliente = {
   Convenio: Convenio;
   ConveniosCliente: ConveniosCliente[];
 };
-
 export type ClientePaginacao = {
   data: Cliente[];
   total: number;
   page: number;
   totalPages: number;
-};
+};

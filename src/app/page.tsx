@@ -1,5 +1,4 @@
 "use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -16,40 +15,35 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail, Lock, LogIn, Loader2 } from "lucide-react";
-
+import { Mail, Lock, LogIn, Loader2, Eye, EyeOff } from "lucide-react";
 export default function Home() {
   const router = useRouter();
   const [login, setLogin] = useState("");
   const [senha, setSenha] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const [showPassword, setShowPassword] = useState(false);
   async function onSubmit(event: FormEvent): Promise<void> {
     event.preventDefault();
     setErrorMessage(null);
     setLoading(true);
-  
     try {
       const result = await signIn("credentials", {
         login,
         password: senha,
         redirect: false,
       });
-
       if (result?.error) {
         setErrorMessage("Credenciais inválidas. Verifique seu login e senha.");
       } else if (result?.ok) {
-        // Login bem-sucedido, redirecionar para o painel
         router.replace("/painel");
       }
-    } catch (err: any) {
+    } catch {
       setErrorMessage("Erro interno do servidor. Tente novamente.");
     } finally {
       setLoading(false);
     }
   }
-  
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 p-4">
       <Card className="w-full max-w-md shadow-lg">
@@ -57,8 +51,8 @@ export default function Home() {
           <div className="flex justify-center mb-4">
             <Image src="/logotipo.svg" alt="GRUPO AAP-VR" width={200} height={100} className="rounded-md" />
           </div>
-          <CardTitle className="text-2xl font-bold">Bem-vindo ao Sistema CPSI</CardTitle>
-          <CardDescription>Entre com suas credenciais para acessar sua conta</CardDescription>
+          <CardTitle className="text-2xl font-bold">Bem-vindo ao Sistema Prev-Saúde</CardTitle>
+          <CardDescription>Faça login para acessar sua conta</CardDescription>
         </CardHeader>
         <form onSubmit={onSubmit}>
           <CardContent className="space-y-4">
@@ -79,13 +73,26 @@ export default function Home() {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <Input 
-                  type="password" 
+                  type={showPassword ? "text" : "password"}
                   placeholder="Senha" 
-                  className="pl-10" 
+                  className="pl-10 pr-10" 
                   required 
                   value={senha} 
                   onChange={(e) => setSenha(e.target.value)} 
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </Button>
               </div>
             </div>
             {errorMessage && (
@@ -115,4 +122,4 @@ export default function Home() {
       </Card>
     </main>
   );
-}
+}

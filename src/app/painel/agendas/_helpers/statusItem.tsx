@@ -7,7 +7,6 @@ import {
   UserCheckIcon,
   CalendarIcon,
 } from "lucide-react";
-
 export const statusItems = [
   {
     label: "LIVRE",
@@ -44,4 +43,4 @@ export const statusItems = [
     color: "text-gray-500",
     icon: <XCircleIcon className="w-4 h-4 mr-2" />,
   },
-];
+];

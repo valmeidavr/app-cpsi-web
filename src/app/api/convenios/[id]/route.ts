@@ -1,39 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { gestorPool } from "@/lib/mysql";
-
-// GET - Buscar convenio por ID
+import { accessPool } from "@/lib/mysql";
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-
-    const [rows] = await gestorPool.execute(
-      'SELECT id, nome, desconto, regras, tabelaFaturamentosId as tabela_faturamento_id FROM convenios WHERE id = ?',
+    const [rows] = await accessPool.execute(
+      'SELECT id, nome, desconto, regras, tabela_faturamento_id FROM convenios WHERE id = ?',
       [id]
     );
-
-    if ((rows as any[]).length === 0) {
+    if ((rows as Array<{
+      id: number;
+      nome: string;
+      desconto: number;
+      regras: string;
+      tabela_faturamento_id: number;
+    }>).length === 0) {
       return NextResponse.json(
         { error: 'Convênio não encontrado' },
         { status: 404 }
       );
     }
-
-    const convenio = (rows as any[])[0];
-
+    const convenio = (rows as Array<{
+      id: number;
+      nome: string;
+      desconto: number;
+      regras: string;
+      tabela_faturamento_id: number;
+    }>)[0];
     return NextResponse.json(convenio);
   } catch (error) {
-    console.error('Erro ao buscar convenio:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
 }
-
-// PUT - Atualizar convenio
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -41,29 +44,21 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
-
-    // Validar campos obrigatórios
     if (!body.nome || !body.regras || body.tabela_faturamento_id === undefined) {
       return NextResponse.json(
         { error: 'Campos obrigatórios não preenchidos' },
         { status: 400 }
       );
     }
-
-    // Garantir que desconto seja um número válido
     const desconto = body.desconto !== undefined ? Number(body.desconto) : 0;
-
-    // Atualizar convenio
-    await gestorPool.execute(
+    await accessPool.execute(
       `UPDATE convenios SET 
-        nome = ?, desconto = ?, regras = ?, tabelaFaturamentosId = ?
+        nome = ?, desconto = ?, regras = ?, tabela_faturamento_id = ?
        WHERE id = ?`,
       [body.nome, desconto, body.regras, body.tabela_faturamento_id, id]
     );
-
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Erro ao atualizar convenio:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
